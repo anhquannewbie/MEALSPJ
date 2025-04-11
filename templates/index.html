@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+{% load static %}
+{% block title %}Trang Chủ | Meals System{% endblock %}
+
+{% block content %}
+<!-- Hero Section với background image -->
+<div class="jumbotron jumbotron-fluid text-white" style="background-image: url('{% static "images/hero-bg.jpg" %}'); background-size: cover; background-position: center;">
+  <div class="container">
+    <h1 class="display-4">Chào mừng đến với Meals System</h1>
+    <p class="lead">Quản lý và thống kê bữa ăn cho học sinh một cách thông minh và chuyên nghiệp.</p>
+    <a href="{% url 'meals:meal_list' %}" class="btn btn-primary btn-lg">Xem Danh Sách Bữa Ăn</a>
+  </div>
+</div>
+
+<!-- Section Features -->
+<div class="container my-5">
+  <div class="row">
+    <div class="col-md-4 text-center">
+      <i class="fas fa-cutlery fa-4x text-primary mb-3"></i>
+      <h4>Đơn giản</h4>
+      <p>Nhập liệu nhanh chóng, dễ dàng và chính xác.</p>
+    </div>
+    <div class="col-md-4 text-center">
+      <i class="fas fa-chart-bar fa-4x text-success mb-3"></i>
+      <h4>Thống kê</h4>
+      <p>Biểu đồ trực quan và báo cáo chi tiết mỗi ngày, tuần, tháng.</p>
+    </div>
+    <div class="col-md-4 text-center">
+      <i class="fas fa-shield-alt fa-4x text-danger mb-3"></i>
+      <h4>Bảo mật</h4>
+      <p>Hệ thống quản trị nội bộ an toàn, dữ liệu luôn được bảo vệ.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Call-to-Action Section -->
+<div class="bg-light py-5">
+  <div class="container text-center">
+    <h2 class="mb-4">Sẵn sàng quản lý bữa ăn cho học sinh?</h2>
+    <a href="{% url 'meals:meal_create' %}" class="btn btn-lg btn-outline-primary">Nhập Dữ liệu Bữa Ăn Ngay</a>
+  </div>
+</div>
+{% endblock %}

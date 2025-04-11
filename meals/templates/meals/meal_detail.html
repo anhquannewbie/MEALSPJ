@@ -1,0 +1,14 @@
+{% load static %}
+{% extends "layout.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<h2>{{ title }}</h2>
+<ul class="list-group">
+  <li class="list-group-item"><strong>Học Sinh:</strong> {{ record.student }}</li>
+  <li class="list-group-item"><strong>Ngày:</strong> {{ record.date }}</li>
+  <li class="list-group-item"><strong>Loại bữa ăn:</strong> {{ record.meal_type }}</li>
+  <li class="list-group-item"><strong>Trạng thái:</strong> {{ record.status }}</li>
+</ul>
+<a href="{% url 'meals:meal_list' %}" class="btn btn-secondary mt-3">Quay lại danh sách</a>
+{% endblock %}
