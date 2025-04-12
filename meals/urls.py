@@ -6,6 +6,8 @@ app_name = 'meals'
 urlpatterns = [
     path('', views.meal_record_list, name='meal_list'),
     path('record/<int:pk>/', views.meal_record_detail, name='meal_detail'),
-    path('record/new/', views.meal_record_create, name='meal_create'),
+    #path('record/new/', views.meal_record_create, name='meal_create'),
     path('ajax/load-students/', views.load_students, name='ajax_load_students'),
+    path('record/bulk_new/', views.bulk_meal_record_create, name='meal_bulk_create'),
+    path('record/bulk_save/', views.bulk_meal_record_save, name='meal_bulk_save'),
 ]

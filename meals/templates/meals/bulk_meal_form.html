@@ -1,0 +1,115 @@
+{% extends "layout.html" %}
+{% load static %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">{{ title }}</h2>
+
+<form id="meal-form" method="POST">
+  {% csrf_token %}
+  <!-- Combo: Chọn Lớp -->
+  <div class="form-group">
+    <label for="id_class_choice">Chọn Lớp:</label>
+    <select id="id_class_choice" class="form-control">
+      <option value="">-- Chọn Lớp --</option>
+      {% for cls in class_list %}
+      <option value="{{ cls }}">{{ cls }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <!-- Combo: Chọn Bữa Ăn -->
+  <div class="form-group">
+    <label for="id_meal_type">Chọn Loại Bữa Ăn:</label>
+    <select id="id_meal_type" class="form-control">
+      <option value="Bữa sáng">Bữa sáng</option>
+      <option value="Bữa trưa">Bữa trưa</option>
+      <option value="Bữa xế">Bữa xế</option>
+    </select>
+  </div>
+
+  <!-- Vùng hiển thị danh sách học sinh (checkbox) -->
+  <div id="student-list" class="mb-3">
+    <!-- Mặc định rỗng, sẽ được AJAX đổ dữ liệu -->
+  </div>
+
+  <!-- Nút Lưu -->
+  <button type="button" class="btn btn-primary" id="btn-save">Lưu Dữ Liệu</button>
+</form>
+
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  // Khi dropdown "Chọn Lớp" thay đổi => Gọi AJAX để lấy danh sách học sinh
+  $("#id_class_choice").change(function(){
+    var className = $(this).val();
+    if (!className) {
+      $("#student-list").html("");
+      return;
+    }
+
+    // Gửi request đến URL load_students (có sẵn) hoặc viết riêng:
+    $.ajax({
+      url: "{% url 'meals:ajax_load_students' %}",
+      data: { 'class_name': className },
+      success: function(data){
+        // Tạo HTML checkbox
+        let html = "<h5>Danh sách Học Sinh</h5>";
+        data.forEach(function(student){
+          html += `
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" 
+                     id="student_${student.id}"
+                     name="student_ids" value="${student.id}" checked />
+              <label class="form-check-label" for="student_${student.id}">
+                ${student.name}
+              </label>
+            </div>
+          `;
+        });
+        $("#student-list").html(html);
+      }
+    });
+  });
+
+  // Khi bấm nút "Lưu Dữ Liệu"
+  $("#btn-save").click(function(e){
+    e.preventDefault();
+
+    // Cảnh báo xác nhận
+    if(!confirm("Bạn có chắc muốn lưu dữ liệu cho các học sinh đã tick?")) {
+      return;
+    }
+
+    // Gom dữ liệu
+    var className = $("#id_class_choice").val();
+    var mealType  = $("#id_meal_type").val();
+    var studentIds = [];
+
+    // Thu thập các checkbox đang tick
+    $("input[name='student_ids']:checked").each(function(){
+      studentIds.push($(this).val());
+    });
+
+    // Gửi request POST đến view "meal_bulk_save"
+    $.ajax({
+      url: "{% url 'meals:meal_bulk_save' %}",
+      method: "POST",
+      data: {
+        'class_name': className,
+        'meal_type': mealType,
+        'student_ids': studentIds,
+        'csrfmiddlewaretoken': "{{ csrf_token }}"
+      },
+      success: function(response){
+        alert("Đã lưu thành công!");
+        // Tuỳ ý redirect hoặc reset form
+        // window.location.href = "{% url 'meals:meal_list' %}";
+      },
+      error: function(){
+        alert("Lưu không thành công, vui lòng thử lại!");
+      }
+    });
+  });
+</script>
+{% endblock %}

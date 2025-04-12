@@ -18,7 +18,7 @@ class MealRecord(models.Model):
     meal_type = models.CharField(max_length=50, choices=MEAL_TYPE_CHOICES, help_text="Chọn loại bữa ăn")
     status = models.CharField(
         max_length=20,
-        choices=[('Đủ', 'Đủ'), ('Thiếu', 'Thiếu'), ('Bổ sung', 'Bổ sung')],
+        choices=[('Đủ', 'Đủ'), ('Thiếu', 'Thiếu')],
         help_text="Trạng thái bữa ăn"
     )
 
