@@ -4,10 +4,31 @@ from .models import StudentPayment
 
 class StudentPaymentForm(forms.ModelForm):
     classroom = forms.ChoiceField(required=False, label='Lớp', choices=[])
+    prev_month_balance = forms.DecimalField(
+        label="Tiền tháng trước",
+        required=False,
+        disabled=True,
+        widget=forms.TextInput(attrs={'readonly': 'readonly'})
+    )
+    current_month_payment = forms.DecimalField(
+        label="Tiền tháng này",
+        required=False,
+        disabled=True,
+        widget=forms.TextInput(attrs={'readonly': 'readonly'})
+    )
 
     class Meta:
         model = StudentPayment
-        fields = ['classroom', 'student', 'month', 'tuition_fee', 'daily_meal_fee', 'amount_paid', 'previous_balance']
+        fields = [
+            'classroom',
+            'student',
+            'month',
+            'tuition_fee',
+            'daily_meal_fee',
+            'amount_paid',
+            # Không có previous_balance, vì đã xóa
+            # Không có remaining_balance, vì DB field hiển thị qua field ảo current_month_payment
+        ]
         labels = {
             'classroom': 'Chọn Lớp',
             'student': 'Học sinh',
@@ -15,35 +36,53 @@ class StudentPaymentForm(forms.ModelForm):
             'tuition_fee': 'Học phí',
             'daily_meal_fee': 'Tiền ăn/ngày',
             'amount_paid': 'Tiền đã đóng',
-            'previous_balance': 'Tiền tháng trước (tự động)',
-        }
-        # Đánh dấu previous_balance là readonly (HTML) bằng widget
-        widgets = {
-            'previous_balance': forms.TextInput(attrs={'readonly': 'readonly'}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Lấy toàn bộ lớp
-        classrooms = ClassRoom.objects.values_list('id', 'name')
-        # Tạo choices cho classroom
-        self.fields['classroom'].choices = [('', '--- Chọn Lớp ---')] + [(str(cls_id), cls_name) for cls_id, cls_name in classrooms]
 
-        # Mặc định student là none (chưa chọn lớp)
+        # Lấy danh sách ClassRoom
+        from .models import ClassRoom, Student
+        classrooms = ClassRoom.objects.values_list('id', 'name')
+        self.fields['classroom'].choices = [('', '--- Chọn Lớp ---')] + [
+            (str(cls_id), cls_name) for cls_id, cls_name in classrooms
+        ]
+        # Mặc định student là none
         self.fields['student'].queryset = Student.objects.none()
 
-        # Nếu có dữ liệu POST => xem classroom đã chọn
+        # Xử lý logic lọc học sinh theo lớp
         if 'classroom' in self.data:
             try:
                 class_id = int(self.data.get('classroom'))
                 self.fields['student'].queryset = Student.objects.filter(classroom_id=class_id).order_by('name')
             except (ValueError, TypeError):
                 pass
-        # Hoặc nếu đang sửa 1 bản ghi có sẵn => tự động set classroom
         elif self.instance.pk:
+            # Nếu đang edit 1 payment đã có sẵn
             class_id = self.instance.student.classroom_id
             self.fields['classroom'].initial = class_id
             self.fields['student'].queryset = Student.objects.filter(classroom_id=class_id).order_by('name')
+
+        # Nếu instance có pk -> hiển thị "Tiền tháng trước" đã được dùng để tính
+        # => Tức là remaining_balance của tháng trước. 
+        # Ta tính logic y như save() => Tìm record tháng trước, lấy remaining_balance
+        if self.instance and self.instance.pk:
+            from datetime import datetime, timedelta
+            if self.instance.month:
+                dt = datetime.strptime(self.instance.month, '%Y-%m')
+                prev_month = (dt.replace(day=1) - timedelta(days=1)).strftime('%Y-%m')
+                from .models import StudentPayment
+                prev_payment = StudentPayment.objects.filter(
+                    student=self.instance.student,
+                    month=prev_month
+                ).order_by('-id').first()
+                if prev_payment:
+                    self.fields['prev_month_balance'].initial = prev_payment.remaining_balance or 0
+                else:
+                    self.fields['prev_month_balance'].initial = 0
+        else:
+            # Nếu tạo mới => mặc định = 0
+            self.fields['prev_month_balance'].initial = 0
 class MealRecordForm(forms.ModelForm):
     # Thêm trường chọn lớp học: không lưu vào model, dùng để lọc học sinh.
     class_name_choice = forms.ChoiceField(

@@ -5,55 +5,81 @@
 {% block content %}
 <h2>Chỉnh sửa Thanh toán Học sinh</h2>
 
+<!-- Hiển thị lỗi của form (nếu có) -->
+{% if form.errors %}
+<div class="alert alert-danger">
+    <ul>
+    {% for field in form %}
+      {% for error in field.errors %}
+         <li>{{ field.label }}: {{ error }}</li>
+      {% endfor %}
+    {% endfor %}
+    {% for error in form.non_field_errors %}
+         <li>{{ error }}</li>
+    {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
 <form method="post" id="payment-form">
     {% csrf_token %}
 
-    <!-- Dropdown chọn lớp -->
+    <!-- Sử dụng widget của form cho lớp và học sinh -->
     <div class="form-group">
-        <label for="id_classroom">Chọn Lớp</label>
-        <select id="id_classroom" class="form-control">
-            <option value="">-- Chọn Lớp --</option>
-            {% for room in classrooms %}
-                <option value="{{ room.id }}">{{ room.name }}</option>
-            {% endfor %}
-        </select>
+        {{ form.classroom.label_tag }}
+        {{ form.classroom }}
+    </div>
+    <div class="form-group">
+        {{ form.student.label_tag }}
+        {{ form.student }}
     </div>
 
-    <!-- Dropdown chọn học sinh (sẽ được load qua AJAX) -->
+    <!-- Các trường khác -->
     <div class="form-group">
-        <label for="id_student">Chọn Học sinh</label>
-        <select id="id_student" name="student" class="form-control" disabled>
-            <option value="">-- Chọn Học sinh --</option>
-        </select>
+        {{ form.month.label_tag }}
+        {{ form.month }}
+    </div>
+    <div class="form-group">
+        {{ form.tuition_fee.label_tag }}
+        {{ form.tuition_fee }}
+    </div>
+    <div class="form-group">
+        {{ form.daily_meal_fee.label_tag }}
+        {{ form.daily_meal_fee }}
+    </div>
+    <div class="form-group">
+        {{ form.amount_paid.label_tag }}
+        {{ form.amount_paid }}
     </div>
 
-    <!-- Các trường còn lại của form -->
-    {{ form.month.label_tag }}: {{ form.month }}<br>
-    {{ form.tuition_fee.label_tag }}: {{ form.tuition_fee }}<br>
-    {{ form.daily_meal_fee.label_tag }}: {{ form.daily_meal_fee }}<br>
-    {{ form.amount_paid.label_tag }}: {{ form.amount_paid }}<br>
-    <!-- Trường previous_balance không nhập tay -->
+    <!-- Field ảo: Tiền tháng trước -->
     <div class="form-group">
-        <label for="id_previous_balance">Tiền tháng trước</label>
-        <input type="text" id="id_previous_balance" name="previous_balance" class="form-control" readonly value="0">
+        <label for="id_prev_month_balance">Tiền tháng trước</label>
+        {{ form.prev_month_balance }}
+    </div>
+    <!-- Field ảo: Tiền tháng này -->
+    <div class="form-group">
+        <label for="id_current_month_payment">Tiền tháng này</label>
+        {{ form.current_month_payment }}
     </div>
 
     <button type="submit" class="btn btn-primary">Lưu lại</button>
 </form>
 
+<!-- JavaScript load dữ liệu qua AJAX -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 $(document).ready(function(){
-    // Khi chọn lớp, bật dropdown học sinh và load danh sách qua AJAX
+    // Biến isEdit: true nếu đang chỉnh sửa, false nếu tạo mới.
+    var isEdit = {% if is_edit %}true{% else %}false{% endif %};
+
+    // Luôn cập nhật danh sách học sinh khi chọn lớp (AJAX)
     $('#id_classroom').change(function(){
         var classroomID = $(this).val();
         if (classroomID) {
-            $('#id_student').prop('disabled', false);
             $.ajax({
                 url: "{% url 'ajax_load_students' %}",
-                data: {
-                    'classroom_id': classroomID
-                },
+                data: { 'classroom_id': classroomID },
                 success: function(data) {
                     var options = '<option value="">-- Chọn Học sinh --</option>';
                     data.forEach(function(item){
@@ -63,42 +89,40 @@ $(document).ready(function(){
                 }
             });
         } else {
-            $('#id_student').prop('disabled', true);
             $('#id_student').html('<option value="">-- Chọn Học sinh --</option>');
         }
     });
 
-    // Khi chọn học sinh hoặc thay đổi tháng, load previous_balance qua AJAX
-    $('#id_student, #id_month').change(function(){
-        var studentID = $('#id_student').val();
-        var month = $('#id_month').val();
-        if (studentID && month) {
-            $.ajax({
-                url: "{% url 'ajax_load_previous_balance' %}",
-                data: {
-                    'student_id': studentID,
-                    'month': month
-                },
-                success: function(response) {
-                    $('#id_previous_balance').val(response.previous_balance);
-                }
-            });
-        } else {
-            $('#id_previous_balance').val(0);
-        }
-    });
-
-    // Nếu các trường khác trong form cần bị disable khi lớp chưa chọn,
-    // có thể dùng code sau:
-    $('#payment-form input, #payment-form select').not('#id_classroom').prop('disabled', true);
-    // Khi lớp được chọn, bật lại các trường khác
-    $('#id_classroom').change(function(){
-        if ($(this).val()) {
-            $('#payment-form input, #payment-form select').not('#id_classroom').prop('disabled', false);
-        } else {
-            $('#payment-form input, #payment-form select').not('#id_classroom').prop('disabled', true);
-        }
-    });
+    // Chỉ attach AJAX load cho trường 'student' và 'month' nếu không đang chỉnh sửa
+    if (!isEdit) {
+        $('#id_student, #id_month').change(function(){
+            var studentID = $('#id_student').val();
+            var month = $('#id_month').val();
+            if (studentID && month) {
+                $.ajax({
+                    url: "{% url 'ajax_load_payment_details' %}",
+                    data: { 'student_id': studentID, 'month': month },
+                    success: function(data) {
+                        if (data.tuition_fee !== undefined) {
+                            $('#id_tuition_fee').val(data.tuition_fee);
+                        }
+                        if (data.daily_meal_fee !== undefined) {
+                            $('#id_daily_meal_fee').val(data.daily_meal_fee);
+                        }
+                        if (data.amount_paid !== undefined) {
+                            $('#id_amount_paid').val(data.amount_paid);
+                        }
+                        if (data.current_month_payment !== undefined) {
+                            $('#id_current_month_payment').val(data.current_month_payment);
+                        }
+                        if (data.prev_month_balance !== undefined) {
+                            $('#id_prev_month_balance').val(data.prev_month_balance);
+                        }
+                    }
+                });
+            }
+        });
+    }
 });
 </script>
 {% endblock %}

@@ -6,36 +6,61 @@ from django.utils.translation import gettext as _
 from django.http import JsonResponse
 from .models import Student
 from django.views.decorators.csrf import csrf_exempt
-from datetime import date, timedelta
+from datetime import date, timedelta,datetime
 from .models import MealRecord, Student
 from .models import StudentPayment
 from .forms import StudentPaymentForm,ClassRoom
+
 @csrf_exempt
 def student_payment_edit(request, pk=None):
-    # Lấy danh sách lớp có sẵn
     classrooms = ClassRoom.objects.all()
 
-    # Nếu có truyền pk (sửa thông tin thanh toán), dùng instance hiện có
-    if pk:
-        payment = get_object_or_404(StudentPayment, pk=pk)
+    if request.method == "GET" and request.GET.get('payment_id'):
+        try:
+            payment = StudentPayment.objects.get(id=request.GET.get('payment_id'))
+        except StudentPayment.DoesNotExist:
+            payment = None
     else:
-        payment = None
+        if pk:
+            payment = get_object_or_404(StudentPayment, pk=pk)
+        else:
+            payment = None
 
     if request.method == "POST":
-        # Sử dụng form nhập liệu (không bao gồm trường học sinh vì học sinh sẽ được chọn qua AJAX)
+        # Lấy dữ liệu từ form
         form = StudentPaymentForm(request.POST, instance=payment)
         if form.is_valid():
-            payment_obj = form.save()  # Phương thức save() sẽ tự tính toán remaining_balance
-            return redirect('payment_list')  # Điều hướng sang trang danh sách thanh toán
+            student = form.cleaned_data.get('student')
+            month = form.cleaned_data.get('month')
+            
+            # Luôn kiểm tra xem có bản ghi tồn tại với student và month không
+            # Bỏ điều kiện "not payment" để đảm bảo luôn kiểm tra và cập nhật
+            existing_payment = StudentPayment.objects.filter(student=student, month=month).first()
+            
+            if existing_payment and (not payment or existing_payment.id != payment.id):
+                # Nếu tìm thấy một bản ghi khác với bản ghi hiện tại
+                # Cập nhật các giá trị từ form sang bản ghi đó
+                existing_payment.tuition_fee = form.cleaned_data.get('tuition_fee')
+                existing_payment.daily_meal_fee = form.cleaned_data.get('daily_meal_fee')
+                existing_payment.amount_paid = form.cleaned_data.get('amount_paid')
+                existing_payment.save()  # Cập nhật remaining_balance bằng phương thức save
+                payment_obj = existing_payment
+            else:
+                # Nếu không tìm thấy hoặc đang chỉnh sửa bản ghi hiện tại
+                payment_obj = form.save()
+                
+            return redirect(request.path)
     else:
         form = StudentPaymentForm(instance=payment)
 
+    var_is_edit = True if payment and payment.pk else False
     return render(request, 'payments/student_payment_form.html', {
         'form': form,
-        'classrooms': classrooms
+        'classrooms': classrooms,
+        'is_edit': var_is_edit,
     })
 
-# View AJAX: Khi chọn lớp, trả về danh sách học sinh của lớp đó
+# Các view khác giữ nguyên
 def ajax_load_students(request):
     classroom_id = request.GET.get('classroom_id')
     if classroom_id:
@@ -45,22 +70,60 @@ def ajax_load_students(request):
         student_list = []
     return JsonResponse(student_list, safe=False)
 
-# View AJAX: Khi chọn học sinh, load số dư (previous_balance) của tháng trước, nếu có.
-# Giả sử tháng trước = tháng hiện tại - 1 tháng theo format 'YYYY-MM'
 def ajax_load_previous_balance(request):
     student_id = request.GET.get('student_id')
-    month = request.GET.get('month')  # ở format 'YYYY-MM'
-    # Tính tháng trước: chuyển đổi sang datetime sau đó trừ 1 tháng
-    if month and student_id:
+    month = request.GET.get('month')  # 'YYYY-MM'
+    prior_balance = 0
+    if student_id and month:
+        from datetime import datetime, timedelta
         dt = datetime.strptime(month, '%Y-%m')
-        # Giả sử cách tính: nếu tháng là 2025-04 thì tháng trước là 2025-03
-        # Truy vấn StudentPayment với student và month bằng tháng trước
-        previous_month = (dt.replace(day=1) - timedelta(days=1)).strftime('%Y-%m')
-        prev_payment = StudentPayment.objects.filter(student_id=student_id, month=previous_month).order_by('-id').first()
-        previous_balance = prev_payment.remaining_balance if prev_payment else 0
+        prev_month = (dt.replace(day=1) - timedelta(days=1)).strftime('%Y-%m')
+        
+        from .models import StudentPayment
+        prev_payment = StudentPayment.objects.filter(student_id=student_id, month=prev_month).order_by('-id').first()
+        if prev_payment:
+            prior_balance = prev_payment.remaining_balance or 0
+    return JsonResponse({'prev_month_balance': prior_balance})
+
+def ajax_load_payment_details(request):
+    student_id = request.GET.get('student_id')
+    month = request.GET.get('month')  # format 'YYYY-MM'
+    data = {}
+
+    if student_id and month:
+        # 1. Lấy payment của THÁNG HIỆN TẠI (nếu có) -> để load tuition_fee, daily_meal_fee, amount_paid, v.v.
+        payment = StudentPayment.objects.filter(student_id=student_id, month=month).first()
+        if payment:
+            data['tuition_fee'] = str(payment.tuition_fee)
+            data['daily_meal_fee'] = str(payment.daily_meal_fee)
+            data['amount_paid'] = str(payment.amount_paid)
+            # "Tiền tháng này" = remaining_balance
+            data['current_month_payment'] = str(payment.remaining_balance)
+        else:
+            # Nếu chưa có payment cho tháng này => để trống
+            data['tuition_fee'] = ''
+            data['daily_meal_fee'] = ''
+            data['amount_paid'] = ''
+            data['current_month_payment'] = ''
+
+        # 2. Tính "Tiền tháng trước" = remaining_balance của tháng trước (nếu có)
+        dt = datetime.strptime(month, '%Y-%m')
+        prev_month = (dt.replace(day=1) - timedelta(days=1)).strftime('%Y-%m')
+        prev_payment = StudentPayment.objects.filter(student_id=student_id, month=prev_month).first()
+        if prev_payment:
+            data['prev_month_balance'] = str(prev_payment.remaining_balance)
+        else:
+            data['prev_month_balance'] = '0'
     else:
-        previous_balance = 0
-    return JsonResponse({'previous_balance': previous_balance})
+        # Nếu thiếu student hoặc month -> mọi thứ để trống
+        data['tuition_fee'] = ''
+        data['daily_meal_fee'] = ''
+        data['amount_paid'] = ''
+        data['current_month_payment'] = ''
+        data['prev_month_balance'] = '0'
+
+    return JsonResponse(data)
+
 def bulk_meal_record_save(request):
     if request.method == 'POST':
         class_name = request.POST.get('class_name')
@@ -70,7 +133,7 @@ def bulk_meal_record_save(request):
         today = date.today()
 
         # Lấy tất cả học sinh của lớp đó
-        students = Student.objects.filter(classroom_name=class_name)
+        students = Student.objects.filter(classroom__name=class_name)
 
         # Xóa các bản ghi cũ của lớp, meal_type trong ngày hôm nay
         MealRecord.objects.filter(student__in=students, date=today, meal_type=meal_type).delete()
@@ -93,12 +156,13 @@ def bulk_meal_record_save(request):
 
 def bulk_meal_record_create(request):
     # Lấy danh sách lớp (distinct)
-    class_list = Student.objects.values_list('classroom_name', flat=True).distinct()
+    class_list = Student.objects.values_list('classroom__name', flat=True).distinct()
 
     return render(request, 'meals/bulk_meal_form.html', {
         'class_list': class_list,
         'title': 'Nhập Dữ liệu Bữa Ăn'
     })
+
 def meal_record_list(request):
     records = MealRecord.objects.all().order_by('-date')
     return render(request, 'meals/meal_list.html', {'records': records, 'title': _("Danh sách Bữa Ăn")})
@@ -107,22 +171,11 @@ def meal_record_detail(request, pk):
     record = get_object_or_404(MealRecord, pk=pk)
     return render(request, 'meals/meal_detail.html', {'record': record, 'title': _("Chi tiết Bữa Ăn")})
 
-# def meal_record_create(request):
-#     if request.method == 'POST':
-#         form = MealRecordForm(request.POST)
-#         if form.is_valid():
-#             form.save()
-#             messages.success(request, _("Bản ghi bữa ăn đã được lưu thành công!"))
-#             return redirect('meals:meal_list')
-#     else:
-#         form = MealRecordForm()
-#     return render(request, 'meals/meal_form.html', {'form': form, 'title': _("Nhập Dữ liệu Bữa Ăn")})
-
 def load_students(request):
     # Ajax view: Lấy danh sách học sinh dựa theo lớp học đã chọn
     class_name = request.GET.get('class_name')
     students = []
     if class_name:
-        students = Student.objects.filter(class_name=class_name).order_by('name')
+        students = Student.objects.filter(classroom__name=class_name).order_by('name')
     data = [{'id': student.id, 'name': student.name} for student in students]
     return JsonResponse(data, safe=False)

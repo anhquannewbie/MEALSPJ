@@ -1,20 +1,45 @@
 from django.db import models
 from django.utils import timezone
-
+from datetime import datetime, timedelta
 class StudentPayment(models.Model):
     student = models.ForeignKey('Student', on_delete=models.CASCADE)
     month = models.CharField(max_length=7, help_text="YYYY-MM")
     tuition_fee = models.DecimalField(max_digits=10, decimal_places=2)
     daily_meal_fee = models.DecimalField(max_digits=10, decimal_places=2)
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2)
-    # previous_balance tự động lấy từ DB, nhưng vẫn lưu vào đây
-    previous_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     remaining_balance = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
     def save(self, *args, **kwargs):
-        # Giả định cố định 26 ngày
+        
+        # Chúng ta giả định vẫn cố định 26 ngày
         days = 26
-        self.remaining_balance = self.amount_paid - self.tuition_fee - (self.daily_meal_fee * days) + self.previous_balance
+        
+        # Tính số dư tháng trước:
+        prior_remain_balance = 0
+        
+        if self.month:
+            # month ở format YYYY-MM
+            dt = datetime.strptime(self.month, '%Y-%m')
+            # Xác định tháng trước
+            prev_month = (dt.replace(day=1) - timedelta(days=1)).strftime('%Y-%m')
+            
+            # Tìm bản ghi tháng trước, nếu có
+            prev_payment = StudentPayment.objects.filter(
+                student=self.student,
+                month=prev_month
+            ).order_by('-id').first()
+            
+            if prev_payment and prev_payment.remaining_balance:
+                prior_remain_balance = prev_payment.remaining_balance
+        
+        # Tính remaining_balance = số tiền đóng - tiền học phí - tiền ăn (26 ngày) + số dư tháng trước
+        self.remaining_balance = (
+            self.amount_paid
+            - self.tuition_fee
+            - (self.daily_meal_fee * days)
+            + prior_remain_balance
+        )
+        
         super().save(*args, **kwargs)
 
     def __str__(self):
