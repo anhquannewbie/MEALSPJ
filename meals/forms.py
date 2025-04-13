@@ -1,6 +1,49 @@
 from django import forms
-from .models import MealRecord, Student
+from .models import MealRecord, Student,ClassRoom
+from .models import StudentPayment
 
+class StudentPaymentForm(forms.ModelForm):
+    classroom = forms.ChoiceField(required=False, label='Lớp', choices=[])
+
+    class Meta:
+        model = StudentPayment
+        fields = ['classroom', 'student', 'month', 'tuition_fee', 'daily_meal_fee', 'amount_paid', 'previous_balance']
+        labels = {
+            'classroom': 'Chọn Lớp',
+            'student': 'Học sinh',
+            'month': 'Tháng (YYYY-MM)',
+            'tuition_fee': 'Học phí',
+            'daily_meal_fee': 'Tiền ăn/ngày',
+            'amount_paid': 'Tiền đã đóng',
+            'previous_balance': 'Tiền tháng trước (tự động)',
+        }
+        # Đánh dấu previous_balance là readonly (HTML) bằng widget
+        widgets = {
+            'previous_balance': forms.TextInput(attrs={'readonly': 'readonly'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Lấy toàn bộ lớp
+        classrooms = ClassRoom.objects.values_list('id', 'name')
+        # Tạo choices cho classroom
+        self.fields['classroom'].choices = [('', '--- Chọn Lớp ---')] + [(str(cls_id), cls_name) for cls_id, cls_name in classrooms]
+
+        # Mặc định student là none (chưa chọn lớp)
+        self.fields['student'].queryset = Student.objects.none()
+
+        # Nếu có dữ liệu POST => xem classroom đã chọn
+        if 'classroom' in self.data:
+            try:
+                class_id = int(self.data.get('classroom'))
+                self.fields['student'].queryset = Student.objects.filter(classroom_id=class_id).order_by('name')
+            except (ValueError, TypeError):
+                pass
+        # Hoặc nếu đang sửa 1 bản ghi có sẵn => tự động set classroom
+        elif self.instance.pk:
+            class_id = self.instance.student.classroom_id
+            self.fields['classroom'].initial = class_id
+            self.fields['student'].queryset = Student.objects.filter(classroom_id=class_id).order_by('name')
 class MealRecordForm(forms.ModelForm):
     # Thêm trường chọn lớp học: không lưu vào model, dùng để lọc học sinh.
     class_name_choice = forms.ChoiceField(

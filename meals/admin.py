@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Student, MealRecord
+from .models import Student, MealRecord,ClassRoom
 
 class ClassNameFilter(admin.SimpleListFilter):
     title = 'Lớp học'
@@ -14,9 +14,15 @@ class ClassNameFilter(admin.SimpleListFilter):
         if self.value():
             return queryset.filter(class_name=self.value())
         return queryset
+
+class ClassRoomAdmin(admin.ModelAdmin):
+    list_display = ('name',)
+    search_fields = ('name',)
+
+# Nếu cần, cập nhật lại StudentAdmin để hiển thị thông tin lớp học dưới dạng dropdown
 class StudentAdmin(admin.ModelAdmin):
     search_fields = ('name',)
-    list_filter = (ClassNameFilter,)
+    list_filter = ('classroom',)
 
 class MealRecordAdmin(admin.ModelAdmin):
     list_display = ('student', 'date', 'meal_type', 'status')
@@ -41,5 +47,6 @@ class MealRecordAdmin(admin.ModelAdmin):
         else:
             super().save_model(request, obj, form, change)
 
+admin.site.register(ClassRoom, ClassRoomAdmin)
 admin.site.register(Student, StudentAdmin)
 admin.site.register(MealRecord, MealRecordAdmin)

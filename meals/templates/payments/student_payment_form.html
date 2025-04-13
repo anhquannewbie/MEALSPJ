@@ -1,0 +1,104 @@
+{% extends "layout.html" %}
+{% load static %}
+{% block title %}Chỉnh sửa Thanh toán Học sinh{% endblock %}
+
+{% block content %}
+<h2>Chỉnh sửa Thanh toán Học sinh</h2>
+
+<form method="post" id="payment-form">
+    {% csrf_token %}
+
+    <!-- Dropdown chọn lớp -->
+    <div class="form-group">
+        <label for="id_classroom">Chọn Lớp</label>
+        <select id="id_classroom" class="form-control">
+            <option value="">-- Chọn Lớp --</option>
+            {% for room in classrooms %}
+                <option value="{{ room.id }}">{{ room.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- Dropdown chọn học sinh (sẽ được load qua AJAX) -->
+    <div class="form-group">
+        <label for="id_student">Chọn Học sinh</label>
+        <select id="id_student" name="student" class="form-control" disabled>
+            <option value="">-- Chọn Học sinh --</option>
+        </select>
+    </div>
+
+    <!-- Các trường còn lại của form -->
+    {{ form.month.label_tag }}: {{ form.month }}<br>
+    {{ form.tuition_fee.label_tag }}: {{ form.tuition_fee }}<br>
+    {{ form.daily_meal_fee.label_tag }}: {{ form.daily_meal_fee }}<br>
+    {{ form.amount_paid.label_tag }}: {{ form.amount_paid }}<br>
+    <!-- Trường previous_balance không nhập tay -->
+    <div class="form-group">
+        <label for="id_previous_balance">Tiền tháng trước</label>
+        <input type="text" id="id_previous_balance" name="previous_balance" class="form-control" readonly value="0">
+    </div>
+
+    <button type="submit" class="btn btn-primary">Lưu lại</button>
+</form>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function(){
+    // Khi chọn lớp, bật dropdown học sinh và load danh sách qua AJAX
+    $('#id_classroom').change(function(){
+        var classroomID = $(this).val();
+        if (classroomID) {
+            $('#id_student').prop('disabled', false);
+            $.ajax({
+                url: "{% url 'ajax_load_students' %}",
+                data: {
+                    'classroom_id': classroomID
+                },
+                success: function(data) {
+                    var options = '<option value="">-- Chọn Học sinh --</option>';
+                    data.forEach(function(item){
+                        options += '<option value="' + item.id + '">' + item.name + '</option>';
+                    });
+                    $('#id_student').html(options);
+                }
+            });
+        } else {
+            $('#id_student').prop('disabled', true);
+            $('#id_student').html('<option value="">-- Chọn Học sinh --</option>');
+        }
+    });
+
+    // Khi chọn học sinh hoặc thay đổi tháng, load previous_balance qua AJAX
+    $('#id_student, #id_month').change(function(){
+        var studentID = $('#id_student').val();
+        var month = $('#id_month').val();
+        if (studentID && month) {
+            $.ajax({
+                url: "{% url 'ajax_load_previous_balance' %}",
+                data: {
+                    'student_id': studentID,
+                    'month': month
+                },
+                success: function(response) {
+                    $('#id_previous_balance').val(response.previous_balance);
+                }
+            });
+        } else {
+            $('#id_previous_balance').val(0);
+        }
+    });
+
+    // Nếu các trường khác trong form cần bị disable khi lớp chưa chọn,
+    // có thể dùng code sau:
+    $('#payment-form input, #payment-form select').not('#id_classroom').prop('disabled', true);
+    // Khi lớp được chọn, bật lại các trường khác
+    $('#id_classroom').change(function(){
+        if ($(this).val()) {
+            $('#payment-form input, #payment-form select').not('#id_classroom').prop('disabled', false);
+        } else {
+            $('#payment-form input, #payment-form select').not('#id_classroom').prop('disabled', true);
+        }
+    });
+});
+</script>
+{% endblock %}
