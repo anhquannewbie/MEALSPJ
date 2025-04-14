@@ -84,23 +84,26 @@ class StudentPaymentForm(forms.ModelForm):
             # Nếu tạo mới => mặc định = 0
             self.fields['prev_month_balance'].initial = 0
 class MealRecordForm(forms.ModelForm):
-    # Thêm trường chọn lớp học: không lưu vào model, dùng để lọc học sinh.
     class_name_choice = forms.ChoiceField(
         label="Lớp học",
         required=True,
         choices=[],
     )
+    non_eat = forms.ChoiceField(
+        label="Trạng thái nghỉ ăn",
+        choices=[(0, 'Ăn đủ'), (1, 'Nghỉ (Có phép)'), (2, 'Nghỉ (Không phép)')],
+        required=True
+    )
 
     class Meta:
         model = MealRecord
-        fields = ['class_name_choice', 'student', 'date', 'meal_type', 'status']
+        fields = ['class_name_choice', 'student', 'date', 'meal_type', 'status', 'non_eat']
         widgets = {
             'date': forms.DateInput(attrs={'type': 'date'}),
         }
         labels = {
             'student': 'Học Sinh',
         }
-
     def __init__(self, *args, **kwargs):
         super(MealRecordForm, self).__init__(*args, **kwargs)
         # Lấy tất cả các lớp học trong bảng Student.

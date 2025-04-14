@@ -19,19 +19,18 @@
     </select>
   </div>
 
-  <!-- Combo: Chọn Bữa Ăn -->
+  <!-- Combo: Chọn Bữa Ăn (chỉ gồm Bữa sáng và Bữa trưa) -->
   <div class="form-group">
     <label for="id_meal_type">Chọn Loại Bữa Ăn:</label>
     <select id="id_meal_type" class="form-control">
       <option value="Bữa sáng">Bữa sáng</option>
       <option value="Bữa trưa">Bữa trưa</option>
-      <option value="Bữa xế">Bữa xế</option>
     </select>
   </div>
 
-  <!-- Vùng hiển thị danh sách học sinh (checkbox) -->
+  <!-- Vùng hiển thị danh sách học sinh (checkbox và dropdown) -->
   <div id="student-list" class="mb-3">
-    <!-- Mặc định rỗng, sẽ được AJAX đổ dữ liệu -->
+    <!-- Sẽ được AJAX đổ dữ liệu -->
   </div>
 
   <!-- Nút Lưu -->
@@ -41,76 +40,94 @@
 <!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-  // Khi dropdown "Chọn Lớp" thay đổi => Gọi AJAX để lấy danh sách học sinh
-  $("#id_class_choice").change(function(){
-    var className = $(this).val();
-    if (!className) {
-      $("#student-list").html("");
-      return;
-    }
-
-    // Gửi request đến URL load_students (có sẵn) hoặc viết riêng:
-    $.ajax({
-      url: "{% url 'meals:ajax_load_students' %}",
-      data: { 'class_name': className },
-      success: function(data){
-        // Tạo HTML checkbox
-        let html = "<h5>Danh sách Học Sinh</h5>";
-        data.forEach(function(student){
-          html += `
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" 
-                     id="student_${student.id}"
-                     name="student_ids" value="${student.id}" checked />
-              <label class="form-check-label" for="student_${student.id}">
-                ${student.name}
-              </label>
-            </div>
-          `;
-        });
-        $("#student-list").html(html);
-      }
-    });
+  $(document).ready(function(){
+      // Khi dropdown "Chọn Lớp" thay đổi, lấy danh sách học sinh qua AJAX
+      $("#id_class_choice").change(function(){
+          var className = $(this).val();
+          if (!className) {
+              $("#student-list").html("");
+              return;
+          }
+          $.ajax({
+              url: "{% url 'meals:ajax_load_students' %}",
+              data: { "class_name": className },
+              success: function(data){
+                  let html = "<h5>Danh sách Học Sinh</h5>";
+                  data.forEach(function(student){
+                      html += `
+                          <div class="form-check d-flex align-items-center mb-2">
+                            <input class="form-check-input student-checkbox" type="checkbox" 
+                                   id="student_${student.id}" 
+                                   name="student_ids[]" value="${student.id}" checked />
+                            <label class="form-check-label me-2" for="student_${student.id}">
+                              ${student.name}
+                            </label>
+                            <select class="form-select absence-dropdown" name="absence_${student.id}" style="max-width:150px;" disabled>
+                              <option value="1">Có phép</option>
+                              <option value="2">Không phép</option>
+                            </select>
+                          </div>
+                      `;
+                  });
+                  $("#student-list").html(html);
+                  
+                  // Attach event cho checkbox để bật/tắt dropdown
+                  $("#meal-form input.student-checkbox").change(function(){
+                      var checkbox = $(this);
+                      var dropdown = checkbox.closest(".form-check").find(".absence-dropdown");
+                      if(checkbox.is(":checked")){
+                          dropdown.prop("disabled", true);
+                          dropdown.val("1");
+                      } else {
+                          dropdown.prop("disabled", false);
+                      }
+                  });
+              }
+          });
+      });
+    
+      // Khi bấm nút "Lưu Dữ Liệu"
+      $("#btn-save").click(function(e){
+          e.preventDefault();
+          if (!confirm("Bạn có chắc muốn lưu dữ liệu cho các học sinh đã tick?")) {
+              return;
+          }
+          var className = $("#id_class_choice").val();
+          var mealType  = $("#id_meal_type").val();
+          // Sử dụng selector dựa trên class để lấy các checkbox được tick
+          var studentIds = [];
+          $("#meal-form input.student-checkbox:checked").each(function(){
+              studentIds.push($(this).val());
+          });
+          console.log("Checked student IDs:", studentIds);
+    
+          // Thu thập dữ liệu dropdown cho từng học sinh (dù dropdown có thể disabled)
+          var absenceData = {};
+          $("#meal-form select[name^='absence_']").each(function(){
+              var sid = $(this).attr("name").split("_")[1];
+              absenceData[sid] = $(this).val();
+          });
+          console.log("Absence data:", absenceData);
+    
+          $.ajax({
+              url: "{% url 'meals:meal_bulk_save' %}",
+              method: "POST",
+              data: {
+                  "class_name": className,
+                  "meal_type": mealType,
+                  "student_ids": studentIds,
+                  "absence_data": JSON.stringify(absenceData),
+                  "csrfmiddlewaretoken": "{{ csrf_token }}"
+              },
+              success: function(response){
+                  alert("Đã lưu thành công!");
+              },
+              error: function(){
+                  alert("Lưu không thành công, vui lòng thử lại!");
+              }
+          });
+      });
   });
-
-  // Khi bấm nút "Lưu Dữ Liệu"
-  $("#btn-save").click(function(e){
-    e.preventDefault();
-
-    // Cảnh báo xác nhận
-    if(!confirm("Bạn có chắc muốn lưu dữ liệu cho các học sinh đã tick?")) {
-      return;
-    }
-
-    // Gom dữ liệu
-    var className = $("#id_class_choice").val();
-    var mealType  = $("#id_meal_type").val();
-    var studentIds = [];
-
-    // Thu thập các checkbox đang tick
-    $("input[name='student_ids']:checked").each(function(){
-      studentIds.push($(this).val());
-    });
-
-    // Gửi request POST đến view "meal_bulk_save"
-    $.ajax({
-      url: "{% url 'meals:meal_bulk_save' %}",
-      method: "POST",
-      data: {
-        'class_name': className,
-        'meal_type': mealType,
-        'student_ids': studentIds,
-        'csrfmiddlewaretoken': "{{ csrf_token }}"
-      },
-      success: function(response){
-        alert("Đã lưu thành công!");
-        // Tuỳ ý redirect hoặc reset form
-        // window.location.href = "{% url 'meals:meal_list' %}";
-      },
-      error: function(){
-        alert("Lưu không thành công, vui lòng thử lại!");
-      }
-    });
-  });
-</script>
+  </script>
+    
 {% endblock %}

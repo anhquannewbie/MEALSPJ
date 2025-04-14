@@ -62,13 +62,21 @@ class MealRecord(models.Model):
     MEAL_TYPE_CHOICES = [
         ('Bữa sáng', 'Bữa sáng'),
         ('Bữa trưa', 'Bữa trưa'),
-        ('Bữa xế', 'Bữa xế'),
+        # Loại bỏ "Bữa xế" nếu bạn không sử dụng nữa
     ]
     meal_type = models.CharField(max_length=50, choices=MEAL_TYPE_CHOICES, help_text="Chọn loại bữa ăn")
+    # Nếu ăn đủ thì status là "Đủ", còn nếu nghỉ thì status là "Thiếu"
+    # Nhưng giờ chúng ta bổ sung thêm cột non_eat để phân biệt nghỉ có phép và không phép.
     status = models.CharField(
         max_length=20,
         choices=[('Đủ', 'Đủ'), ('Thiếu', 'Thiếu')],
         help_text="Trạng thái bữa ăn"
+    )
+    # Thêm trường non_eat: 0 = Ăn đủ; 1 = Nghỉ có phép; 2 = Nghỉ không phép.
+    non_eat = models.IntegerField(
+        default=0,
+        choices=[(0, 'Ăn đủ'), (1, 'Nghỉ (Có phép)'), (2, 'Nghỉ (Không phép)')],
+        help_text="Loại trừ bữa ăn: 0 = Ăn đủ, 1 = Nghỉ (Có phép), 2 = Nghỉ (Không phép)"
     )
 
     def __str__(self):

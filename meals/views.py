@@ -10,7 +10,8 @@ from datetime import date, timedelta,datetime
 from .models import MealRecord, Student
 from .models import StudentPayment
 from .forms import StudentPaymentForm,ClassRoom
-
+from django.db import connection
+import json
 @csrf_exempt
 def student_payment_edit(request, pk=None):
     classrooms = ClassRoom.objects.all()
@@ -48,8 +49,15 @@ def student_payment_edit(request, pk=None):
             else:
                 # Nếu không tìm thấy hoặc đang chỉnh sửa bản ghi hiện tại
                 payment_obj = form.save()
-                
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                UPDATE meals_studentpayment
+                SET remaining_balance = amount_paid - tuition_fee - (daily_meal_fee * 26)+ COALESCE((SELECT sp_prev.remaining_balance FROM meals_studentpayment AS sp_prev WHERE sp_prev.student_id = meals_studentpayment.student_id AND sp_prev.month = strftime('%Y-%m', date(meals_studentpayment.month || '-01', '-1 month')) ORDER BY sp_prev.id DESC LIMIT 1), 0);
+                """)
+            messages.success(request, "Lưu thành công")
             return redirect(request.path)
+        else:
+            print("Form errors:", form.errors)
     else:
         form = StudentPaymentForm(instance=payment)
 
@@ -128,30 +136,35 @@ def bulk_meal_record_save(request):
     if request.method == 'POST':
         class_name = request.POST.get('class_name')
         meal_type = request.POST.get('meal_type')
-        # Lấy danh sách các giá trị từ checkbox
-        student_ids = request.POST.getlist('student_ids[]') 
+        student_ids = request.POST.getlist('student_ids[]')
+        print("DEBUG: student_ids =", student_ids)  # Debug: in ra danh sách học sinh có tick
         today = date.today()
 
-        # Lấy tất cả học sinh của lớp đó
-        students = Student.objects.filter(classroom__name=class_name)
+        absence_data_str = request.POST.get('absence_data', '{}')
+        absence_data = json.loads(absence_data_str)
+        print("DEBUG: absence_data =", absence_data)  # Debug: in ra dữ liệu dropdown
 
-        # Xóa các bản ghi cũ của lớp, meal_type trong ngày hôm nay
+        students = Student.objects.filter(classroom__name=class_name)
         MealRecord.objects.filter(student__in=students, date=today, meal_type=meal_type).delete()
 
-        # Tạo bản ghi mới cho tất cả học sinh trong lớp:
-        # Nếu học sinh được chọn (checkbox tick) thì lưu "Đủ", ngược lại lưu "Thiếu".
-
         for student in students:
-            status = "Đủ" if str(student.id) in student_ids else "Thiếu"
+            sid = str(student.id)
+            if sid in student_ids:
+                status = "Đủ"
+                non_eat = 0
+            else:
+                status = "Thiếu"
+                non_eat = int(absence_data.get(sid, "2"))
+            print("DEBUG: For student", sid, "status =", status, "non_eat =", non_eat)
             MealRecord.objects.create(
                 student=student,
                 date=today,
                 meal_type=meal_type,
-                status=status
+                status=status,
+                non_eat=non_eat
             )
             
         return JsonResponse({"message": "success"}, status=200)
-
     return JsonResponse({"error": "Invalid method"}, status=400)
 
 def bulk_meal_record_create(request):
