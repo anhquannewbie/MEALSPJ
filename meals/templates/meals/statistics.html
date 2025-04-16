@@ -86,7 +86,9 @@
     
     <button type="submit" class="btn btn-primary">Xem Thống Kê</button>
   </form>
-
+  <a href="{% url 'meals:export_excel' %}?year={{ selected_year }}&month={{ selected_month }}&meal_type={{ selected_meal_type }}&class_id={{ selected_class_id }}" class="btn btn-success mb-3">
+    Xuất Excel Thống Kê Tháng
+  </a>
   {% if rows_data %}
     <table class="table table-bordered">
       <colgroup>
@@ -101,17 +103,15 @@
         <tr>
           <th rowspan="2" class="student-col">Học sinh</th>
           <th colspan="31">Ngày</th>
+          <th rowspan="2">Tổng</th>       <!-- NEW -->
+          <th rowspan="2">Thành tiền</th> <!-- NEW -->
         </tr>
         <tr>
           {% if max_day_list %}
             {% for d in max_day_list %}
               <th>{{ d }}</th>
             {% endfor %}
-            {% if max_day_list|length < 31 %}
-              {% for i in max_day_list|length|add:"1"|make_list %}
-                <th>0</th>
-              {% endfor %}
-            {% endif %}
+            {# ...nếu padding thêm cột 0, tuỳ logic cũ #}
           {% else %}
             {% for i in "1234567890123456789012345678901" %}
               <th>{{ forloop.counter }}</th>
@@ -119,14 +119,17 @@
           {% endif %}
         </tr>
       </thead>
+      
       <tbody>
         {% for row in rows_data %}
-        <tr>
-          <td>{{ row.student.name }}</td>
-          {% for val in row.days %}
-            <td>{{ val }}</td>
-          {% endfor %}
-        </tr>
+          <tr>
+            <td>{{ row.student.name }}</td>
+            {% for val in row.days %}
+              <td>{{ val }}</td>
+            {% endfor %}
+            <td>{{ row.total_meals }}</td>       <!-- NEW -->
+            <td>{{ row.total_cost|floatformat:0 }}</td> <!-- NEW, floatformat tuỳ ý -->
+          </tr>
         {% endfor %}
       </tbody>
     </table>

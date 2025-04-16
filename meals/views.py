@@ -14,6 +14,8 @@ from django.db import connection
 import json
 from django.db.models import Q
 import calendar
+import openpyxl
+from django.http import HttpResponse
 @csrf_exempt
 def student_payment_edit(request, pk=None):
     classrooms = ClassRoom.objects.all()
@@ -338,34 +340,18 @@ def statistics_view(request):
     #    - Mỗi học sinh 1 hàng
     #    - Từng ô: X, P, KP, 0
     if mode == 'month':
-        # Kiểm tra đã có đủ tham số chưa
         if selected_year and selected_month and selected_meal_type and selected_class_id:
-            # Lấy class
             try:
                 class_id_int = int(selected_class_id)
             except:
                 class_id_int = None
-
-            # Lấy danh sách học sinh của lớp
+            
             students = Student.objects.filter(classroom_id=class_id_int).order_by('name')
+            max_day = calendar.monthrange(int(selected_year), int(selected_month))[1]  # Số ngày của tháng
 
-            # Tạo cấu trúc data: {student_id: { day1: ..., day2: ..., ... }}
-            # days_stat[student.id][day] = 'X' / 'P' / 'KP' / '0'
-            days_stat = {}
-            # Tạo cột ngày 1..31 (tháng 2, 4, 9 ... có thể ít ngày hơn nhưng ta vẫn hiển thị 31 cột)
-            # Hoặc xác định max_day = calendar.monthrange(year, month)[1]
-            max_day = calendar.monthrange(int(selected_year), int(selected_month))[1]
-
-            for stu in students:
-                days_stat[stu.id] = {}
-                for d in range(1, max_day+1):
-                    days_stat[stu.id][d] = '0'  # mặc định = 0
-
-            # Lấy MealRecord filter: year=selected_year, month=selected_month, meal_type=selected_meal_type
-            from datetime import datetime
+            # Lấy MealRecord cho tất cả học sinh trong lớp, cho đúng meal_type
             year_i = int(selected_year)
             month_i = int(selected_month)
-            # Lọc MealRecord
             records = MealRecord.objects.filter(
                 student__classroom_id=class_id_int,
                 meal_type=selected_meal_type,
@@ -373,49 +359,82 @@ def statistics_view(request):
                 date__month=month_i
             )
 
-            # Duyệt qua records, xác định day => status => set 'X' / 'P' / 'KP'
+            # Tạo dict { (stu_id, day) : (status, non_eat) } để tra nhanh
+            record_map = {}
             for rec in records:
-                d = rec.date.day
-                # rec.status: 'Đủ' or 'Thiếu'
-                # rec.non_eat: 0=Ăn đủ, 1=Có phép, 2=Không phép
-                # => logic hiển thị:
-                #    if status='Đủ' => 'X'
-                #    else if status='Thiếu' and non_eat=1 => 'P'
-                #    else if status='Thiếu' and non_eat=2 => 'KP'
-                val = '0'
-                if rec.status == 'Đủ':
-                    val = 'X'
-                elif rec.status == 'Thiếu':
-                    if rec.non_eat == 1:
-                        val = 'P'
-                    elif rec.non_eat == 2:
-                        val = 'KP'
-                # ghi vào days_stat
-                days_stat[rec.student.id][d] = val
+                record_map[(rec.student_id, rec.date.day)] = (rec.status, rec.non_eat)
 
-            # Tạo list hiển thị
-            max_day = calendar.monthrange(int(selected_year), int(selected_month))[1]
             rows_data = []
             for stu in students:
-                # days_array để chứa 31 giá trị cho 31 ngày
+                # NEW: Chuẩn bị tính tổng bữa ăn và tổng tiền
+                total_meals = 0
+                total_cost = 0
+
+                # NEW: Truy vấn lấy daily_meal_fee từ StudentPayment (nếu có)
+                #     (Giả sử mỗi học sinh chỉ có 1 StudentPayment cho month này)
+                #     Nếu có nhiều thì bạn cần tùy biến thêm.
+                year_month_str = f"{selected_year}-{selected_month.zfill(2)}"
+                sp = StudentPayment.objects.filter(student=stu, month=year_month_str).first()
+                daily_meal_fee=0
+                if sp:
+                    daily_meal_fee = float(sp.daily_meal_fee)
+                else:
+                    # Nếu không có studentPayment, có thể đặt default = 30
+                    daily_meal_fee = 30000
+                print(daily_meal_fee)
+                fee_breakfast = 10
+                # bữa trưa = daily_meal_fee - 10, trừ các case 30 -> 20, 40 -> 30
+                if daily_meal_fee == 30000:
+                    fee_lunch = 20000
+                elif daily_meal_fee == 40000:
+                    fee_lunch = 30000
+                else:
+                    fee_lunch = daily_meal_fee - 10000
+
                 days_array = []
-                for d in range(1, 32):  # 1..31
+                for d in range(1, 32):  # 1..31 cột
                     if d > max_day:
-                        # Nếu d lớn hơn số ngày thật của tháng => '0'
+                        # nếu d vượt số ngày thật -> hiển thị '0'
                         days_array.append('0')
                     else:
-                        # Lấy giá trị X, P, KP hoặc 0 từ days_stat (hay logic tuỳ ý)
-                        val = days_stat[stu.id][d] if d in days_stat[stu.id] else '0'
-                        days_array.append(val)
+                        status_tuple = record_map.get((stu.id, d))  # (status, non_eat)
+                        if status_tuple:
+                            s, n_eat = status_tuple
+                            if s == 'Đủ':
+                                days_array.append('X')
+                                # NEW: tính tổng
+                                total_meals += 1
+                                # NEW: cộng tiền
+                                if selected_meal_type == 'Bữa sáng':
+                                    total_cost += fee_breakfast
+                                else:
+                                    total_cost += fee_lunch
+                            elif s == 'Thiếu':
+                                if n_eat == 1:
+                                    days_array.append('P')  # Có phép
+                                elif n_eat == 2:
+                                    days_array.append('KP')  # Không phép
+                                    # NEW: vẫn tính
+                                    total_meals += 1
+                                    if selected_meal_type == 'Bữa sáng':
+                                        total_cost += fee_breakfast
+                                    else:
+                                        total_cost += fee_lunch
+                            else:
+                                days_array.append('0')
+                        else:
+                            days_array.append('0')
+                
                 row = {
                     'student': stu,
-                    'days': days_array
+                    'days': days_array,
+                    'total_meals': total_meals,  # NEW
+                    'total_cost': total_cost,    # NEW
                 }
                 rows_data.append(row)
-
+            
             context['rows_data'] = rows_data
-            # Bạn vẫn truyền max_day vào context nếu cần hiển thị “Ngày” gộp cột = 31
-            context['max_day'] = 31  # Luôn 31
+            context['max_day'] = 31  # hiển thị đủ 31 cột
 
     # 6. Phần "Thống kê theo năm"
     #    - Nếu mode='year' => người dùng chọn year, meal_type, class_id => hiển thị bảng cột 12 tháng
@@ -464,3 +483,121 @@ def ajax_load_months(request):
     months_set = {m.date.month for m in year_meals}
     months_list = sorted(list(months_set))
     return JsonResponse(months_list, safe=False)
+import calendar
+import openpyxl
+from django.http import HttpResponse
+from .models import Student, MealRecord, StudentPayment, ClassRoom
+
+def export_monthly_statistics(request):
+    selected_year      = request.GET.get('year')
+    selected_month     = request.GET.get('month')
+    selected_meal_type = request.GET.get('meal_type')
+    selected_class_id  = request.GET.get('class_id')
+    
+    if not (selected_year and selected_month and selected_meal_type and selected_class_id):
+        return HttpResponse("Thiếu tham số", status=400)
+    
+    # Chuyển kiểu và tính số ngày
+    year_i  = int(selected_year)
+    month_i = int(selected_month)
+    max_day = calendar.monthrange(year_i, month_i)[1]
+    
+    # Lấy lớp và danh sách học sinh
+    try:
+        class_id_int = int(selected_class_id)
+        classroom    = ClassRoom.objects.get(id=class_id_int)
+    except Exception:
+        return HttpResponse("Lớp học không hợp lệ", status=400)
+    students = Student.objects.filter(classroom=classroom).order_by('name')
+    
+    # Lấy các MealRecord trong tháng
+    records = MealRecord.objects.filter(
+        student__classroom=classroom,
+        meal_type=selected_meal_type,
+        date__year=year_i,
+        date__month=month_i
+    )
+    record_map = {
+        (r.student_id, r.date.day): (r.status, r.non_eat)
+        for r in records
+    }
+    
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = f"TK {selected_month}-{selected_year}"
+    
+    # --- 1. Big Title (merge A1 → (3+max_day)2) ---
+    last_col = 3 + max_day  # cột cuối cùng: A=1, ngày từ 2→(1+max_day), Tổng=(2+max_day), Thành tiền=(3+max_day)
+    ws.merge_cells(start_row=1, start_column=1, end_row=2, end_column=last_col)
+    title = f"BẢNG CHẤM {selected_meal_type.upper()} THÁNG {selected_month}/{selected_year} - LỚP: {classroom.name}"
+    cell = ws.cell(row=1, column=1, value=title)
+    cell.alignment = openpyxl.styles.Alignment(horizontal='center', vertical='center')
+    cell.font      = openpyxl.styles.Font(size=14, bold=True)
+    
+    # --- 2. Header cột (row 3) ---
+    headers = ["Học sinh"] + [str(d) for d in range(1, max_day+1)] + ["Tổng", "Thành tiền"]
+    for idx, h in enumerate(headers, start=1):
+        c = ws.cell(row=3, column=idx, value=h)
+        c.font      = openpyxl.styles.Font(bold=True)
+        c.alignment = openpyxl.styles.Alignment(horizontal='center', vertical='center')
+        # Giãn độ rộng cột
+        ws.column_dimensions[openpyxl.utils.get_column_letter(idx)].width = 12 if idx <= 2 else 5
+    
+    # --- 3. Thêm dữ liệu học sinh (bắt đầu row 4) ---
+    row_num = 4
+    for stu in students:
+        # Lấy daily_meal_fee của học sinh
+        ym_str = f"{selected_year}-{selected_month.zfill(2)}"
+        sp = StudentPayment.objects.filter(student=stu, month=ym_str).first()
+        daily_fee = float(sp.daily_meal_fee) if sp else 30000.0
+        
+        # Tính phí sáng/trưa (nghìn đồng)
+        fee_break = 10000
+        if daily_fee == 30000:
+            fee_lunch = 20000
+        elif daily_fee == 40000:
+            fee_lunch = 30000
+        else:
+            fee_lunch = daily_fee - 10000
+        
+        total_meals = 0
+        total_cost  = 0
+        row = [stu.name]
+        
+        # Chấm từng ngày
+        for d in range(1, max_day+1):
+            status = record_map.get((stu.id, d))
+            if status:
+                s, ne = status
+                if s == "Đủ" or (s == "Thiếu" and ne == 2):
+                    mark = "X"
+                    total_meals += 1
+                    total_cost  += (fee_break if selected_meal_type=="Bữa sáng" else fee_lunch)
+                elif s == "Thiếu" and ne == 1:
+                    mark = "P"
+                else:
+                    mark = "0"
+            else:
+                mark = "0"
+            row.append(mark)
+        
+        # Nếu bạn muốn luôn xuất 31 ngày bất kể max_day, uncomment đoạn sau:
+        # for d in range(max_day+1, 32):
+        #     row.append("0")
+        
+        # Tổng và Thành tiền
+        row += [total_meals, total_cost]
+        
+        # Ghi vào sheet
+        for idx, val in enumerate(row, start=1):
+            ws.cell(row=row_num, column=idx, value=val)
+        row_num += 1
+    
+    # --- 4. Trả file ---
+    resp = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    fname = f"ThongKe_{selected_year}_{selected_month}.xlsx"
+    resp["Content-Disposition"] = f'attachment; filename="{fname}"'
+    wb.save(resp)
+    return resp

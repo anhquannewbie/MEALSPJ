@@ -16,5 +16,6 @@ urlpatterns = [
     path('ajax/load-payment-details/', ajax_load_payment_details, name='ajax_load_payment_details'),
     path('ajax/load-mealdata/', ajax_load_mealdata, name='ajax_load_mealdata'),
     path('ajax/load-months/', ajax_load_months, name='ajax_load_months'),
-    
+    path('export/excel/', views.export_monthly_statistics, name='export_excel'),
+
 ]
