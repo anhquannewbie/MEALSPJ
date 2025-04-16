@@ -66,14 +66,18 @@
     <button type="submit" class="btn btn-primary">Lưu lại</button>
 </form>
 
+<!-- Khối hiển thị số bữa ăn đã ăn của học sinh -->
+<div id="meal-counts" class="mt-4">
+    <h4>Số bữa ăn đã ăn:</h4>
+    <p>Bữa sáng: <span id="breakfast_count">{{ breakfast_count|default:"0" }}</span></p>
+    <p>Bữa trưa: <span id="lunch_count">{{ lunch_count|default:"0" }}</span></p>
+</div>
+
 <!-- JavaScript load dữ liệu qua AJAX -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 $(document).ready(function(){
-    // Biến isEdit: true nếu đang chỉnh sửa, false nếu tạo mới.
-    var isEdit = {% if is_edit %}true{% else %}false{% endif %};
-
-    // Luôn cập nhật danh sách học sinh khi chọn lớp (AJAX)
+    // Khi dropdown Lớp thay đổi, load danh sách Học sinh qua AJAX
     $('#id_classroom').change(function(){
         var classroomID = $(this).val();
         if (classroomID) {
@@ -93,7 +97,8 @@ $(document).ready(function(){
         }
     });
 
-    // Chỉ attach AJAX load cho trường 'student' và 'month' nếu không đang chỉnh sửa
+    // Nếu không đang chỉnh sửa, attach AJAX load cho "student" và "month" để lấy số bữa ăn.
+    var isEdit = {% if is_edit %}true{% else %}false{% endif %};
     if (!isEdit) {
         $('#id_student, #id_month').change(function(){
             var studentID = $('#id_student').val();
@@ -117,6 +122,12 @@ $(document).ready(function(){
                         }
                         if (data.prev_month_balance !== undefined) {
                             $('#id_prev_month_balance').val(data.prev_month_balance);
+                        }
+                        if (data.breakfast_count !== undefined) {
+                            $('#breakfast_count').text(data.breakfast_count);
+                        }
+                        if (data.lunch_count !== undefined) {
+                            $('#lunch_count').text(data.lunch_count);
                         }
                     }
                 });

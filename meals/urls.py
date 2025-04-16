@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from .views import student_payment_edit, ajax_load_previous_balance,ajax_load_students,ajax_load_payment_details
+from .views import student_payment_edit, ajax_load_previous_balance,ajax_load_students,ajax_load_payment_details,ajax_load_mealdata,ajax_load_months
 app_name = 'meals'
 
 urlpatterns = [
@@ -14,4 +14,7 @@ urlpatterns = [
     path('ajax/load-students/', ajax_load_students, name='ajax_load_students'),
     path('ajax/load-previous-balance/', ajax_load_previous_balance, name='ajax_load_previous_balance'),
     path('ajax/load-payment-details/', ajax_load_payment_details, name='ajax_load_payment_details'),
+    path('ajax/load-mealdata/', ajax_load_mealdata, name='ajax_load_mealdata'),
+    path('ajax/load-months/', ajax_load_months, name='ajax_load_months'),
+    
 ]
