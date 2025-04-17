@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
+{% load humanize %}
 {% load static %}
 {% block title %}Thống kê{% endblock %}
-
 {% block content %}
 <style>
   /* Reset mặc định, cho bảng dàn trang tự động */
@@ -127,16 +127,28 @@
             {% for val in row.days %}
               <td>{{ val }}</td>
             {% endfor %}
-            <td>{{ row.total_meals }}</td>       <!-- NEW -->
-            <td>{{ row.total_cost|floatformat:0 }}</td> <!-- NEW, floatformat tuỳ ý -->
+            <td>{{ row.total_meals }}</td>
+            <td>{{ row.total_cost|floatformat:0|intcomma }}</td>
           </tr>
         {% endfor %}
       </tbody>
+
+      {% if totals_per_day %}
+      <tfoot>
+        <tr>
+          <td><strong>Tổng</strong></td>
+          {% for cnt in totals_per_day %}
+          <td><strong>{{ cnt|intcomma }}</strong></td>
+          {% endfor %}
+          <td></td>
+          <td></td>
+        </tr>
+      </tfoot>
+      {% endif %}
     </table>
   {% endif %}
 
-{% elif mode == 'year' %}
-  <!-- Form thống kê NĂM -->
+  {% elif mode == 'year' %}
   <form method="get" class="my-3">
     <input type="hidden" name="mode" value="year">
     <label>Năm:</label>
@@ -145,12 +157,6 @@
       {% for y in years_list %}
         <option value="{{ y }}" {% if selected_year|stringformat:"s" == y|stringformat:"s" %}selected{% endif %}>{{ y }}</option>
       {% endfor %}
-    </select>
-
-    <label>Bữa ăn:</label>
-    <select name="meal_type">
-      <option value="Bữa sáng" {% if selected_meal_type == 'Bữa sáng' %}selected{% endif %}>Bữa sáng</option>
-      <option value="Bữa trưa" {% if selected_meal_type == 'Bữa trưa' %}selected{% endif %}>Bữa trưa</option>
     </select>
 
     <label>Lớp:</label>
@@ -163,23 +169,24 @@
 
     <button type="submit" class="btn btn-primary">Xem Thống Kê</button>
   </form>
-
+  <a href="{% url 'meals:export_yearly_statistics' %}?year={{ selected_year }}&class_id={{ selected_class_id }}" 
+     class="btn btn-success mb-3">
+    Xuất Excel Thống Kê Năm
+  </a>
   {% if rows_year %}
     <table class="table table-bordered">
-      <colgroup>
-        <col class="student-col">
-        {% for i in "123456789012" %}
-          <col class="month-col">
-        {% endfor %}
-      </colgroup>
       <thead>
         <tr>
-          <th rowspan="2" class="student-col">Học sinh</th>
-          <th colspan="12">Tháng</th>
+          <th rowspan="2">Học sinh</th>
+          {% for m in months %}
+            <th colspan="3">Tháng {{ m }}/{{ selected_year }}</th>
+          {% endfor %}
         </tr>
         <tr>
-          {% for i in "123456789012" %}
-            <th>{{ forloop.counter }}</th>
+          {% for m in months %}
+            <th>Đã đóng</th>
+            <th>Ăn học</th>
+            <th>Còn lại</th>
           {% endfor %}
         </tr>
       </thead>
@@ -187,12 +194,26 @@
         {% for row in rows_year %}
         <tr>
           <td>{{ row.student.name }}</td>
-          {% for val in row.months %}
-            <td>{{ val }}</td>
+          {% for cell in row.data %}
+            <td>{{ cell.paid|floatformat:0|intcomma }}</td>
+            <td>{{ cell.spent|floatformat:0|intcomma }}</td>
+            <td>{{ cell.remaining|floatformat:0|intcomma }}</td>
           {% endfor %}
         </tr>
         {% endfor %}
       </tbody>
+      {% if totals_year_data %}
+      <tfoot>
+        <tr>
+          <td><strong>Tổng</strong></td>
+          {% for t in totals_year_data %}
+            <td><strong>{{ t.0|floatformat:0|intcomma }}</strong></td>
+            <td><strong>{{ t.1|floatformat:0|intcomma }}</strong></td>
+            <td><strong>{{ t.2|floatformat:0|intcomma }}</strong></td>
+          {% endfor %}
+        </tr>
+      </tfoot>
+      {% endif %}
     </table>
   {% endif %}
 {% endif %}

@@ -3,9 +3,18 @@ from .models import MealRecord, Student,ClassRoom
 from .models import StudentPayment
 
 class StudentPaymentForm(forms.ModelForm):
-    classroom = forms.ChoiceField(required=False, label='Lớp', choices=[])
+    classroom = forms.ChoiceField(
+        required=False,
+        label='Lớp',
+        choices=[]
+    )
+    month = forms.DateField(
+        label='Tháng (YYYY-MM)',
+        widget=forms.DateInput(attrs={'type': 'month'}),
+        input_formats=['%Y-%m']
+    )
     prev_month_balance = forms.DecimalField(
-        label="Tiền tháng trước",
+        label="Công nợ",
         required=False,
         disabled=True,
         widget=forms.TextInput(attrs={'readonly': 'readonly'})
@@ -26,63 +35,61 @@ class StudentPaymentForm(forms.ModelForm):
             'tuition_fee',
             'daily_meal_fee',
             'amount_paid',
-            # Không có previous_balance, vì đã xóa
-            # Không có remaining_balance, vì DB field hiển thị qua field ảo current_month_payment
         ]
         labels = {
-            'classroom': 'Chọn Lớp',
-            'student': 'Học sinh',
-            'month': 'Tháng (YYYY-MM)',
-            'tuition_fee': 'Học phí',
+            'classroom':      'Chọn Lớp',
+            'student':        'Học sinh',
+            'tuition_fee':    'Học phí',
             'daily_meal_fee': 'Tiền ăn/ngày',
-            'amount_paid': 'Tiền đã đóng',
+            'amount_paid':    'Tiền đã đóng',
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # Lấy danh sách ClassRoom
-        from .models import ClassRoom, Student
-        classrooms = ClassRoom.objects.values_list('id', 'name')
+        # Lấy danh sách lớp
+        cls_list = ClassRoom.objects.values_list('id','name')
         self.fields['classroom'].choices = [('', '--- Chọn Lớp ---')] + [
-            (str(cls_id), cls_name) for cls_id, cls_name in classrooms
+            (str(pk), name) for pk,name in cls_list
         ]
-        # Mặc định student là none
+        # Student rỗng ban đầu
         self.fields['student'].queryset = Student.objects.none()
 
-        # Xử lý logic lọc học sinh theo lớp
+        # Nếu POST có class, load student
         if 'classroom' in self.data:
             try:
-                class_id = int(self.data.get('classroom'))
-                self.fields['student'].queryset = Student.objects.filter(classroom_id=class_id).order_by('name')
-            except (ValueError, TypeError):
+                cid = int(self.data.get('classroom'))
+                self.fields['student'].queryset = Student.objects.filter(
+                    classroom_id=cid
+                ).order_by('name')
+            except:
                 pass
         elif self.instance.pk:
-            # Nếu đang edit 1 payment đã có sẵn
-            class_id = self.instance.student.classroom_id
-            self.fields['classroom'].initial = class_id
-            self.fields['student'].queryset = Student.objects.filter(classroom_id=class_id).order_by('name')
+            cid = self.instance.student.classroom_id
+            self.fields['classroom'].initial = cid
+            self.fields['student'].queryset = Student.objects.filter(
+                classroom_id=cid
+            ).order_by('name')
 
-        # Nếu instance có pk -> hiển thị "Tiền tháng trước" đã được dùng để tính
-        # => Tức là remaining_balance của tháng trước. 
-        # Ta tính logic y như save() => Tìm record tháng trước, lấy remaining_balance
-        if self.instance and self.instance.pk:
-            from datetime import datetime, timedelta
-            if self.instance.month:
-                dt = datetime.strptime(self.instance.month, '%Y-%m')
-                prev_month = (dt.replace(day=1) - timedelta(days=1)).strftime('%Y-%m')
-                from .models import StudentPayment
-                prev_payment = StudentPayment.objects.filter(
-                    student=self.instance.student,
-                    month=prev_month
-                ).order_by('-id').first()
-                if prev_payment:
-                    self.fields['prev_month_balance'].initial = prev_payment.remaining_balance or 0
-                else:
-                    self.fields['prev_month_balance'].initial = 0
+        # Tính công nợ (prev_month_balance)
+        if self.instance and self.instance.pk and self.instance.month:
+            dt = datetime.strptime(self.instance.month, '%Y-%m')
+            prev_m = (dt.replace(day=1) - timedelta(days=1)).strftime('%Y-%m')
+            from .models import StudentPayment as SP
+            prev = SP.objects.filter(
+                student=self.instance.student,
+                month=prev_m
+            ).order_by('-id').first()
+            self.fields['prev_month_balance'].initial = (
+                prev.remaining_balance if prev and prev.remaining_balance is not None else 0
+            )
         else:
-            # Nếu tạo mới => mặc định = 0
             self.fields['prev_month_balance'].initial = 0
+
+    def clean_month(self):
+        # month coming in as a datetime.date from DateField
+        dt = self.cleaned_data['month']
+        return dt.strftime('%Y-%m')  # trả về string lưu vào model CharField
 class MealRecordForm(forms.ModelForm):
     class_name_choice = forms.ChoiceField(
         label="Lớp học",

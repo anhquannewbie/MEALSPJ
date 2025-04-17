@@ -17,5 +17,5 @@ urlpatterns = [
     path('ajax/load-mealdata/', ajax_load_mealdata, name='ajax_load_mealdata'),
     path('ajax/load-months/', ajax_load_months, name='ajax_load_months'),
     path('export/excel/', views.export_monthly_statistics, name='export_excel'),
-
+    path('export/yearly/', views.export_yearly_statistics, name='export_yearly_statistics'),
 ]

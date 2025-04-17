@@ -14,6 +14,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
     'meals',                # Ứng dụng meals
     'crispy_forms',         # Crispy forms (tuỳ chọn)
 ]

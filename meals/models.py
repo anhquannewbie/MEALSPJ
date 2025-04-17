@@ -38,14 +38,14 @@ class StudentPayment(models.Model):
 
         # Xác định tiền cho từng bữa dựa trên daily_meal_fee
         # Giá trị mặc định: bữa sáng luôn tính 10
-        fee_breakfast = 10
-        if self.daily_meal_fee == 30:
-            fee_lunch = 20
-        elif self.daily_meal_fee == 40:
-            fee_lunch = 30
+        fee_breakfast = 10000
+        if self.daily_meal_fee == 30000:
+            fee_lunch = 20000
+        elif self.daily_meal_fee == 40000:
+            fee_lunch = 30000
         else:
             # Nếu daily_meal_fee khác, dùng công thức: bữa trưa = daily_meal_fee - 10
-            fee_lunch = float(self.daily_meal_fee) - 10
+            fee_lunch = float(self.daily_meal_fee) - 10000
 
         # Duyệt qua các MealRecord của tháng
         for record in meal_records:
