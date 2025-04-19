@@ -5,7 +5,6 @@
 {% block content %}
 <h2>Chỉnh sửa Thanh toán Học sinh</h2>
 
-<!-- Hiển thị lỗi của form (nếu có) -->
 {% if form.errors %}
 <div class="alert alert-danger">
     <ul>
@@ -24,7 +23,6 @@
 <form method="post" id="payment-form">
     {% csrf_token %}
 
-    <!-- Sử dụng widget của form cho lớp và học sinh -->
     <div class="form-group">
         {{ form.classroom.label_tag }}
         {{ form.classroom }}
@@ -34,30 +32,32 @@
         {{ form.student }}
     </div>
 
-    <!-- Các trường khác -->
     <div class="form-group">
         {{ form.month.label_tag }}
         {{ form.month }}
     </div>
+
+    <!-- Các ô tiền đã chuyển về text + money class -->
     <div class="form-group">
-        {{ form.tuition_fee.label_tag }}
-        {{ form.tuition_fee }}
+        <label for="id_tuition_fee">{{ form.tuition_fee.label }}</label>
+        <input type="text" id="id_tuition_fee" name="tuition_fee" class="form-control money"
+               value="{{ form.tuition_fee.value|default_if_none:'' }}">
     </div>
     <div class="form-group">
-        {{ form.daily_meal_fee.label_tag }}
-        {{ form.daily_meal_fee }}
+        <label for="id_daily_meal_fee">{{ form.daily_meal_fee.label }}</label>
+        <input type="text" id="id_daily_meal_fee" name="daily_meal_fee" class="form-control money"
+               value="{{ form.daily_meal_fee.value|default_if_none:'' }}">
     </div>
     <div class="form-group">
-        {{ form.amount_paid.label_tag }}
-        {{ form.amount_paid }}
+        <label for="id_amount_paid">{{ form.amount_paid.label }}</label>
+        <input type="text" id="id_amount_paid" name="amount_paid" class="form-control money"
+               value="{{ form.amount_paid.value|default_if_none:'' }}">
     </div>
 
-    <!-- Field ảo: Tiền tháng trước -->
     <div class="form-group">
         <label for="id_prev_month_balance">Công nợ</label>
         {{ form.prev_month_balance }}
     </div>
-    <!-- Field ảo: Tiền tháng này -->
     <div class="form-group">
         <label for="id_current_month_payment">Tiền tháng này</label>
         {{ form.current_month_payment }}
@@ -66,74 +66,103 @@
     <button type="submit" class="btn btn-primary">Lưu lại</button>
 </form>
 
-<!-- Khối hiển thị số bữa ăn đã ăn của học sinh -->
 <div id="meal-counts" class="mt-4">
     <h4>Số bữa ăn đã ăn:</h4>
     <p>Bữa sáng: <span id="breakfast_count">{{ breakfast_count|default:"0" }}</span></p>
     <p>Bữa trưa: <span id="lunch_count">{{ lunch_count|default:"0" }}</span></p>
 </div>
 
-<!-- JavaScript load dữ liệu qua AJAX -->
+<!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- AJAX load students & payment details -->
 <script>
-$(document).ready(function(){
-    // Khi dropdown Lớp thay đổi, load danh sách Học sinh qua AJAX
+$(function(){
     $('#id_classroom').change(function(){
-        var classroomID = $(this).val();
-        if (classroomID) {
-            $.ajax({
-                url: "{% url 'ajax_load_students' %}",
-                data: { 'classroom_id': classroomID },
-                success: function(data) {
-                    var options = '<option value="">-- Chọn Học sinh --</option>';
-                    data.forEach(function(item){
-                        options += '<option value="' + item.id + '">' + item.name + '</option>';
-                    });
-                    $('#id_student').html(options);
-                }
-            });
-        } else {
-            $('#id_student').html('<option value="">-- Chọn Học sinh --</option>');
+        var cid = $(this).val();
+        var $stu = $('#id_student');
+        if(!cid){
+            $stu.html('<option value="">-- Chọn Học sinh --</option>');
+            return;
         }
+        $.get("{% url 'ajax_load_students' %}", { classroom_id: cid })
+         .done(data => {
+            var opts = '<option value="">-- Chọn Học sinh --</option>';
+            data.forEach(it => opts += `<option value="${it.id}">${it.name}</option>`);
+            $stu.html(opts);
+         });
     });
 
-    // Nếu không đang chỉnh sửa, attach AJAX load cho "student" và "month" để lấy số bữa ăn.
-    var isEdit = {% if is_edit %}true{% else %}false{% endif %};
-    if (!isEdit) {
+    var isEdit = {{ is_edit|yesno:"true,false" }};
+    if(!isEdit){
         $('#id_student, #id_month').change(function(){
-            var studentID = $('#id_student').val();
-            var month = $('#id_month').val();
-            if (studentID && month) {
-                $.ajax({
-                    url: "{% url 'ajax_load_payment_details' %}",
-                    data: { 'student_id': studentID, 'month': month },
-                    success: function(data) {
-                        if (data.tuition_fee !== undefined) {
-                            $('#id_tuition_fee').val(data.tuition_fee);
-                        }
-                        if (data.daily_meal_fee !== undefined) {
-                            $('#id_daily_meal_fee').val(data.daily_meal_fee);
-                        }
-                        if (data.amount_paid !== undefined) {
-                            $('#id_amount_paid').val(data.amount_paid);
-                        }
-                        if (data.current_month_payment !== undefined) {
-                            $('#id_current_month_payment').val(data.current_month_payment);
-                        }
-                        if (data.prev_month_balance !== undefined) {
-                            $('#id_prev_month_balance').val(data.prev_month_balance);
-                        }
-                        if (data.breakfast_count !== undefined) {
-                            $('#breakfast_count').text(data.breakfast_count);
-                        }
-                        if (data.lunch_count !== undefined) {
-                            $('#lunch_count').text(data.lunch_count);
-                        }
-                    }
-                });
-            }
+            var sid = $('#id_student').val(), m = $('#id_month').val();
+            if(!sid || !m) return;
+            $.get("{% url 'ajax_load_payment_details' %}", { student_id: sid, month: m })
+             .done(data => {
+                $('#id_tuition_fee').val(data.tuition_fee);
+                $('#id_daily_meal_fee').val(data.daily_meal_fee);
+                $('#id_amount_paid').val(data.amount_paid);
+                $('#id_prev_month_balance').val(data.prev_month_balance);
+                $('#id_current_month_payment').val(data.current_month_payment);
+                $('#breakfast_count').text(data.breakfast_count);
+                $('#lunch_count').text(data.lunch_count);
+             });
         });
     }
 });
 </script>
+
+<!-- Format dấu phẩy realtime -->
+<script>
+    $(function(){
+      // 1) Hàm format chung
+      function formatNumberWithCommas(value){
+        var parts = value.toString().split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return parts.join('.');
+      }
+    
+      // 2) Format ngay khi load trang
+      $('.money, #id_prev_month_balance, #id_current_month_payment').each(function(){
+        var v = $(this).val().replace(/,/g,'');
+        if(v) $(this).val(formatNumberWithCommas(v));
+      });
+    
+      // 3) AJAX load khi chọn Student/Month
+      $('#id_student, #id_month').change(function(){
+        var sid = $('#id_student').val(), m = $('#id_month').val();
+        if(!sid || !m) return;
+        $.get("{% url 'ajax_load_payment_details' %}", { student_id: sid, month: m })
+         .done(data => {
+           $('#id_tuition_fee').val(data.tuition_fee ? formatNumberWithCommas(data.tuition_fee) : '');
+           $('#id_daily_meal_fee').val(data.daily_meal_fee ? formatNumberWithCommas(data.daily_meal_fee) : '');
+           $('#id_amount_paid').val(data.amount_paid ? formatNumberWithCommas(data.amount_paid) : '');
+           $('#id_prev_month_balance').val(data.prev_month_balance ? formatNumberWithCommas(data.prev_month_balance) : '');
+           $('#id_current_month_payment').val(data.current_month_payment ? formatNumberWithCommas(data.current_month_payment) : '');
+           $('#breakfast_count').text(data.breakfast_count);
+           $('#lunch_count').text(data.lunch_count);
+         });
+      });
+    
+      // 4) Input realtime (nếu cho phép edit)
+      $('.money').on('input', function(){
+        var pos = this.selectionStart, old = this.value;
+        var cleaned = old.replace(/[^0-9\.]/g,'');
+        var parts  = cleaned.split('.');
+        if(parts.length>2) cleaned = parts.shift()+'.'+parts.join('');
+        var fmt = formatNumberWithCommas(cleaned);
+        this.value = fmt;
+        var diff = fmt.length - old.length;
+        this.setSelectionRange(pos+diff, pos+diff);
+      });
+    
+      // 5) Strip commas khi submit
+      $('#payment-form').on('submit', function(){
+        $('.money, #id_prev_month_balance, #id_current_month_payment').each(function(){
+          this.value = this.value.replace(/,/g,'');
+        });
+      });
+    });
+    </script>
 {% endblock %}

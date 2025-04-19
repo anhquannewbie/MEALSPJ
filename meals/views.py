@@ -369,11 +369,12 @@ def statistics_view(request):
                             days_array.append('0')
                     else:
                         days_array.append('0')
+            formatted_cost = f"{int(total_cost):,}"
             rows_data.append({
                 'student':     stu,
                 'days':        days_array,
                 'total_meals': total_meals,
-                'total_cost':  total_cost,
+                'total_cost':  formatted_cost,
             })
 
         # Tính totals_per_day
@@ -447,20 +448,30 @@ def statistics_view(request):
                 totals_year_data[idx][0] += paid
                 totals_year_data[idx][1] += spent
                 totals_year_data[idx][2] += remaining
-
+                paid_s      = f"{int(paid):,}"
+                spent_s     = f"{int(spent):,}"
+                remaining_s = f"{int(remaining):,}"
                 data_per_month.append({
-                    'paid':      paid,
-                    'spent':     spent,
-                    'remaining': remaining,
+                    'paid':      paid_s,
+                    'spent':     spent_s,
+                    'remaining': remaining_s,
                 })
 
             rows_year.append({'student': stu, 'data': data_per_month})
-
+        formatted_totals = []
+        for triple in totals_year_data:
+            # triple là [Decimal_paid, Decimal_spent, Decimal_remaining]
+            # ép về int rồi format với dấu phẩy
+            formatted_totals.append([
+                f"{int(triple[0]):,}",
+                f"{int(triple[1]):,}",
+                f"{int(triple[2]):,}",
+            ])
         context.update({
             'mode':              'year',
             'months':            months,
             'rows_year':         rows_year,
-            'totals_year_data':  totals_year_data,
+            'totals_year_data':  formatted_totals,
         })
 
     return render(request, 'meals/statistics.html', context)
