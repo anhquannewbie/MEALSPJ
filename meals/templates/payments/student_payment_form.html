@@ -165,4 +165,12 @@ $(function(){
       });
     });
     </script>
+    <script>
+      $('#payment-form').on('submit', function(){
+        // Với mỗi trường có class .money
+        $('.money').each(function(){
+          this.value = this.value.replace(/,/g, '');
+        });
+      });
+    </script>
 {% endblock %}

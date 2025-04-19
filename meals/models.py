@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 from datetime import datetime, timedelta
 from decimal import Decimal
+from django.utils.translation import gettext_lazy as _
 class StudentPayment(models.Model):
     student = models.ForeignKey('Student', on_delete=models.CASCADE)
     month = models.CharField(max_length=7, help_text="YYYY-MM")
@@ -71,13 +72,18 @@ class ClassRoom(models.Model):
 
     def __str__(self):
         return self.name
+    class Meta:
+        verbose_name = _('Lớp học')
+        verbose_name_plural = _('Lớp học')
 class Student(models.Model):
     name = models.CharField(max_length=100, help_text="Họ và tên học sinh")
     classroom = models.ForeignKey(ClassRoom, on_delete=models.CASCADE, help_text="Lớp học của học sinh")
 
     def __str__(self):
         return f"{self.name} ({self.classroom})"
-
+    class Meta:
+        verbose_name = _('Học sinh')
+        verbose_name_plural = _('Học sinh')
 class MealRecord(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     date = models.DateField(help_text="Ngày của bữa ăn")
@@ -103,3 +109,6 @@ class MealRecord(models.Model):
 
     def __str__(self):
         return f"{self.student.name} - {self.meal_type} - {self.date}"
+    class Meta:
+        verbose_name = _("Bữa ăn")                # tên số ít
+        verbose_name_plural = _("Bữa ăn")         # tên số nhiều (hiển thị ở admin)

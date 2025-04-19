@@ -1,6 +1,10 @@
 from django.contrib import admin
 from .models import Student, MealRecord, ClassRoom, StudentPayment
+from django.contrib import admin
 
+admin.site.site_header  = "Trang quản trị bữa ăn học sinh"
+admin.site.site_title   = "Quản lý bữa ăn"
+admin.site.index_title  = "Bảng điều khiển"
 class ClassNameFilter(admin.SimpleListFilter):
     title = 'Lớp học'
     parameter_name = 'class_name'
@@ -17,15 +21,24 @@ class ClassNameFilter(admin.SimpleListFilter):
 class ClassRoomAdmin(admin.ModelAdmin):
     list_display = ('name',)
     search_fields = ('name',)
+    # Đổi tên hiển thị của model ClassRoom trong Admin
+    verbose_name = "Lớp học"
+    verbose_name_plural = "Các lớp học"
 
 class StudentAdmin(admin.ModelAdmin):
     search_fields = ('name',)
     list_filter = ('classroom',)
+    # Đổi tên hiển thị của model Student trong Admin
+    verbose_name = "Học sinh"
+    verbose_name_plural = "Các học sinh"
 
 class MealRecordAdmin(admin.ModelAdmin):
     list_display = ('student', 'date', 'meal_type', 'status')
     list_filter = ('date', 'meal_type')
     search_fields = ('student__name',)
+    # Đổi tên hiển thị của model MealRecord trong Admin
+    verbose_name = "Bữa ăn"
+    verbose_name_plural = "Các bữa ăn"
 
     def save_model(self, request, obj, form, change):
         """
