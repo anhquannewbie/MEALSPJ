@@ -1,42 +1,122 @@
 {% extends "layout.html" %}
 {% load static %}
+
 {% block title %}Trang Chủ | Hệ Thống Quản Lý Bữa Ăn{% endblock %}
 
 {% block content %}
-<!-- Hero Section với background image -->
-<div class="jumbotron jumbotron-fluid text-white" style="background-image: url('{% static "images/hero-bg.jpg" %}'); background-size: cover; background-position: center;">
-  <div class="container">
-    <h1 class="display-4">Hệ Thống Quản Lý Bữa Ăn</h1>
-    <p class="lead">Quản lý và thống kê bữa ăn cho học sinh một cách thông minh và chuyên nghiệp.</p>
-  </div>
-</div>
+  <style>
+    /* 1. Import Google Font Noto Sans (subset vietnamese) để fix lỗi diacritics */
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;700&display=swap&subset=vietnamese');
 
-<!-- Section Features -->
-<div class="container my-5">
-  <div class="row">
-    <div class="col-md-4 text-center">
-      <i class="fas fa-cutlery fa-4x text-primary mb-3"></i>
-      <h4>Đơn giản</h4>
-      <p>Nhập liệu nhanh chóng, dễ dàng và chính xác.</p>
-    </div>
-    <div class="col-md-4 text-center">
-      <i class="fas fa-chart-bar fa-4x text-success mb-3"></i>
-      <h4>Thống kê</h4>
-      <p>Biểu đồ trực quan và báo cáo chi tiết mỗi ngày, tuần, tháng.</p>
-    </div>
-    <div class="col-md-4 text-center">
-      <i class="fas fa-shield-alt fa-4x text-danger mb-3"></i>
-      <h4>Bảo mật</h4>
-      <p>Hệ thống quản trị nội bộ an toàn, dữ liệu luôn được bảo vệ.</p>
+    :root {
+      /* gradient pastel hồng → pastel xanh */
+      --primary-start: #FFCDD2;
+      --primary-end:   #BBDEFB;
+      --section-bg:    #FAFBFC;
+      --heading-color:#222;
+      --text-color:   #555;
+    }
+
+    /* 2. Áp dụng font Noto Sans cho toàn trang */
+    body, h1, h2, h4, p, .btn-gradient {
+      font-family: 'Noto Sans', sans-serif;
+    }
+
+    /* Hero */
+    .hero {
+      background: linear-gradient(135deg, var(--primary-start), var(--primary-end));
+      padding: 100px 0;
+      text-align: center;
+    }
+    .hero h1 {
+      font-size: 3.5rem;
+      font-weight: 700;
+      color: var(--heading-color);
+      margin-bottom: 0.5rem;
+    }
+    .hero p {
+      font-size: 1.25rem;
+      font-weight: 400;
+      color: var(--text-color);
+    }
+
+    /* Features */
+    .features {
+      background: var(--section-bg);
+      padding: 60px 0;
+    }
+    .features .fa-3x {
+      color: var(--primary-start);
+      transition: transform .3s, color .3s;
+    }
+    .features .col-md-4:hover .fa-3x {
+      transform: translateY(-8px);
+      color: var(--primary-end);
+    }
+    .features h4 {
+      font-weight: 500;
+      color: var(--heading-color);
+      margin-top: 15px;
+    }
+    .features p {
+      color: var(--text-color);
+    }
+
+    /* Call-to-Action */
+    .cta {
+      padding: 80px 0;
+      text-align: center;
+    }
+    .btn-gradient {
+      background: linear-gradient(135deg, var(--primary-start), var(--primary-end));
+      color: #fff !important;
+      border: none;
+      padding: 0.75rem 2rem;
+      border-radius: 50px;
+      font-weight: 500;
+      font-size: 1.1rem;
+      transition: transform .2s, opacity .2s;
+    }
+    .btn-gradient:hover {
+      transform: translateY(-3px);
+      opacity: 0.9;
+    }
+  </style>
+
+  <!-- Hero Section -->
+  <div class="hero">
+    <div class="container">
+      <h1>Hệ Thống Quản Lý Bữa Ăn</h1>
+      <p>Quản lý và thống kê bữa ăn cho học sinh một cách thông minh và chuyên nghiệp.</p>
     </div>
   </div>
-</div>
 
-<!-- Call-to-Action Section -->
-<div class="bg-light py-5">
-  <div class="container text-center">
+  <!-- Features Section -->
+  <div class="features container">
+    <div class="row text-center">
+      <div class="col-md-4 mb-4">
+        <i class="fas fa-cutlery fa-3x"></i>
+        <h4>Đơn giản</h4>
+        <p>Nhập liệu nhanh chóng, dễ dàng và chính xác.</p>
+      </div>
+      <div class="col-md-4 mb-4">
+        <i class="fas fa-chart-bar fa-3x"></i>
+        <h4>Thống kê</h4>
+        <p>Biểu đồ trực quan và báo cáo chi tiết mỗi ngày, tuần, tháng.</p>
+      </div>
+      <div class="col-md-4 mb-4">
+        <i class="fas fa-shield-alt fa-3x"></i>
+        <h4>Bảo mật</h4>
+        <p>Hệ thống quản trị nội bộ an toàn, dữ liệu luôn được bảo vệ.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Call-to-Action -->
+  <div class="cta">
     <h2 class="mb-4">Sẵn sàng quản lý bữa ăn cho học sinh?</h2>
-    <a href="{% url 'meals:meal_bulk_create' %}" class="btn btn-lg btn-outline-primary">Nhập Dữ liệu Bữa Ăn Ngay</a>
+    <a href="{% url 'meals:meal_bulk_create' %}" class="btn btn-gradient btn-lg">
+      Nhập Dữ liệu Bữa Ăn Ngay
+    </a>
   </div>
-</div>
 {% endblock %}

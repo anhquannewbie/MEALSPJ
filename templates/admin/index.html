@@ -1,0 +1,40 @@
+{# project_root/templates/admin/index.html #}
+{% extends "admin/index.html" %}
+{% load i18n %}
+
+{# 1. Chèn CSS để ẩn sidebar và mở rộng content #}
+{% block extrastyle %}
+<style>
+  /* Ẩn cột sidebar */
+  #nav-sidebar {
+    display: none !important;
+  }
+  /* Mở rộng khối content sang trái */
+  #content {
+    margin-left: 0 !important;
+    width: auto !important;
+  }
+  /* Nếu template có wrapper content-main */
+  #content-main {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+</style>
+{% endblock %}
+
+{# 2. Override block content để thêm “Liên kết nhanh” lên trên #}
+{% block content %}
+  <div class="module" style="margin-bottom:1.5em; padding:1em; background:#f9f9f9;">
+    <h2 style="margin:0 0 .5em;">{% trans "Liên kết nhanh" %}</h2>
+    <p style="margin:0;">
+      <a href="{% url 'meals:statistics' %}" class="button addlink" style="background:#28a745; color:#fff; padding:.4em .8em; text-decoration:none; border-radius:3px; margin-right:.5em;">
+        📊 Thống kê
+      </a>
+      <a href="{% url 'meals:student_payment_edit' %}" class="button addlink" style="background:#17a2b8; color:#fff; padding:.4em .8em; text-decoration:none; border-radius:3px;">
+        💳 Chỉnh sửa công nợ
+      </a>
+    </p>
+  </div>
+
+  {{ block.super }}  {# Giữ nguyên các module MEALS, XÁC THỰC VÀ ỦY QUYỀN và Recent Actions #}
+{% endblock %}

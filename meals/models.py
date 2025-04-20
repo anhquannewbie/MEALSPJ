@@ -106,7 +106,11 @@ class MealRecord(models.Model):
         choices=[(0, 'Ăn đủ'), (1, 'Nghỉ (Có phép)'), (2, 'Nghỉ (Không phép)')],
         help_text="Loại trừ bữa ăn: 0 = Ăn đủ, 1 = Nghỉ (Có phép), 2 = Nghỉ (Không phép)"
     )
-
+    absence_reason = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Lý do nghỉ"
+    )
     def __str__(self):
         return f"{self.student.name} - {self.meal_type} - {self.date}"
     class Meta:

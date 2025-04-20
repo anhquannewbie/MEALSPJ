@@ -19,7 +19,33 @@ from django.http import HttpResponse
 from openpyxl.styles import Alignment, Font
 from decimal import Decimal
 from openpyxl.utils import get_column_letter
+from django.shortcuts import render, redirect
+from django.contrib.auth import authenticate, login
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import logout
 @csrf_exempt
+
+
+def logout_view(request):
+    logout(request)
+    return redirect('login')
+def user_login(request):
+    error = None
+    if request.method == 'POST':
+        username = request.POST['username']
+        password = request.POST['password']
+        user = authenticate(request, username=username, password=password)
+
+        if user:
+            login(request, user)
+            if user.is_superuser:
+                return redirect('/admin/')
+            else:
+                return redirect('home')
+        else:
+            error = "Invalid username or password."
+
+    return render(request, 'login.html', {'error': error})
 def student_payment_edit(request, pk=None):
     classrooms = ClassRoom.objects.all()
 
@@ -177,6 +203,7 @@ def ajax_load_payment_details(request):
     return JsonResponse(data)
 
 def bulk_meal_record_save(request):
+    
     if request.method == 'POST':
         class_name = request.POST.get('class_name')
         meal_type = request.POST.get('meal_type')
@@ -186,6 +213,8 @@ def bulk_meal_record_save(request):
 
         absence_data_str = request.POST.get('absence_data', '{}')
         absence_data = json.loads(absence_data_str)
+        reason_data_str  = request.POST.get('reason_data', '{}')
+        reason_data      = json.loads(reason_data_str)
         print("DEBUG: absence_data =", absence_data)  # Debug: in ra dữ liệu dropdown
 
         students = Student.objects.filter(classroom__name=class_name)
@@ -205,7 +234,8 @@ def bulk_meal_record_save(request):
                 date=today,
                 meal_type=meal_type,
                 status=status,
-                non_eat=non_eat
+                non_eat=non_eat,
+                absence_reason=reason_data.get(sid, '').strip()
             )
             current_month = today.strftime("%Y-%m")
             from django.db import connection
@@ -240,42 +270,36 @@ def load_students(request):
     data = [{'id': student.id, 'name': student.name} for student in students]
     return JsonResponse(data, safe=False)
 def ajax_load_mealdata(request):
-    """
-    Endpoint trả về danh sách học sinh của lớp được chọn, kèm thông tin MealRecord của ngày hôm qua cho loại bữa ăn được chọn.
-    Nếu có MealRecord: trả về dữ liệu record (checkbox checked nếu status="Đủ", không tick nếu status="Thiếu" và trả về non_eat).
-    Nếu không có MealRecord: mặc định checkbox tick, non_eat mặc định là 1 (Có phép).
-    """
     class_name = request.GET.get('class_name')
-    meal_type = request.GET.get('meal_type')  # ví dụ: "Bữa sáng" hoặc "Bữa trưa"
-    
-    # Ngày hôm qua
-    yesterday = date.today() - timedelta(days=1)
-    
-    # Lấy danh sách học sinh của lớp
-    students = Student.objects.filter(classroom__name=class_name).order_by('name')
-    
+    meal_type  = request.GET.get('meal_type')
+    today = date.today()
+    students   = Student.objects.filter(classroom__name=class_name).order_by('name')
+
     data = []
     for student in students:
-        # Tìm MealRecord của học sinh cho ngày hôm qua và meal_type
-        record = MealRecord.objects.filter(student=student, date=yesterday, meal_type=meal_type).first()
+        record = MealRecord.objects.filter(
+            student=student, date=today, meal_type=meal_type
+        ).first()
+
         if record:
-            # Nếu có bản ghi, set checkbox theo status
             item = {
-                'id': student.id,
-                'name': student.name,
-                # Nếu record.status=="Đủ" thì checkbox tick; nếu "Thiếu" thì không tick.
-                'checked': True if record.status == "Đủ" else False,
-                'non_eat': record.non_eat  # Giá trị của non_eat từ record (1 hoặc 2)
+                'id':      student.id,
+                'name':    student.name,
+                'checked': (record.status == 'Đủ'),
+                'non_eat': record.non_eat,
+                'reason':  record.absence_reason or ''
             }
         else:
-            # Nếu không có bản ghi thì mặc định:
+            # mặc định: tick Ăn đủ nhưng cho phép chỉnh non_eat=1 và reason=''
             item = {
-                'id': student.id,
-                'name': student.name,
-                'checked': True,  # tick mặc định (ăn đủ)
-                'non_eat': 1      # mặc định "Có phép" (nhưng nếu tick thì dropdown sẽ bị disable)
+                'id':      student.id,
+                'name':    student.name,
+                'checked': True,
+                'non_eat': 1,
+                'reason':  ''
             }
         data.append(item)
+
     return JsonResponse(data, safe=False)
 def statistics_view(request):
     # 1. Lấy danh sách lớp (ClassRoom)
