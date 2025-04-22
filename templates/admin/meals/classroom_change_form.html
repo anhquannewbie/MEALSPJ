@@ -3,13 +3,12 @@
 
 {% block object-tools %}
   {{ block.super }}
-  {# Chỉ show khi original tồn tại (đang edit) #}
   {% if original %}
     <li>
-        <a href="{% url 'myadmin:meals_classroom_delete_students' classroom_id=original.id %}"
-        class="deletelink">
+      <a href="{% url 'myadmin:meals_classroom_delete_students' classroom_id=original.id %}"
+         class="deletelink">
         Xóa toàn bộ học sinh
-        </a>
+      </a>
     </li>
     <li>
       <a href="{% url 'myadmin:meals_classroom_export_students' classroom_id=original.id %}"
@@ -24,4 +23,24 @@
       </a>
     </li>
   {% endif %}
+{% endblock %}
+
+{# nút Xóa học sinh đã chọn lên trên #}
+{% block submit_buttons_top %}
+  {{ block.super }}
+  <input type="submit"
+         name="delete_selected_students"
+         value="{% trans 'Xóa học sinh đã chọn' %}"
+         class="default"
+         onclick="return confirm('{% trans "Bạn có chắc chắn muốn xóa các học sinh đã chọn?" %}');" />
+{% endblock %}
+
+{# nút Xóa học sinh đã chọn xuống dưới #}
+{% block submit_buttons_bottom %}
+  {{ block.super }}
+  <input type="submit"
+         name="delete_selected_students"
+         value="{% trans 'Xóa học sinh đã chọn' %}"
+         class="default"
+         onclick="return confirm('{% trans "Bạn có chắc chắn muốn xóa các học sinh đã chọn?" %}');" />
 {% endblock %}

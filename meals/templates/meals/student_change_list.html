@@ -1,0 +1,27 @@
+{% extends "admin/change_list.html" %}
+{% load i18n %}
+
+{% block sidebar %}
+  {{ block.super }}
+  <div class="module">
+    <h3>{% trans "Tìm học sinh" %}</h3>
+    <form method="get">
+      {# Giữ nguyên các param filter khác #}
+      {% for key, value in request.GET.items %}
+        {% if key != 'q' %}
+          <input type="hidden" name="{{ key }}" value="{{ value }}">
+        {% endif %}
+      {% endfor %}
+
+      <input type="text"
+             name="q"
+             placeholder="{% trans 'Nhập tên...' %}"
+             value="{{ cl.query|default_if_none:'' }}"
+             style="width: 100%; box-sizing: border-box; margin-bottom: .5em;"/>
+
+      <button type="submit" class="default">
+        {% trans "Tìm" %}
+      </button>
+    </form>
+  </div>
+{% endblock %}

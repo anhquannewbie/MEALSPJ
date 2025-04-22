@@ -5,15 +5,44 @@ from decimal import Decimal
 from django.utils.translation import gettext_lazy as _
 class StudentPayment(models.Model):
     class Meta:
+        unique_together = ('student', 'month')
+        verbose_name = "Công nợ học sinh"
+        verbose_name_plural = "Công nợ học sinh"
         permissions = [
             ("view_statistics", "Có thể xem thống kê"),
         ]
-    student = models.ForeignKey('Student', on_delete=models.CASCADE)
-    month = models.CharField(max_length=7, help_text="YYYY-MM")
-    tuition_fee = models.DecimalField(max_digits=10, decimal_places=2)
-    daily_meal_fee = models.DecimalField(max_digits=10, decimal_places=2)
-    amount_paid = models.DecimalField(max_digits=10, decimal_places=2)
-    remaining_balance = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    student = models.ForeignKey(
+        'Student',
+        on_delete=models.CASCADE,
+        verbose_name="Học sinh"
+    )
+    month = models.CharField(
+        max_length=7,
+        verbose_name="Tháng",
+        help_text="Chọn tháng theo định dạng YYYY‑MM"
+    )
+    tuition_fee = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="Học phí"
+    )
+    daily_meal_fee = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="Phí ăn hàng ngày"
+    )
+    amount_paid = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="Số tiền đã đóng"
+    )
+    remaining_balance = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Số dư"
+    )
 
     def save(self, *args, **kwargs):
         # Tính số dư tháng trước như cũ

@@ -1,14 +1,24 @@
-{% extends "admin/index.html" %}
+{% extends "admin/base_site.html" %}
 {% load i18n %}
+
 {% block content %}
   <h1>{{ title }}</h1>
-  <form method="post" enctype="multipart/form-data" style="margin-top:1em;">
+  <form method="post" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
-    <p>
-      <label for="id_csv_file">{% trans "Chọn file CSV" %}:</label><br>
-      <input type="file" name="csv_file" accept=".csv" required>
-    </p>
-    <button type="submit" class="default">{% trans "Import" %}</button>
-    <a href="../../{{ original.id }}/change/" class="button cancellink">{% trans "Hủy" %}</a>
+    <div>
+      <label for="excel_file">{% trans "Chọn file Excel (.xlsx)" %}:</label>
+      <input type="file"
+             name="excel_file"
+             id="excel_file"
+             accept=".xlsx"
+             required />
+    </div>
+    <br>
+    <button type="submit" class="default">
+      {% trans "Import Học sinh" %}
+    </button>
+    <a href="../../{{ original.id }}/change/" class="button">
+      {% trans "Hủy" %}
+    </a>
   </form>
 {% endblock %}
