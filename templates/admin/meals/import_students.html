@@ -1,0 +1,14 @@
+{% extends "admin/index.html" %}
+{% load i18n %}
+{% block content %}
+  <h1>{{ title }}</h1>
+  <form method="post" enctype="multipart/form-data" style="margin-top:1em;">
+    {% csrf_token %}
+    <p>
+      <label for="id_csv_file">{% trans "Chọn file CSV" %}:</label><br>
+      <input type="file" name="csv_file" accept=".csv" required>
+    </p>
+    <button type="submit" class="default">{% trans "Import" %}</button>
+    <a href="../../{{ original.id }}/change/" class="button cancellink">{% trans "Hủy" %}</a>
+  </form>
+{% endblock %}

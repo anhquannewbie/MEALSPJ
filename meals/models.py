@@ -4,6 +4,10 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from django.utils.translation import gettext_lazy as _
 class StudentPayment(models.Model):
+    class Meta:
+        permissions = [
+            ("view_statistics", "Có thể xem thống kê"),
+        ]
     student = models.ForeignKey('Student', on_delete=models.CASCADE)
     month = models.CharField(max_length=7, help_text="YYYY-MM")
     tuition_fee = models.DecimalField(max_digits=10, decimal_places=2)

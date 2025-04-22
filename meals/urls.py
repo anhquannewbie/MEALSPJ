@@ -31,4 +31,7 @@ urlpatterns = [
 
     # Payments alias (optional)
     path('payments/', login_required(views.student_payment_edit), name='payments'),
+    path('ajax/load-meal-stats/',
+         login_required(views.ajax_load_meal_stats),
+         name='ajax_load_meal_stats'),
 ]

@@ -67,6 +67,13 @@
               <i class="fas fa-sign-out-alt"></i> Thoát
             </a>
           </li>
+          {% if user.is_superuser %}
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'admin:index' %}">
+                <i class="fas fa-arrow-left"></i> Quay lại Admin
+              </a>
+            </li>
+          {% endif %}
         {% endif %}
       </ul>
     </div>

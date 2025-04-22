@@ -1,5 +1,6 @@
 {% extends "layout.html" %}
 {% load static %}
+{% url 'meals:ajax_load_students' %}
 {% block title %}Chỉnh sửa Thanh toán Học sinh{% endblock %}
 
 {% block content %}
@@ -72,6 +73,13 @@
     <p>Bữa trưa: <span id="lunch_count">{{ lunch_count|default:"0" }}</span></p>
 </div>
 
+<div id="meal-stats" class="mt-5" style="display:none;">
+  <h4>Chi tiết Bữa sáng</h4>
+  <div id="breakfast-table" class="table-responsive mb-4"></div>
+
+  <h4>Chi tiết Bữa trưa</h4>
+  <div id="lunch-table" class="table-responsive"></div>
+</div>
 <!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
@@ -172,5 +180,50 @@ $(function(){
           this.value = this.value.replace(/,/g, '');
         });
       });
+    </script>
+  <script>
+    // Hàm dựng bảng thống kê
+    function renderMealTable(container, stats) {
+      var days = stats.days;
+      var total = stats.total;
+      var cost  = stats.cost.toLocaleString();
+    
+      var html = '<table class="table table-bordered"><thead><tr>' +
+                 days.map((_, i) => '<th>'+(i+1)+'</th>').join('') +
+                 '<th>Tổng</th><th>Thành tiền</th>' +
+                 '</tr></thead><tbody><tr>' +
+                 days.map(v => '<td>'+v+'</td>').join('') +
+                 '<td>'+ total +'</td><td>'+ cost +'</td>' +
+                 '</tr></tbody></table>';
+      document.querySelector(container).innerHTML = html;
+    }
+    
+    $(function(){
+      // Mình đã có sự kiện load student/month ở trên; thêm vào callback đó:
+      function loadStats(sid, m) {
+        if (!sid || !m) {
+          $('#meal-stats').hide();
+          return;
+        }
+        $.get("{% url 'meals:ajax_load_meal_stats' %}", { student_id: sid, month: m })
+          .done(function(data){
+            renderMealTable('#breakfast-table', data.breakfast);
+            renderMealTable('#lunch-table',     data.lunch);
+            $('#meal-stats').show();         // chỉ hiện khi có data
+          });
+}
+    
+      // Trong phần $(...).change() của id_student & id_month, thêm:
+      $('#id_student, #id_month').on('change', function(){
+        var sid = $('#id_student').val(),
+            m   = $('#id_month').val();
+        loadStats(sid, m);
+      });
+    
+      // Nếu là edit (đã có giá trị), load ngay khi trang load
+      if($('#id_student').val() && $('#id_month').val()){
+        loadStats($('#id_student').val(), $('#id_month').val());
+      }
+    });
     </script>
 {% endblock %}

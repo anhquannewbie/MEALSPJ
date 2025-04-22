@@ -5,10 +5,19 @@ from django.contrib.admin import AdminSite
 from .models import MealRecord, Student, ClassRoom, StudentPayment
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
+from django.http import HttpResponse, HttpResponseRedirect
+from django.template.response import TemplateResponse
+from django.urls import path
+import csv
 from django.urls import reverse
 admin.site.site_header  = "Trang quản trị bữa ăn học sinh"
 admin.site.site_title   = "Quản lý bữa ăn"
 admin.site.index_title  = "Bảng điều khiển"
+class StudentInline(admin.TabularInline):
+    model = Student
+    extra = 0                 # không sinh form trống
+    fields = ('name',)        # chỉ hiện tên (có thể thêm các field khác)
+    show_change_link = True   # có link vào form edit của từng student
 class MyAdminSite(AdminSite):
     site_header = "Trang quản trị bữa ăn học sinh"
     index_title = "Bảng điều khiển"
@@ -46,10 +55,90 @@ class ClassNameFilter(admin.SimpleListFilter):
 
 class ClassRoomAdmin(admin.ModelAdmin):
     list_display = ('name',)
-    search_fields = ('name',)
-    # Đổi tên hiển thị của model ClassRoom trong Admin
+    inlines = [StudentInline]  
     verbose_name = "Lớp học"
     verbose_name_plural = "Các lớp học"
+    change_form_template = "admin/meals/classroom_change_form.html"
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom = [
+            path(
+                '<int:classroom_id>/delete_students/',
+                self.admin_site.admin_view(self.delete_students_view),
+                name='meals_classroom_delete_students'
+            ),
+            path(
+                '<int:classroom_id>/export_students/',
+                self.admin_site.admin_view(self.export_students_view),
+                name='meals_classroom_export_students'
+            ),
+            path(
+                '<int:classroom_id>/import_students/',
+                self.admin_site.admin_view(self.import_students_view),
+                name='meals_classroom_import_students'
+            ),
+        ]
+        # Đặt custom URLs lên trước để không bị chặn bởi mặc định
+        return custom + urls
+    def delete_students_view(self, request, classroom_id):
+        room = ClassRoom.objects.get(pk=classroom_id)
+        if request.method == 'POST':
+            # xóa tất cả sinh viên trong lớp, cascades luôn MealRecord & StudentPayment
+            qs = Student.objects.filter(classroom=room)
+            count, _ = qs.delete()
+            self.message_user(request, f"Đã xóa {count} học sinh (và dữ liệu liên quan) của lớp {room.name}.")
+            return HttpResponseRedirect(f'../../{classroom_id}/change/')
+
+        context = {
+            **self.admin_site.each_context(request),
+            'opts':    self.model._meta,
+            'original': room,
+            'title':   f'Xác nhận xóa toàn bộ học sinh lớp “{room.name}”',
+        }
+        return TemplateResponse(request, "admin/meals/classroom_delete_students_confirmation.html", context)
+    
+    def export_students_view(self, request, classroom_id):
+        """Xuất CSV các học sinh của lớp."""
+        room = ClassRoom.objects.get(pk=classroom_id)
+        qs = Student.objects.filter(classroom=room).order_by('name')
+
+        resp = HttpResponse(content_type='text/csv')
+        resp['Content-Disposition'] = f'attachment; filename="students_{room.name}.csv"'
+        writer = csv.writer(resp)
+        writer.writerow(['Tên học sinh'])
+        for s in qs:
+            writer.writerow([s.name])
+        return resp
+
+    def import_students_view(self, request, classroom_id):
+        """Form upload CSV để import học sinh vào lớp."""
+        room = ClassRoom.objects.get(pk=classroom_id)
+
+        if request.method == 'POST':
+            csv_file = request.FILES.get('csv_file')
+            if not csv_file:
+                self.message_user(request, "Chưa chọn file.", level='error')
+                return HttpResponseRedirect(request.path)
+            decoded = csv_file.read().decode('utf-8').splitlines()
+            reader = csv.reader(decoded)
+            headers = next(reader, [])
+            count = 0
+            for row in reader:
+                name = row[0].strip()
+                if name:
+                    Student.objects.get_or_create(name=name, classroom=room)
+                    count += 1
+            self.message_user(request, f"Imported {count} học sinh vào lớp {room.name}.")
+            return HttpResponseRedirect(f'../../{classroom_id}/change/')
+
+        context = {
+            **self.admin_site.each_context(request),
+            'opts':        self.model._meta,
+            'original':    room,
+            'title':       f'Import học sinh cho lớp “{room.name}”',
+        }
+        return TemplateResponse(request, "admin/meals/import_students.html", context)
 
 class StudentAdmin(admin.ModelAdmin):
     search_fields = ('name',)
@@ -122,7 +211,13 @@ my_admin_site = MyAdminSite(name='myadmin')
 from .admin import MealRecordAdmin  # form tuỳ chỉnh bạn đã có
 my_admin_site.register(MealRecord, MealRecordAdmin)
 my_admin_site.register(Student)
-my_admin_site.register(ClassRoom)
+try:
+    my_admin_site.unregister(ClassRoom)
+except:
+    pass
+
+# đăng ký ClassRoomAdmin lên my_admin_site
+my_admin_site.register(ClassRoom, ClassRoomAdmin)
 # Đăng ký thêm StudentPayment nếu muốn
 my_admin_site.register(StudentPayment)
 my_admin_site.register(User, UserAdmin)

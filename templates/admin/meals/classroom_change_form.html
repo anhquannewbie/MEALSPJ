@@ -1,0 +1,27 @@
+{% extends "admin/change_form.html" %}
+{% load i18n %}
+
+{% block object-tools %}
+  {{ block.super }}
+  {# Chỉ show khi original tồn tại (đang edit) #}
+  {% if original %}
+    <li>
+        <a href="{% url 'myadmin:meals_classroom_delete_students' classroom_id=original.id %}"
+        class="deletelink">
+        Xóa toàn bộ học sinh
+        </a>
+    </li>
+    <li>
+      <a href="{% url 'myadmin:meals_classroom_export_students' classroom_id=original.id %}"
+         class="addlink">
+        Export Học sinh
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'myadmin:meals_classroom_import_students' classroom_id=original.id %}"
+         class="addlink">
+        Import Học sinh
+      </a>
+    </li>
+  {% endif %}
+{% endblock %}

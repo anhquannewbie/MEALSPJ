@@ -1,6 +1,7 @@
 from meals.admin import my_admin_site
 from django.urls import path, include
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from meals.views import logout_view
 # Views
 from meals_system.views import home
@@ -36,9 +37,19 @@ urlpatterns = [
     path('ajax/load-months/', ajax_load_months, name='ajax_load_months'),
     path('logout/', logout_view, name='logout'),
     # Statistics and exports
-    path('statistics/', statistics_view, name='statistics'),
+    path(
+      'statistics/',
+      login_required(
+        permission_required('meals.view_statistics', raise_exception=True)(
+          statistics_view
+        ),
+        login_url='login'
+      ),
+      name='statistics'
+    ),
     path('export/excel/', export_monthly_statistics, name='export_excel'),
     path('export/yearly/', export_yearly_statistics, name='export_yearly_statistics'),
+    path('login/', user_login, name='login'),
 
     # Root URL: redirect to login
     path(

@@ -23,6 +23,10 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
+from django.contrib.auth import authenticate, login as auth_login
+from django.urls import reverse
+from django.contrib.auth.decorators import login_required, permission_required
+from django.core.exceptions import PermissionDenied
 @csrf_exempt
 
 
@@ -32,20 +36,21 @@ def logout_view(request):
 def user_login(request):
     error = None
     if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
+        username = request.POST.get('username')
+        password = request.POST.get('password')
         user = authenticate(request, username=username, password=password)
-
         if user:
-            login(request, user)
-            if user.is_superuser:
-                return redirect('/admin/')
-            else:
-                return redirect('home')
+            auth_login(request, user)
+            # nếu là staff (admin site) thì redirect luôn vào /admin/
+            if user.is_staff:
+                return redirect(reverse('admin:index'))
+            # ngược lại về home
+            return redirect('home')
         else:
-            error = "Invalid username or password."
-
+            error = "Sai tên đăng nhập hoặc mật khẩu"
     return render(request, 'login.html', {'error': error})
+@login_required(login_url='login')
+@permission_required('meals.change_studentpayment', raise_exception=True)
 def student_payment_edit(request, pk=None):
     classrooms = ClassRoom.objects.all()
 
@@ -301,6 +306,8 @@ def ajax_load_mealdata(request):
         data.append(item)
 
     return JsonResponse(data, safe=False)
+@login_required(login_url='login')
+@permission_required('meals.view_statistics', raise_exception=True)
 def statistics_view(request):
     # 1. Lấy danh sách lớp (ClassRoom)
     classrooms = ClassRoom.objects.all().order_by('name')
@@ -740,3 +747,73 @@ def export_yearly_statistics(request):
     resp["Content-Disposition"] = f'attachment; filename="TheoDoiTienAn_{classroom.name}_{year}.xlsx"'
     wb.save(resp)
     return resp
+def ajax_load_meal_stats(request):
+    """
+    Trả về 2 object: breakfast và lunch, mỗi object có:
+      - days: mảng ['X','0',...]
+      - total: tổng số bữa đã ăn
+      - cost: tổng tiền (số nguyên, chưa format)
+    """
+    student_id = request.GET.get('student_id')
+    month_str  = request.GET.get('month')  # "YYYY-MM"
+    data = {'breakfast': {}, 'lunch': {}}
+
+    if student_id and month_str:
+        # parse year/month
+        year, month = map(int, month_str.split('-'))
+        max_day = calendar.monthrange(year, month)[1]
+
+        # lấy fee để tính thành tiền
+        sp = StudentPayment.objects.filter(student_id=student_id, month=month_str).first()
+        daily_fee = sp.daily_meal_fee if sp else Decimal('30000')
+        fee_break = Decimal('10000')
+        fee_lunch = (Decimal('20000') if daily_fee == Decimal('30000')
+                     else Decimal('30000') if daily_fee == Decimal('40000')
+                     else daily_fee - Decimal('10000'))
+
+        # load tất cả MealRecord của tháng
+        recs = MealRecord.objects.filter(
+            student_id=student_id,
+            date__year=year,
+            date__month=month,
+            meal_type__in=["Bữa sáng","Bữa trưa"]
+        )
+        # map (meal_type,day) -> (status, non_eat)
+        record_map = {
+            (r.meal_type, r.date.day): (r.status, r.non_eat)
+            for r in recs
+        }
+
+        # build breakfast
+        br_days = []
+        br_count = 0
+        for d in range(1, max_day+1):
+            s = record_map.get(("Bữa sáng", d))
+            if s and (s[0]=="Đủ" or (s[0]=="Thiếu" and s[1]==2)):
+                br_days.append("X")
+                br_count += 1
+            else:
+                br_days.append("0")
+        data['breakfast'] = {
+            'days': br_days,
+            'total': br_count,
+            'cost': int(br_count * fee_break)
+        }
+
+        # build lunch
+        lu_days = []
+        lu_count = 0
+        for d in range(1, max_day+1):
+            s = record_map.get(("Bữa trưa", d))
+            if s and (s[0]=="Đủ" or (s[0]=="Thiếu" and s[1]==2)):
+                lu_days.append("X")
+                lu_count += 1
+            else:
+                lu_days.append("0")
+        data['lunch'] = {
+            'days': lu_days,
+            'total': lu_count,
+            'cost': int(lu_count * fee_lunch)
+        }
+
+    return JsonResponse(data)
