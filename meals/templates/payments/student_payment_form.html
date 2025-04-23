@@ -38,17 +38,18 @@
         {{ form.month }}
     </div>
 
-    <!-- Các ô tiền đã chuyển về text + money class -->
     <div class="form-group">
         <label for="id_tuition_fee">{{ form.tuition_fee.label }}</label>
         <input type="text" id="id_tuition_fee" name="tuition_fee" class="form-control money"
                value="{{ form.tuition_fee.value|default_if_none:'' }}">
     </div>
+
+    <!-- Thay daily_meal_fee bằng meal_price -->
     <div class="form-group">
-        <label for="id_daily_meal_fee">{{ form.daily_meal_fee.label }}</label>
-        <input type="text" id="id_daily_meal_fee" name="daily_meal_fee" class="form-control money"
-               value="{{ form.daily_meal_fee.value|default_if_none:'' }}">
+        {{ form.meal_price.label_tag }}
+        {{ form.meal_price }}
     </div>
+
     <div class="form-group">
         <label for="id_amount_paid">{{ form.amount_paid.label }}</label>
         <input type="text" id="id_amount_paid" name="amount_paid" class="form-control money"
@@ -56,7 +57,7 @@
     </div>
 
     <div class="form-group">
-        <label for="id_prev_month_balance">Công nợ</label>
+        <label for="id_prev_month_balance">Công nợ tháng trước</label>
         {{ form.prev_month_balance }}
     </div>
     <div class="form-group">
@@ -80,15 +81,13 @@
   <h4>Chi tiết Bữa trưa</h4>
   <div id="lunch-table" class="table-responsive"></div>
 </div>
-<!-- jQuery -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-<!-- AJAX load students & payment details -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 $(function(){
+    // Load students khi chọn lớp
     $('#id_classroom').change(function(){
-        var cid = $(this).val();
-        var $stu = $('#id_student');
+        var cid = $(this).val(), $stu = $('#id_student');
         if(!cid){
             $stu.html('<option value="">-- Chọn Học sinh --</option>');
             return;
@@ -101,6 +100,7 @@ $(function(){
          });
     });
 
+    // Khi chọn học sinh hoặc tháng (chỉ với thêm mới)
     var isEdit = {{ is_edit|yesno:"true,false" }};
     if(!isEdit){
         $('#id_student, #id_month').change(function(){
@@ -109,7 +109,8 @@ $(function(){
             $.get("{% url 'ajax_load_payment_details' %}", { student_id: sid, month: m })
              .done(data => {
                 $('#id_tuition_fee').val(data.tuition_fee);
-                $('#id_daily_meal_fee').val(data.daily_meal_fee);
+                // Thiết lập select meal_price
+                $('#id_meal_price').val(data.meal_price);
                 $('#id_amount_paid').val(data.amount_paid);
                 $('#id_prev_month_balance').val(data.prev_month_balance);
                 $('#id_current_month_payment').val(data.current_month_payment);
@@ -118,112 +119,58 @@ $(function(){
              });
         });
     }
-});
-</script>
 
-<!-- Format dấu phẩy realtime -->
-<script>
-    $(function(){
-      // 1) Hàm format chung
-      function formatNumberWithCommas(value){
+    // Format tiền với dấu phẩy
+    function formatNumberWithCommas(value){
         var parts = value.toString().split('.');
         parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         return parts.join('.');
-      }
-    
-      // 2) Format ngay khi load trang
-      $('.money, #id_prev_month_balance, #id_current_month_payment').each(function(){
+    }
+    $('.money, #id_prev_month_balance, #id_current_month_payment').each(function(){
         var v = $(this).val().replace(/,/g,'');
         if(v) $(this).val(formatNumberWithCommas(v));
-      });
-    
-      // 3) AJAX load khi chọn Student/Month
-      $('#id_student, #id_month').change(function(){
-        var sid = $('#id_student').val(), m = $('#id_month').val();
-        if(!sid || !m) return;
-        $.get("{% url 'ajax_load_payment_details' %}", { student_id: sid, month: m })
-         .done(data => {
-           $('#id_tuition_fee').val(data.tuition_fee ? formatNumberWithCommas(data.tuition_fee) : '');
-           $('#id_daily_meal_fee').val(data.daily_meal_fee ? formatNumberWithCommas(data.daily_meal_fee) : '');
-           $('#id_amount_paid').val(data.amount_paid ? formatNumberWithCommas(data.amount_paid) : '');
-           $('#id_prev_month_balance').val(data.prev_month_balance ? formatNumberWithCommas(data.prev_month_balance) : '');
-           $('#id_current_month_payment').val(data.current_month_payment ? formatNumberWithCommas(data.current_month_payment) : '');
-           $('#breakfast_count').text(data.breakfast_count);
-           $('#lunch_count').text(data.lunch_count);
-         });
-      });
-    
-      // 4) Input realtime (nếu cho phép edit)
-      $('.money').on('input', function(){
+    });
+    $('.money').on('input', function(){
         var pos = this.selectionStart, old = this.value;
-        var cleaned = old.replace(/[^0-9\.]/g,'');
-        var parts  = cleaned.split('.');
-        if(parts.length>2) cleaned = parts.shift()+'.'+parts.join('');
-        var fmt = formatNumberWithCommas(cleaned);
+        var clean = old.replace(/[^0-9\.]/g,'').split('.');
+        if(clean.length>2) clean = [clean.shift(), clean.join('')];
+        var fmt = formatNumberWithCommas(clean.join('.'));
         this.value = fmt;
         var diff = fmt.length - old.length;
         this.setSelectionRange(pos+diff, pos+diff);
-      });
-    
-      // 5) Strip commas khi submit
-      $('#payment-form').on('submit', function(){
+    });
+    $('#payment-form').on('submit', function(){
         $('.money, #id_prev_month_balance, #id_current_month_payment').each(function(){
           this.value = this.value.replace(/,/g,'');
         });
-      });
     });
-    </script>
-    <script>
-      $('#payment-form').on('submit', function(){
-        // Với mỗi trường có class .money
-        $('.money').each(function(){
-          this.value = this.value.replace(/,/g, '');
-        });
-      });
-    </script>
-  <script>
-    // Hàm dựng bảng thống kê
-    function renderMealTable(container, stats) {
-      var days = stats.days;
-      var total = stats.total;
-      var cost  = stats.cost.toLocaleString();
-    
-      var html = '<table class="table table-bordered"><thead><tr>' +
-                 days.map((_, i) => '<th>'+(i+1)+'</th>').join('') +
-                 '<th>Tổng</th><th>Thành tiền</th>' +
-                 '</tr></thead><tbody><tr>' +
-                 days.map(v => '<td>'+v+'</td>').join('') +
-                 '<td>'+ total +'</td><td>'+ cost +'</td>' +
-                 '</tr></tbody></table>';
-      document.querySelector(container).innerHTML = html;
+
+    // Render bảng chi tiết ăn
+    function renderMealTable(container, stats){
+        var days = stats.days, total = stats.total, cost = stats.cost.toLocaleString();
+        var html = '<table class="table table-bordered"><thead><tr>' +
+                   days.map((_,i)=>'<th>'+(i+1)+'</th>').join('') +
+                   '<th>Tổng</th><th>Thành tiền</th></tr></thead><tbody><tr>' +
+                   days.map(v=>'<td>'+v+'</td>').join('') +
+                   '<td>'+total+'</td><td>'+cost+'</td>' +
+                   '</tr></tbody></table>';
+        $(container).html(html);
     }
-    
-    $(function(){
-      // Mình đã có sự kiện load student/month ở trên; thêm vào callback đó:
-      function loadStats(sid, m) {
-        if (!sid || !m) {
-          $('#meal-stats').hide();
-          return;
-        }
+    function loadStats(sid, m){
+        if(!sid||!m){ $('#meal-stats').hide(); return; }
         $.get("{% url 'meals:ajax_load_meal_stats' %}", { student_id: sid, month: m })
-          .done(function(data){
+         .done(data=>{
             renderMealTable('#breakfast-table', data.breakfast);
             renderMealTable('#lunch-table',     data.lunch);
-            $('#meal-stats').show();         // chỉ hiện khi có data
-          });
-}
-    
-      // Trong phần $(...).change() của id_student & id_month, thêm:
-      $('#id_student, #id_month').on('change', function(){
-        var sid = $('#id_student').val(),
-            m   = $('#id_month').val();
-        loadStats(sid, m);
-      });
-    
-      // Nếu là edit (đã có giá trị), load ngay khi trang load
-      if($('#id_student').val() && $('#id_month').val()){
+            $('#meal-stats').show();
+         });
+    }
+    $('#id_student, #id_month').on('change', function(){
         loadStats($('#id_student').val(), $('#id_month').val());
-      }
     });
-    </script>
+    if($('#id_student').val() && $('#id_month').val()){
+        loadStats($('#id_student').val(), $('#id_month').val());
+    }
+});
+</script>
 {% endblock %}

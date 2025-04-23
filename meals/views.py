@@ -27,6 +27,7 @@ from django.contrib.auth import authenticate, login as auth_login
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import PermissionDenied
+from .utils import get_current_price
 @csrf_exempt
 
 
@@ -54,7 +55,7 @@ def user_login(request):
 def student_payment_edit(request, pk=None):
     classrooms = ClassRoom.objects.all()
 
-    # Lấy bản ghi nếu edit
+    # Lấy đối tượng để edit (nếu có)
     if request.method == "GET" and request.GET.get('payment_id'):
         try:
             payment = StudentPayment.objects.get(id=request.GET.get('payment_id'))
@@ -64,24 +65,21 @@ def student_payment_edit(request, pk=None):
         payment = get_object_or_404(StudentPayment, pk=pk) if pk else None
 
     if request.method == "POST":
-        form = StudentPaymentForm(request.POST, instance=payment)
+        # Nếu tạo mới mà trùng student+month, bind luôn vào bản tồn tại
+        student_id = request.POST.get('student')
+        month_val  = request.POST.get('month')
+        form_instance = payment
+        if not payment and student_id and month_val:
+            dup = StudentPayment.objects.filter(
+                student_id=student_id, month=month_val
+            ).first()
+            if dup:
+                form_instance = dup
+
+        form = StudentPaymentForm(request.POST, instance=form_instance)
         if form.is_valid():
-            student = form.cleaned_data['student']
-            month   = form.cleaned_data['month']
-
-            # Kiểm tra duplicate
-            existing = StudentPayment.objects.filter(student=student, month=month).first()
-            if existing and (not payment or existing.id != payment.id):
-                # Cập nhật bản ghi tồn tại
-                existing.tuition_fee    = form.cleaned_data['tuition_fee']
-                existing.daily_meal_fee = form.cleaned_data['daily_meal_fee']
-                existing.amount_paid    = form.cleaned_data['amount_paid']
-                existing.save()     # <-- gọi vào StudentPayment.save(), sẽ tính đúng remaining_balance
-                payment_obj = existing
-            else:
-                # Tạo mới hoặc cập nhật chính nó
-                payment_obj = form.save()  # <-- gọi vào StudentPayment.save()
-
+            # form.save() sẽ create nếu instance=None, hoặc update nếu instance!=None
+            payment_obj = form.save()
             messages.success(request, "Lưu thành công")
             return redirect(request.path)
         else:
@@ -106,11 +104,11 @@ def student_payment_edit(request, pk=None):
 
     var_is_edit = bool(payment and payment.pk)
     return render(request, 'payments/student_payment_form.html', {
-        'form': form,
-        'classrooms':    classrooms,
-        'is_edit':       var_is_edit,
-        'breakfast_count': breakfast_count,
-        'lunch_count':     lunch_count,
+        'form':             form,
+        'classrooms':       classrooms,
+        'is_edit':          var_is_edit,
+        'breakfast_count':  breakfast_count,
+        'lunch_count':      lunch_count,
     })
 
 # Các view khác giữ nguyên
@@ -147,15 +145,19 @@ def ajax_load_payment_details(request):
         # 1. Lấy payment của THÁNG HIỆN TẠI (nếu có)
         payment = StudentPayment.objects.filter(student_id=student_id, month=month).first()
         if payment:
+            price = payment.meal_price
+            data['meal_price']   = str(price.pk)
             data['tuition_fee'] = str(payment.tuition_fee)
-            data['daily_meal_fee'] = str(payment.daily_meal_fee)
+            data['daily_price']      = str(price.daily_price)
+            data['breakfast_price']  = str(price.breakfast_price)
+            data['lunch_price']      = str(price.lunch_price)
             data['amount_paid'] = str(payment.amount_paid)
             # "Tiền tháng này" = remaining_balance
             data['current_month_payment'] = str(payment.remaining_balance)
         else:
             # Nếu chưa có payment cho tháng này => để trống
             data['tuition_fee'] = ''
-            data['daily_meal_fee'] = ''
+            data['daily_price'] = ''
             data['amount_paid'] = ''
             data['current_month_payment'] = ''
 
@@ -198,7 +200,7 @@ def ajax_load_payment_details(request):
     else:
         # Nếu thiếu student hoặc month -> mọi thứ để trống
         data['tuition_fee'] = ''
-        data['daily_meal_fee'] = ''
+        data['daily_price'] = ''
         data['amount_paid'] = ''
         data['current_month_payment'] = ''
         data['prev_month_balance'] = '0'
@@ -243,9 +245,8 @@ def bulk_meal_record_save(request):
                 absence_reason=reason_data.get(sid, '').strip()
             )
             current_month = today.strftime("%Y-%m")
-            from django.db import connection
-            with connection.cursor() as cursor:
-                cursor.execute("UPDATE meals_studentpayment SET remaining_balance = amount_paid - tuition_fee - (SELECT COALESCE(SUM(CASE WHEN meal_type = 'Bữa sáng' AND (status = 'Đủ' OR (status = 'Thiếu' AND non_eat = 2)) THEN 10000 WHEN meal_type = 'Bữa trưa' AND (status = 'Đủ' OR (status = 'Thiếu' AND non_eat = 2)) THEN CASE WHEN meals_studentpayment.daily_meal_fee = 30000 THEN 20000 WHEN meals_studentpayment.daily_meal_fee = 40000 THEN 30000 ELSE meals_studentpayment.daily_meal_fee - 10000 END ELSE 0 END), 0) FROM meals_mealrecord WHERE meals_mealrecord.student_id = meals_studentpayment.student_id AND strftime('%%Y-%%m', meals_mealrecord.date) = meals_studentpayment.month) + COALESCE((SELECT sp_prev.remaining_balance FROM meals_studentpayment AS sp_prev WHERE sp_prev.student_id = meals_studentpayment.student_id AND sp_prev.month = strftime('%%Y-%%m', date(meals_studentpayment.month || '-01', '-1 month')) ORDER BY sp_prev.id DESC LIMIT 1), 0) WHERE month = %s AND student_id IN (SELECT id FROM meals_student WHERE classroom_id = (SELECT id FROM meals_classroom WHERE name = %s));", [current_month, class_name])
+            sp = StudentPayment.objects.get(student=student, month=current_month)
+            sp.save()
         return JsonResponse({"message": "success"}, status=200)
     return JsonResponse({"error": "Invalid method"}, status=400)
 
@@ -368,14 +369,10 @@ def statistics_view(request):
             # Lấy daily_fee từ StudentPayment (nếu có)
             ym = f"{selected_year}-{selected_month.zfill(2)}"
             sp = StudentPayment.objects.filter(student=stu, month=ym).first()
-            daily_fee = float(sp.daily_meal_fee) if sp else 30000.0
-            fee_break = 10000
-            fee_lunch = (
-                20000 if daily_fee == 30000 else
-                30000 if daily_fee == 40000 else
-                daily_fee - 10000
-            )
-
+            price     = sp.meal_price if sp else get_current_price()
+            daily_fee = price.daily_price
+            fee_break = price.breakfast_price
+            fee_lunch = price.lunch_price
             days_array = []
             total_meals = 0
             total_cost  = 0
@@ -456,18 +453,9 @@ def statistics_view(request):
                     meal_type__in=["Bữa sáng","Bữa trưa"]
                 )
                 spent_meals = Decimal('0')
-                # xác định phí trưa
-                if sp:
-                    df = sp.daily_meal_fee
-                    if df == Decimal('30000'):
-                        fee_lunch = Decimal('20000')
-                    elif df == Decimal('40000'):
-                        fee_lunch = Decimal('30000')
-                    else:
-                        fee_lunch = df - Decimal('10000')
-                else:
-                    fee_lunch = Decimal('20000')
-                fee_break = Decimal('10000')
+                price    = sp.meal_price if sp else get_current_price()
+                fee_break = Decimal(price.breakfast_price)
+                fee_lunch = Decimal(price.lunch_price)
 
                 for r in recs:
                     if r.status == 'Đủ' or (r.status=='Thiếu' and r.non_eat==2):
@@ -583,12 +571,9 @@ def export_monthly_statistics(request):
         # Lấy daily_fee của học sinh
         ym_str = f"{selected_year}-{selected_month.zfill(2)}"
         sp = StudentPayment.objects.filter(student=stu, month=ym_str).first()
-        daily_fee = float(sp.daily_meal_fee) if sp else 30000.0
-        
-        # Tính phí sáng/trưa
-        fee_break = 10000
-        fee_lunch = 20000 if daily_fee==30000 else 30000 if daily_fee==40000 else daily_fee - 10000
-        
+        price     = sp.meal_price if sp else get_current_price()
+        fee_break = price.breakfast_price
+        fee_lunch = price.lunch_price
         total_meals = 0
         total_cost  = 0
         row = [stu.name]
@@ -695,18 +680,9 @@ def export_yearly_statistics(request):
 
             # Tính spent = tuition + tiền ăn
             # Xác định phí ăn
-            if sp:
-                df = sp.daily_meal_fee
-                if df == Decimal('30000'):
-                    fee_lunch = Decimal('20000')
-                elif df == Decimal('40000'):
-                    fee_lunch = Decimal('30000')
-                else:
-                    fee_lunch = df - Decimal('10000')
-            else:
-                fee_lunch = Decimal('20000')
-            fee_break = Decimal('10000')
-
+            price     = sp.meal_price if sp else get_current_price()
+            fee_break = Decimal(price.breakfast_price)
+            fee_lunch = Decimal(price.lunch_price)
             recs = MealRecord.objects.filter(
                 student=stu,
                 date__year=year_i,
@@ -765,11 +741,9 @@ def ajax_load_meal_stats(request):
 
         # lấy fee để tính thành tiền
         sp = StudentPayment.objects.filter(student_id=student_id, month=month_str).first()
-        daily_fee = sp.daily_meal_fee if sp else Decimal('30000')
-        fee_break = Decimal('10000')
-        fee_lunch = (Decimal('20000') if daily_fee == Decimal('30000')
-                     else Decimal('30000') if daily_fee == Decimal('40000')
-                     else daily_fee - Decimal('10000'))
+        price     = sp.meal_price if sp else get_current_price()
+        fee_break = Decimal(price.breakfast_price)
+        fee_lunch = Decimal(price.lunch_price)
 
         # load tất cả MealRecord của tháng
         recs = MealRecord.objects.filter(

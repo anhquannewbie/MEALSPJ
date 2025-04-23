@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib import admin
 from django import forms
 from django.contrib.admin import AdminSite
-from .models import MealRecord, Student, ClassRoom, StudentPayment
+from .models import MealRecord, Student, ClassRoom, StudentPayment,MealPrice
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from django.http import HttpResponse, HttpResponseRedirect
@@ -15,6 +15,12 @@ from django.urls import reverse
 admin.site.site_header  = "Trang quản trị bữa ăn học sinh"
 admin.site.site_title   = "Quản lý bữa ăn"
 admin.site.index_title  = "Bảng điều khiển"
+
+class MealPriceAdmin(admin.ModelAdmin):
+    list_display  = ('effective_date', 'daily_price', 'breakfast_price', 'lunch_price')
+    list_editable = ('daily_price', 'breakfast_price', 'lunch_price')
+    list_filter   = ('effective_date',)
+    ordering      = ('-effective_date',)
 class StudentInline(admin.TabularInline):
     model = Student
     extra = 0                 # không sinh form trống
@@ -64,7 +70,7 @@ class StudentPaymentAdminForm(forms.ModelForm):
         }
 class StudentPaymentAdmin(admin.ModelAdmin):
     form = StudentPaymentAdminForm
-    list_display  = ('student','month','tuition_fee','daily_meal_fee','amount_paid','remaining_balance')
+    list_display  = ('student','month','tuition_fee','meal_price','amount_paid','remaining_balance')
     search_fields = ('student__name','month')   # ← tìm theo tên học sinh hoặc tháng
     list_filter   = ('month',)                  # filter thêm theo tháng nếu cần
     verbose_name  = "Công nợ học sinh"
@@ -82,7 +88,7 @@ class StudentPaymentAdmin(admin.ModelAdmin):
         if existing:
             # Ghi đè các trường
             existing.tuition_fee    = obj.tuition_fee
-            existing.daily_meal_fee = obj.daily_meal_fee
+            existing.meal_price     = obj.meal_price
             existing.amount_paid    = obj.amount_paid
             # gọi save của model để tính remaining_balance
             existing.save()
@@ -226,9 +232,13 @@ class MealRecordAdmin(admin.ModelAdmin):
         
         # Xác định chuỗi "YYYY-MM" từ obj.date
         year_month = obj.date.strftime("%Y-%m")
-        from django.db import connection
-        with connection.cursor() as cursor:
-            cursor.execute("UPDATE meals_studentpayment SET remaining_balance = amount_paid - tuition_fee - (SELECT COALESCE(SUM(CASE WHEN meal_type = 'Bữa sáng' AND (status = 'Đủ' OR (status = 'Thiếu' AND non_eat = 2)) THEN 10000 WHEN meal_type = 'Bữa trưa' AND (status = 'Đủ' OR (status = 'Thiếu' AND non_eat = 2)) THEN CASE WHEN meals_studentpayment.daily_meal_fee = 30000 THEN 20000 WHEN meals_studentpayment.daily_meal_fee = 40000 THEN 30000 ELSE meals_studentpayment.daily_meal_fee - 10000 END ELSE 0 END), 0) FROM meals_mealrecord WHERE meals_mealrecord.student_id = meals_studentpayment.student_id AND strftime('%%Y-%%m', meals_mealrecord.date) = meals_studentpayment.month) + COALESCE((SELECT sp_prev.remaining_balance FROM meals_studentpayment AS sp_prev WHERE sp_prev.student_id = meals_studentpayment.student_id AND sp_prev.month = strftime('%%Y-%%m', date(meals_studentpayment.month || '-01', '-1 month')) ORDER BY sp_prev.id DESC LIMIT 1), 0) WHERE student_id = %s AND month = %s;", [obj.student.id, year_month])
+        from .models import StudentPayment
+        try:
+            sp = StudentPayment.objects.get(student=obj.student, month=year_month)
+            sp.save()  # gọi model.save() sẽ dùng meal_price để tính remaining_balance
+        except StudentPayment.DoesNotExist:
+            pass
+        
 class MealRecordAdminForm(forms.ModelForm):
     class Meta:
         model = MealRecord
@@ -263,3 +273,4 @@ my_admin_site.register(Student, StudentAdmin)
 # Đăng ký thêm StudentPayment nếu muốn
 my_admin_site.register(User, UserAdmin)
 my_admin_site.register(Group, GroupAdmin)
+my_admin_site.register(MealPrice, MealPriceAdmin)

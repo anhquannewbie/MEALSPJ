@@ -1,6 +1,7 @@
 from django import forms
-from .models import MealRecord, Student,ClassRoom
-from .models import StudentPayment
+from .models import MealRecord, Student, ClassRoom, StudentPayment, MealPrice
+from datetime import timedelta, datetime
+from decimal import Decimal
 
 class StudentPaymentForm(forms.ModelForm):
     classroom = forms.ChoiceField(
@@ -14,13 +15,19 @@ class StudentPaymentForm(forms.ModelForm):
         input_formats=['%Y-%m']
     )
     prev_month_balance = forms.DecimalField(
-        label="Công nợ",
+        label="Công nợ tháng trước",
         required=False,
         disabled=True,
         widget=forms.TextInput(attrs={'readonly': 'readonly'})
     )
     current_month_payment = forms.DecimalField(
         label="Tiền tháng này",
+        required=False,
+        disabled=True,
+        widget=forms.TextInput(attrs={'readonly': 'readonly'})
+    )
+    remaining_balance = forms.DecimalField(
+        label="Số dư hiện tại",
         required=False,
         disabled=True,
         widget=forms.TextInput(attrs={'readonly': 'readonly'})
@@ -33,29 +40,34 @@ class StudentPaymentForm(forms.ModelForm):
             'student',
             'month',
             'tuition_fee',
-            'daily_meal_fee',
+            'meal_price',
             'amount_paid',
         ]
         labels = {
             'classroom':      'Chọn Lớp',
             'student':        'Học sinh',
             'tuition_fee':    'Học phí',
-            'daily_meal_fee': 'Tiền ăn/ngày',
+            'meal_price':     'Cấu hình giá ăn',
             'amount_paid':    'Tiền đã đóng',
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # Lấy danh sách lớp
-        cls_list = ClassRoom.objects.values_list('id','name')
-        self.fields['classroom'].choices = [('', '--- Chọn Lớp ---')] + [
-            (str(pk), name) for pk,name in cls_list
-        ]
-        # Student rỗng ban đầu
-        self.fields['student'].queryset = Student.objects.none()
+        # 1) MealPrice dropdown + initial
+        qs = MealPrice.objects.all()
+        self.fields['meal_price'].queryset = qs
+        if not (self.instance and self.instance.pk):
+            latest = qs.first()
+            if latest:
+                self.fields['meal_price'].initial = latest.pk
 
-        # Nếu POST có class, load student
+        # 2) Classroom → student dynamic
+        cls_list = ClassRoom.objects.values_list('id', 'name')
+        self.fields['classroom'].choices = [('', '--- Chọn Lớp ---')] + [
+            (str(pk), name) for pk, name in cls_list
+        ]
+        self.fields['student'].queryset = Student.objects.none()
         if 'classroom' in self.data:
             try:
                 cid = int(self.data.get('classroom'))
@@ -71,25 +83,58 @@ class StudentPaymentForm(forms.ModelForm):
                 classroom_id=cid
             ).order_by('name')
 
-        # Tính công nợ (prev_month_balance)
+        # 3) Tính công nợ tháng trước
         if self.instance and self.instance.pk and self.instance.month:
             dt = datetime.strptime(self.instance.month, '%Y-%m')
             prev_m = (dt.replace(day=1) - timedelta(days=1)).strftime('%Y-%m')
-            from .models import StudentPayment as SP
-            prev = SP.objects.filter(
+            prev_sp = StudentPayment.objects.filter(
                 student=self.instance.student,
                 month=prev_m
             ).order_by('-id').first()
-            self.fields['prev_month_balance'].initial = (
-                prev.remaining_balance if prev and prev.remaining_balance is not None else 0
-            )
+            prev_balance = (prev_sp.remaining_balance
+                            if prev_sp and prev_sp.remaining_balance is not None
+                            else Decimal('0'))
+            self.fields['prev_month_balance'].initial = prev_balance
         else:
-            self.fields['prev_month_balance'].initial = 0
+            self.fields['prev_month_balance'].initial = Decimal('0')
+
+        # 4) Tính Tiền tháng này & Số dư hiện tại
+        if self.instance and self.instance.pk and self.instance.month:
+            sp = StudentPayment.objects.get(pk=self.instance.pk)
+
+            # recompute prev_balance safely
+            try:
+                dt = datetime.strptime(self.instance.month, '%Y-%m')
+                prev_m = (dt.replace(day=1) - timedelta(days=1)).strftime('%Y-%m')
+                prev_sp = StudentPayment.objects.filter(
+                    student=self.instance.student,
+                    month=prev_m
+                ).order_by('-id').first()
+                prev_balance = (prev_sp.remaining_balance
+                                if prev_sp and prev_sp.remaining_balance is not None
+                                else Decimal('0'))
+            except:
+                prev_balance = Decimal('0')
+
+            amt_paid    = sp.amount_paid or Decimal('0')
+            tuition     = sp.tuition_fee  or Decimal('0')
+            rem_bal     = sp.remaining_balance or Decimal('0')
+
+            # meal_total = (paid + prev_balance) - (tuition + remaining)
+            meal_total = (amt_paid + prev_balance) - (tuition + rem_bal)
+            current    = tuition + meal_total
+
+            self.fields['current_month_payment'].initial = current.quantize(Decimal('0.01'))
+            self.fields['remaining_balance'].initial    = rem_bal
+        else:
+            self.fields['current_month_payment'].initial = Decimal('0')
+            self.fields['remaining_balance'].initial    = Decimal('0')
 
     def clean_month(self):
-        # month coming in as a datetime.date from DateField
         dt = self.cleaned_data['month']
-        return dt.strftime('%Y-%m')  # trả về string lưu vào model CharField
+        return dt.strftime('%Y-%m')
+
+
 class MealRecordForm(forms.ModelForm):
     class_name_choice = forms.ChoiceField(
         label="Lớp học",
@@ -105,27 +150,26 @@ class MealRecordForm(forms.ModelForm):
     class Meta:
         model = MealRecord
         fields = ['class_name_choice', 'student', 'date', 'meal_type', 'status', 'non_eat']
-        widgets = {
-            'date': forms.DateInput(attrs={'type': 'date'}),
-        }
-        labels = {
-            'student': 'Học Sinh',
-        }
+        widgets = {'date': forms.DateInput(attrs={'type': 'date'})}
+        labels = {'student': 'Học Sinh'}
+
     def __init__(self, *args, **kwargs):
         super(MealRecordForm, self).__init__(*args, **kwargs)
-        # Lấy tất cả các lớp học trong bảng Student.
-        class_choices = Student.objects.values_list('class_name', flat=True).distinct()
+        class_choices = Student.objects.values_list('classroom__name', flat=True).distinct()
         choices = [('', 'Chọn Lớp')] + [(cls, cls) for cls in class_choices]
         self.fields['class_name_choice'].choices = choices
 
-        # Nếu có dữ liệu từ request, cập nhật queryset cho trường student.
         if 'class_name_choice' in self.data:
-            selected_class = self.data.get('class_name_choice')
+            sel = self.data.get('class_name_choice')
             try:
-                self.fields['student'].queryset = Student.objects.filter(class_name=selected_class).order_by('name')
+                self.fields['student'].queryset = Student.objects.filter(
+                    classroom__name=sel
+                ).order_by('name')
             except (ValueError, TypeError):
                 self.fields['student'].queryset = Student.objects.none()
         elif self.instance.pk:
-            self.fields['student'].queryset = Student.objects.filter(class_name=self.instance.student.class_name).order_by('name')
+            self.fields['student'].queryset = Student.objects.filter(
+                classroom=self.instance.student.classroom
+            ).order_by('name')
         else:
             self.fields['student'].queryset = Student.objects.none()

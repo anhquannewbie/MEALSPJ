@@ -3,6 +3,31 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 from decimal import Decimal
 from django.utils.translation import gettext_lazy as _
+class MealPrice(models.Model):
+    effective_date  = models.DateField(
+        default=timezone.now,
+        help_text="Ngày bắt đầu áp dụng mức giá này"
+    )
+    daily_price     = models.PositiveIntegerField(
+        default=30000,
+        help_text="Giá tiền ăn 1 ngày (VND)"
+    )
+    breakfast_price = models.PositiveIntegerField(
+        default=15000,
+        help_text="Giá tiền bữa sáng (VND)"
+    )
+    lunch_price     = models.PositiveIntegerField(
+        default=15000,
+        help_text="Giá tiền bữa trưa (VND)"
+    )
+
+    class Meta:
+        ordering = ['-effective_date']
+        verbose_name = "Cấu hình giá ăn"
+        verbose_name_plural = "Các cấu hình giá ăn"
+
+    def __str__(self):
+        return f"{self.effective_date:%Y-%m-%d} → {self.daily_price:,}₫/ngày"
 class StudentPayment(models.Model):
     class Meta:
         unique_together = ('student', 'month')
@@ -26,11 +51,6 @@ class StudentPayment(models.Model):
         decimal_places=2,
         verbose_name="Học phí"
     )
-    daily_meal_fee = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        verbose_name="Phí ăn hàng ngày"
-    )
     amount_paid = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -43,7 +63,12 @@ class StudentPayment(models.Model):
         blank=True,
         verbose_name="Số dư"
     )
-
+    meal_price = models.ForeignKey(
+        MealPrice,
+        on_delete=models.PROTECT,
+        verbose_name="Cấu hình giá ăn",
+        help_text="Chọn cấu hình giá ăn áp dụng cho tháng này"
+    )
     def save(self, *args, **kwargs):
         # Tính số dư tháng trước như cũ
         prior_remain_balance = 0
@@ -70,16 +95,9 @@ class StudentPayment(models.Model):
         else:
             meal_records = []
 
-        # Xác định tiền cho từng bữa dựa trên daily_meal_fee
-        # Giá trị mặc định: bữa sáng luôn tính 10
-        fee_breakfast = 10000
-        if self.daily_meal_fee == 30000:
-            fee_lunch = 20000
-        elif self.daily_meal_fee == 40000:
-            fee_lunch = 30000
-        else:
-            # Nếu daily_meal_fee khác, dùng công thức: bữa trưa = daily_meal_fee - 10
-            fee_lunch = float(self.daily_meal_fee) - 10000
+        # Lấy giá động từ FK meal_price
+        fee_breakfast = self.meal_price.breakfast_price
+        fee_lunch     = self.meal_price.lunch_price
 
         # Duyệt qua các MealRecord của tháng
         for record in meal_records:
