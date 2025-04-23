@@ -1,0 +1,21 @@
+
+INSERT INTO meals_mealrecord (date, meal_type, status, student_id, non_eat, absence_reason) VALUES ('2025-03-02', 1, 'Đủ', (SELECT id FROM meals_student WHERE name = 'Phan Trần Thiên Nhã'), 0, '');
+INSERT INTO meals_mealrecord (date, meal_type, status, student_id, non_eat, absence_reason) VALUES ('2025-03-03', 1, 'Đủ', (SELECT id FROM meals_student WHERE name = 'Phan Trần Thiên Nhã'), 0, '');
+INSERT INTO meals_mealrecord (date, meal_type, status, student_id, non_eat, absence_reason) VALUES ('2025-03-04', 1, 'Thiếu', (SELECT id FROM meals_student WHERE name = 'Phan Trần Thiên Nhã'), 1, '');
+INSERT INTO meals_mealrecord (date, meal_type, status, student_id, non_eat, absence_reason) VALUES ('2025-03-06', 1, 'Đủ', (SELECT id FROM meals_student WHERE name = 'Phan Trần Thiên Nhã'), 0, '');
+INSERT INTO meals_mealrecord (date, meal_type, status, student_id, non_eat, absence_reason) VALUES ('2025-03-07', 1, 'Đủ', (SELECT id FROM meals_student WHERE name = 'Phan Trần Thiên Nhã'), 0, '');
+INSERT INTO meals_mealrecord (date, meal_type, status, student_id, non_eat, absence_reason) VALUES ('2025-03-08', 1, 'Đủ', (SELECT id FROM meals_student WHERE name = 'Phan Trần Thiên Nhã'), 0, '');
+INSERT INTO meals_mealrecord (date, meal_type, status, student_id, non_eat, absence_reason) VALUES ('2025-03-09', 1, 'Đủ', (SELECT id FROM meals_student WHERE name = 'Phan Trần Thiên Nhã'), 0, '');
+INSERT INTO meals_mealrecord (date, meal_type, status, student_id, non_eat, absence_reason) VALUES ('2025-03-10', 1, 'Đủ', (SELECT id FROM meals_student WHERE name = 'Phan Trần Thiên Nhã'), 0, '');
+INSERT INTO meals_mealrecord (date, meal_type, status, student_id, non_eat, absence_reason) VALUES ('2025-03-11', 1, 'Thiếu', (SELECT id FROM meals_student WHERE name = 'Phan Trần Thiên Nhã'), 1, '');
+INSERT INTO meals_mealrecord (date, meal_type, status, student_id, non_eat, absence_reason) VALUES ('2025-03-13', 1, 'Đủ', (SELECT id FROM meals_student WHERE name = 'Phan Trần Thiên Nhã'), 0, '');
+INSERT INTO meals_mealrecord (date, meal_type, status, student_id, non_eat, absence_reason) VALUES ('2025-03-14', 1, 'Đủ', (SELECT id FROM meals_student WHERE name = 'Phan Trần Thiên Nhã'), 0, '');
+INSERT INTO meals_mealrecord (date, meal_type, status, student_id, non_eat, absence_reason) VALUES ('2025-03-15', 1, 'Thiếu', (SELECT id FROM meals_student WHERE name = 'Phan Trần Thiên Nhã'), 1, '');
+INSERT INTO meals_mealrecord (date, meal_type, status, student_id, non_eat, absence_reason) VALUES ('2025-03-16', 1, 'Thiếu', (SELECT id FROM meals_student WHERE name = 'Phan Trần Thiên Nhã'), 1, '');
+INSERT INTO meals_mealrecord (date, meal_type, status, student_id, non_eat, absence_reason) VALUES ('2025-03-17', 1, 'Thiếu', (SELECT id FROM meals_student WHERE name = 'Phan Trần Thiên Nhã'), 1, '');
+INSERT INTO meals_mealrecord (date, meal_type, status, student_id, non_eat, absence_reason) VALUES ('2025-03-18', 1, 'Thiếu', (SELECT id FROM meals_student WHERE name = 'Phan Trần Thiên Nhã'), 1, '');
+INSERT INTO meals_mealrecord (date, meal_type, status, student_id, non_eat, absence_reason) VALUES ('2025-03-20', 1, 'Thiếu', (SELECT id FROM meals_student WHERE name = 'Phan Trần Thiên Nhã'), 1, '');
+INSERT INTO meals_mealrecord (date, meal_type, status, student_id, non_eat, absence_reason) VALUES ('2025-03-21', 1, 'Thiếu', (SELECT id FROM meals_student WHERE name = 'Phan Trần Thiên Nhã'), 1, '');
+INSERT INTO meals_mealrecord (date, meal_type, status, student_id, non_eat, absence_reason) VALUES ('2025-03-22', 1, 'Thiếu', (SELECT id FROM meals_student WHERE name = 'Phan Trần Thiên Nhã'), 1, '');
+INSERT INTO meals_mealrecord (date, meal_type, status, student_id, non_eat, absence_reason) VALUES ('2025-03-23', 1, 'Thiếu', (SELECT id FROM meals_student WHERE name = 'Phan Trần Thiên Nhã'), 1, '');
+INSERT INTO meals_mealrecord (date, meal_type, status, student_id, non_eat, absence_reason) VALUES ('2025-03-24', 1, 'Thiếu', (SELECT id FROM meals_student WHERE name = 'Phan Trần Thiên Nhã'), 1, '');
