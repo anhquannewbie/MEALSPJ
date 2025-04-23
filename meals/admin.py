@@ -68,6 +68,13 @@ class StudentPaymentAdminForm(forms.ModelForm):
             # HTML5 month-picker
             'month': forms.TextInput(attrs={'type': 'month'}),
         }
+        def validate_unique(self):
+            # chỉ giữ lại validate field-level (nếu có), skip toàn bộ unique_together
+            try:
+                # gọi bản gốc, nhưng sẽ không raise vì ta ignore
+                super().validate_unique()
+            except forms.ValidationError:
+                pass
 class StudentPaymentAdmin(admin.ModelAdmin):
     form = StudentPaymentAdminForm
     list_display  = ('student','month','tuition_fee','meal_price','amount_paid','remaining_balance')
