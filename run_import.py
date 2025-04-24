@@ -2,7 +2,7 @@ import sqlite3
 import os
 
 # Đường dẫn đến DB và SQL
-BASE = r"E:\Quan.dang\MEALSPJ"
+BASE = r"C:\Users\DANG ANH QUAN\Documents\GitHub\MEALSPJ"
 DB   = os.path.join(BASE, "site.db")
 SQL  = os.path.join(BASE, "import_meals.sql")
 
