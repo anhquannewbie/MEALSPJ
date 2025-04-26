@@ -29,17 +29,28 @@
   .day-col, .month-col {
     width: 35px !important;
   }
+   /* Reset mặc định */
+  table.table-bordered { width: auto; border-collapse: collapse; margin: 0 auto; }
+  table.table-bordered th, table.table-bordered td { border: 1px solid #dee2e6; padding: 5px; text-align: center; vertical-align: middle; white-space: nowrap; }
+  .student-col { width: 250px !important; text-align: left; white-space: normal; word-break: break-word; }
+  .day-col, .month-col { width: 35px !important; }
+
+  /* Căn chỉnh các dropdown và label trong form */
+  form.my-3.d-flex { display: flex; flex-wrap: wrap; align-items: center; margin-bottom: 1rem; }
+  form.my-3.d-flex .mr-2, form.my-3.d-flex label, form.my-3.d-flex select {
+    margin-right: 0.75rem;
+    margin-bottom: 0.5rem;
 </style>
 
 <h2>Thống kê</h2>
 
 <ul class="nav nav-tabs">
   <li class="nav-item">
-    <a class="nav-link {% if mode == 'month' or not mode %}active{% endif %}"
+    <a class="nav-link {% if mode  ==  'month' or not mode %}active{% endif %}"
        href="?mode=month">Thống kê theo Tháng</a>
   </li>
   <li class="nav-item">
-    <a class="nav-link {% if mode == 'year' %}active{% endif %}"
+    <a class="nav-link {% if mode  ==  'year' %}active{% endif %}"
        href="?mode=year">Thống kê theo Năm</a>
   </li>
 </ul>
@@ -47,14 +58,14 @@
 <div style="overflow-x:auto; margin-top: 10px;">
 
   {# --- Phần Thống kê theo Tháng --- #}
-  {% if mode == 'month' or not mode %}
+  {% if mode  ==  'month' or not mode %}
     <form method="get" class="my-3">
       <input type="hidden" name="mode" value="month">
       <label>Năm:</label>
       <select name="year" id="id_year">
         <option value="">-- Chọn Năm --</option>
         {% for y in years_list %}
-          <option value="{{ y }}" {% if selected_year|stringformat:"s" == y|stringformat:"s" %}selected{% endif %}>{{ y }}</option>
+          <option value="{{ y }}" {% if selected_year|stringformat:"s"  ==  y|stringformat:"s" %}selected{% endif %}>{{ y }}</option>
         {% endfor %}
       </select>
 
@@ -62,122 +73,149 @@
       <select name="month" id="id_month">
         <option value="">-- Chọn Tháng --</option>
         {% for m in months_list %}
-          <option value="{{ m }}" {% if selected_month|stringformat:"s" == m|stringformat:"s" %}selected{% endif %}>{{ m }}</option>
+          <option value="{{ m }}" {% if selected_month|stringformat:"s"  ==  m|stringformat:"s" %}selected{% endif %}>{{ m }}</option>
         {% endfor %}
-      </select>
-
-      <label>Bữa ăn:</label>
-      <select name="meal_type">
-        <option value="Bữa sáng" {% if selected_meal_type == 'Bữa sáng' %}selected{% endif %}>Bữa sáng</option>
-        <option value="Bữa trưa" {% if selected_meal_type == 'Bữa trưa' %}selected{% endif %}>Bữa trưa</option>
       </select>
 
       <label>Lớp:</label>
       <select name="class_id">
         <option value="">-- Chọn Lớp --</option>
         {% for room in classrooms %}
-          <option value="{{ room.id }}" {% if selected_class_id|stringformat:"s" == room.id|stringformat:"s" %}selected{% endif %}>{{ room.name }}</option>
+          <option value="{{ room.id }}" {% if selected_class_id|stringformat:"s"  ==  room.id|stringformat:"s" %}selected{% endif %}>{{ room.name }}</option>
         {% endfor %}
       </select>
 
       <button type="submit" class="btn btn-primary">Xem Thống Kê</button>
     </form>
 
-    <a href="{% url 'meals:export_excel' %}?year={{ selected_year }}&month={{ selected_month }}&meal_type={{ selected_meal_type }}&class_id={{ selected_class_id }}"
-       class="btn btn-success mb-3">
-      Xuất Excel Thống Kê Tháng
+    <a href="{% url 'meals:export_monthly_all' %}?year={{ selected_year }}&month={{ selected_month }}&class_id={{ selected_class_id }}"
+      class="btn btn-success mb-3">
+      Xuất Excel Cả Sáng & Trưa
     </a>
 
-    {% if rows_data %}
-      <table class="table table-bordered">
-        <colgroup>
-          <col class="student-col">
-          {% for i in "1234567890123456789012345678901" %}
-            <col class="day-col">
-          {% endfor %}
-        </colgroup>
-        <thead>
-          <tr>
-            <th rowspan="2" class="student-col">Học sinh</th>
-            <th colspan="31">Ngày</th>
-            <th rowspan="2">Tổng</th>
-            <th rowspan="2">Thành tiền</th>
-          </tr>
-          <tr>
+    {% for mt, data in stats.items %}
+      <h5>Thống kê {{ mt }}</h5>
+      {% if data.rows %}
+        <table class="table table-bordered">
+          <colgroup>
+            <col class="student-col">
             {% for d in max_day_list %}
-              <th>{{ d }}</th>
+              <col class="day-col">
             {% endfor %}
-          </tr>
-        </thead>
-        <tbody>
-          {% for row in rows_data %}
+          </colgroup>
+
+          <thead>
             <tr>
-              <td>{{ row.student.name }}</td>
-              {% for val in row.days %}
-                <td>{{ val }}</td>
-              {% endfor %}
-              <td>{{ row.total_meals }}</td>
-              <td>{{ row.total_cost }}</td>
+              <th rowspan="2" class="student-col">Học sinh</th>
+              <th colspan="{{ max_day_list|length }}">Ngày</th>
+              <th rowspan="2">Tổng</th>
+              <th rowspan="2">Thành tiền</th>
+              {% if mt == 'Bữa trưa' %}
+                <th rowspan="2">Học phí</th>
+                <th rowspan="2">Đã thu</th>
+                <th rowspan="2">Ăn Học</th>
+              {% endif %}
             </tr>
-          {% endfor %}
-        </tbody>
-        {% if totals_per_day %}
-        <tfoot>
-          <tr>
-            <td><strong>Tổng</strong></td>
-            {% for cnt in totals_per_day %}
-              <td><strong>{{ cnt }}</strong></td>
-            {% endfor %}
-            <td></td>
-            <td></td>
-          </tr>
-        </tfoot>
-        {% endif %}
-      </table>
-    {% endif %}
+            <tr>
+                {% for d in max_day_list %}<th>{{ d }}</th>{% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in data.rows %}
+              <tr>
+                <td>{{ row.student.name }}</td>
+                {% for val in row.days %}<td>{{ val }}</td>{% endfor %}
+                <td>{{ row.total_meals }}</td>
+                <td>{{ row.total_cost }}</td>
+                {% if mt == 'Bữa trưa' %}
+                  <td>{{ row.tuition_fee }}</td>
+                  <td>{{ row.collected }}</td>
+                  <td>{{ row.learning_cost }}</td>
+                {% endif %}
+              </tr>
+              {% endfor %}
+            </tbody>
+            {% if data.totals %}
+            <tfoot>
+              <tr>
+                <td><strong>Tổng</strong></td>
+                {% for cnt in data.totals %}<td><strong>{{ cnt }}</strong></td>{% endfor %}
+                <td></td>
+                {% if mt == 'Bữa trưa' %}
+                  <td></td>  {# blank cho Học phí #}
+                  <td></td>  {# blank cho Đã thu #}
+                  <td></td>  {# blank cho Ăn Học #}
+                {% endif %}
+              </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+      {% endif %}
+    {% endfor %}
 
   {# --- Phần Thống kê theo Năm --- #}
-  {% elif mode == 'year' %}
-    <form method="get" class="my-3">
+  {% elif mode  ==  'year' %}
+  <form method="get" class="my-3 d-flex flex-wrap align-items-end">
       <input type="hidden" name="mode" value="year">
-      <label>Năm:</label>
-      <select name="year">
-        <option value="">-- Chọn Năm --</option>
-        {% for y in years_list %}
-          <option value="{{ y }}" {% if selected_year|stringformat:"s" == y|stringformat:"s" %}selected{% endif %}>{{ y }}</option>
+
+      <label class="mr-2">Tháng bắt đầu:</label>
+      <select name="start_month" id="id_start_month">
+        <option value="">-- Chọn Tháng --</option>
+        {% for m in month_choices %}
+          <option value="{{ m }}" {% if m == selected_start_month %}selected{% endif %}>{{ m }}</option>
         {% endfor %}
       </select>
 
-      <label>Lớp:</label>
+      <label class="mr-2">Năm bắt đầu:</label>
+      <select name="start_year" id="id_start_year">
+        <option value="">-- Chọn Năm --</option>
+        {% for y in years_list %}
+          <option value="{{ y }}" {% if y == selected_start_year %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+
+      <label class="mr-2">Tháng kết thúc:</label>
+      <select name="end_month" id="id_end_month">
+        <option value="">-- Chọn Tháng --</option>
+        {% for m in month_choices %}
+          <option value="{{ m }}" {% if m == selected_end_month %}selected{% endif %}>{{ m }}</option>
+        {% endfor %}
+      </select>
+
+      <label class="mr-2">Năm kết thúc:</label>
+      <select name="end_year" id="id_end_year">
+        <option value="">-- Chọn Năm --</option>
+        {% for y in years_list %}
+          <option value="{{ y }}" {% if y == selected_end_year %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+      <div class="w-100"></div>
+      <label class="mr-2">Lớp:</label>
       <select name="class_id">
         <option value="">-- Chọn Lớp --</option>
         {% for room in classrooms %}
-          <option value="{{ room.id }}" {% if selected_class_id|stringformat:"s" == room.id|stringformat:"s" %}selected{% endif %}>{{ room.name }}</option>
+          <option value="{{ room.id }}" {% if room.id|stringformat:"s" == selected_class_id|stringformat:"s" %}selected{% endif %}>{{ room.name }}</option>
         {% endfor %}
       </select>
 
-      <button type="submit" class="btn btn-primary">Xem Thống Kê</button>
+      <button type="submit" class="btn btn-primary ml-2">Xem Thống Kê</button>
     </form>
 
-    <a href="{% url 'meals:export_yearly_statistics' %}?year={{ selected_year }}&class_id={{ selected_class_id }}"
-       class="btn btn-success mb-3">
-      Xuất Excel Thống Kê Năm
-    </a>
+    <a href="{% url 'meals:export_yearly_statistics' %}?start_month={{ selected_start_month }}&start_year={{ selected_start_year }}&end_month={{ selected_end_month }}&end_year={{ selected_end_year }}&class_id={{ selected_class_id }}"
+      class="btn btn-success mb-3">Xuất Excel Thống Kê Năm</a>
 
     {% if rows_year %}
       <table class="table table-bordered">
         <thead>
           <tr>
             <th rowspan="2">Học sinh</th>
-            {% for m in months %}
-              <th colspan="3">Tháng {{ m }}/{{ selected_year }}</th>
+            {% for ym in months %}
+              <th colspan="3">Tháng {{ ym.month }}/{{ ym.year }}</th>
             {% endfor %}
           </tr>
           <tr>
-            {% for m in months %}
-              <th>Đã đóng</th>
-              <th>Ăn học</th>
-              <th>Còn lại</th>
+            {% for ym in months %}
+              <th>Đã đóng</th><th>Ăn học</th><th>Còn lại</th>
             {% endfor %}
           </tr>
         </thead>
@@ -186,9 +224,7 @@
             <tr>
               <td>{{ row.student.name }}</td>
               {% for cell in row.data %}
-                <td>{{ cell.paid }}</td>
-                <td>{{ cell.spent }}</td>
-                <td>{{ cell.remaining }}</td>
+                <td>{{ cell.paid }}</td><td>{{ cell.spent }}</td><td>{{ cell.remaining }}</td>
               {% endfor %}
             </tr>
           {% endfor %}
@@ -198,9 +234,7 @@
           <tr>
             <td><strong>Tổng</strong></td>
             {% for t in totals_year_data %}
-              <td><strong>{{ t.0 }}</strong></td>
-              <td><strong>{{ t.1 }}</strong></td>
-              <td><strong>{{ t.2 }}</strong></td>
+              <td><strong>{{ t.0 }}</strong></td><td><strong>{{ t.1 }}</strong></td><td><strong>{{ t.2 }}</strong></td>
             {% endfor %}
           </tr>
         </tfoot>
@@ -215,6 +249,26 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 $(function(){
+  $("#id_start_year").change(function(){
+    var y = $(this).val(), $m = $('#id_start_month');
+    if(!y){ $m.html('<option value="">-- Chọn Tháng --</option>'); return; }
+    $.get("{% url 'meals:ajax_load_months' %}", {year:y})
+      .done(data => {
+        var html = '<option value="">-- Chọn Tháng --</option>';
+        data.forEach(v => html += `<option value="${v}">${v}</option>`);
+        $m.html(html);
+      });
+  });
+  $("#id_end_year").change(function(){
+    var y = $(this).val(), $m = $('#id_end_month');
+    if(!y){ $m.html('<option value="">-- Chọn Tháng --</option>'); return; }
+    $.get("{% url 'meals:ajax_load_months' %}", {year:y})
+      .done(data => {
+        var html = '<option value="">-- Chọn Tháng --</option>';
+        data.forEach(v => html += `<option value="${v}">${v}</option>`);
+        $m.html(html);
+      });
+  });
   $("select#id_year").change(function(){
     var yearVal = $(this).val();
     if(!yearVal){
@@ -228,6 +282,9 @@ $(function(){
        $("#id_month").html(html);
      });
   });
+
+  if ($('#id_start_year').val()) $('#id_start_year').trigger('change');
+  if ($('#id_end_year').val())   $('#id_end_year').trigger('change');
 });
 </script>
 {% endblock %}

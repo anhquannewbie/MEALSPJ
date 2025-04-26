@@ -2,7 +2,7 @@ from meals.admin import my_admin_site
 from django.urls import path, include
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import login_required, permission_required
-from meals.views import logout_view
+from meals.views import logout_view,export_monthly_statistics_all
 # Views
 from meals_system.views import home
 from meals.views import (
@@ -47,8 +47,12 @@ urlpatterns = [
       ),
       name='statistics'
     ),
-    path('export/excel/', export_monthly_statistics, name='export_excel'),
     path('export/yearly/', export_yearly_statistics, name='export_yearly_statistics'),
+    path(
+      'export/monthly/all/',
+      export_monthly_statistics_all,
+      name='export_monthly_all'
+    ),
     path('login/', user_login, name='login'),
 
     # Root URL: redirect to login

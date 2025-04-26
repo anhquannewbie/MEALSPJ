@@ -26,9 +26,12 @@ urlpatterns = [
 
     # Statistics and exports
     path('statistics/', login_required(views.statistics_view), name='statistics'),
-    path('export/excel/', login_required(views.export_monthly_statistics), name='export_excel'),
     path('export/yearly/', login_required(views.export_yearly_statistics), name='export_yearly_statistics'),
-
+    path(
+      'export/monthly/all/',
+      views.export_monthly_statistics_all,
+      name='export_monthly_all'
+    ),
     # Payments alias (optional)
     path('payments/', login_required(views.student_payment_edit), name='payments'),
     path('ajax/load-meal-stats/',
