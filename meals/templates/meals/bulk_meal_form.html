@@ -61,11 +61,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 <option value="1" ${item.non_eat == 1 ? 'selected' : ''}>Có phép</option>
                 <option value="2" ${item.non_eat == 2 ? 'selected' : ''}>Không phép</option>
               </select>
-              <input type="text" class="form-control reason-input" name="reason_${item.id}" placeholder="Lý do nghỉ" value="${item.reason}" style="display:${item.non_eat != 0 ? 'inline-block' : 'none'}; max-width:200px; margin-left:10px;" />
+              <div class="reason-group" style="margin-left:10px;">
+              <input type="text" class="form-control reason-input" name="reason_${item.id}" placeholder="Lý do nghỉ" value="${item.reason}" style="display: none; max-width:200px; margin-left:10px;" />
+              </div>
             </div>
           `;
         });
         document.getElementById('student-list').innerHTML = html;
+        document.querySelectorAll('#student-list .student-checkbox').forEach(function(cb) {
+          var sid = cb.value;
+          var inp = document.querySelector(`input[name="reason_${sid}"]`);
+          inp.style.display = cb.checked ? 'none' : 'inline-block';
+        });
       }
     });
   }
@@ -96,7 +103,20 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
       inp.style.display = 'none'; inp.value = '';
     }
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.student-checkbox').forEach(function(cb) {
+      // lấy luôn cái input reason tương ứng
+      const id = cb.value;
+      const reasonInput = document.querySelector(`input[name="reason_${id}"]`);
+      // khởi tạo lần đầu
+      reasonInput.style.display = cb.checked ? 'inline-block' : 'none';
+      // gán sự kiện
+      cb.addEventListener('change', function() {
+        reasonInput.style.display = this.checked ? 'inline-block' : 'none';
+      });
+    });
   });
+});
 
   // Bắt sự kiện khi thay đổi Chọn Lớp hoặc Loại Bữa
   document.getElementById('id_class_choice').addEventListener('change', loadMealData);

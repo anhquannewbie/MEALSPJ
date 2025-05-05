@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib import admin
 from django import forms
 from django.contrib.admin import AdminSite
-from .models import MealRecord, Student, ClassRoom, StudentPayment,MealPrice
+from .models import MealRecord, Student, ClassRoom, StudentPayment,MealPrice,AuditLog
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from django.http import HttpResponse, HttpResponseRedirect
@@ -12,10 +12,24 @@ from django.contrib import messages
 from openpyxl import Workbook, load_workbook
 import csv
 from django.urls import reverse
+import json
 admin.site.site_header  = "Trang quản trị bữa ăn học sinh"
 admin.site.site_title   = "Quản lý bữa ăn"
 admin.site.index_title  = "Bảng điều khiển"
 
+def log_admin_action(request, obj, action, extra=None):
+    payload = {
+        'model': obj._meta.label,
+        'pk': obj.pk,
+    }
+    if extra:
+        payload.update(extra)
+    AuditLog.objects.create(
+        user   = request.user,
+        action = action,
+        path   = request.path,
+        data   = json.dumps(payload, ensure_ascii=False)
+    )
 class MealPriceAdmin(admin.ModelAdmin):
     list_display  = ('effective_date', 'daily_price', 'breakfast_price', 'lunch_price')
     list_editable = ('daily_price', 'breakfast_price', 'lunch_price')
@@ -77,31 +91,55 @@ class StudentPaymentAdminForm(forms.ModelForm):
                 pass
 class StudentPaymentAdmin(admin.ModelAdmin):
     form = StudentPaymentAdminForm
-    list_display  = ('student','month','tuition_fee','meal_price','amount_paid','remaining_balance')
+    list_display  = (
+        'student',
+        'month',
+        'tuition_fee_fmt',
+        'meal_price',            # nếu đã override __str__ là "YYYY-MM-DD → X,000đ/ngày"
+        'amount_paid_fmt',
+        'remaining_balance_fmt',
+    )
     search_fields = ('student__name','month')   # ← tìm theo tên học sinh hoặc tháng
-    list_filter   = ('month',)                  # filter thêm theo tháng nếu cần
+    list_filter   = ('month','student__classroom',)                  # filter thêm theo tháng nếu cần
     verbose_name  = "Công nợ học sinh"
     verbose_name_plural = "Công nợ học sinh"
+    @admin.display(ordering='tuition_fee', description='Học phí')
+    def tuition_fee_fmt(self, obj):
+        return f"{obj.tuition_fee:,.0f}"
+
+    @admin.display(ordering='amount_paid', description='Số tiền đã đóng')
+    def amount_paid_fmt(self, obj):
+        return f"{obj.amount_paid:,.0f}"
+
+    @admin.display(ordering='remaining_balance', description='Số dư')
+    def remaining_balance_fmt(self, obj):
+        return f"{obj.remaining_balance:,.0f}"
     def save_model(self, request, obj, form, change):
-        """
-        Nếu đã có record cùng student+month khác pk này,
-        thì cập nhật vào record đó thay vì tạo mới.
-        """
         existing = StudentPayment.objects.filter(
             student=obj.student,
             month=obj.month
         ).exclude(pk=obj.pk).first()
 
         if existing:
-            # Ghi đè các trường
+            # ghi đè lên existing
             existing.tuition_fee    = obj.tuition_fee
             existing.meal_price     = obj.meal_price
             existing.amount_paid    = obj.amount_paid
-            # gọi save của model để tính remaining_balance
             existing.save()
-            self.message_user(request, f"✅ Đã cập nhật bản ghi {existing.id} thay vì tạo mới.", level=messages.SUCCESS)
+            self.message_user(request, f"✅ Đã cập nhật bản ghi {existing.id}.", level=messages.SUCCESS)
+            target = existing
         else:
             super().save_model(request, obj, form, change)
+            target = obj
+
+        # always log both add & change
+        action = 'change_payment' if change else 'add_payment'
+        log_admin_action(request, target, action,
+                         extra={'changed_fields': form.changed_data})
+
+    def delete_model(self, request, obj):
+        log_admin_action(request, obj, 'delete_payment')
+        super().delete_model(request, obj)
 class ClassRoomAdmin(admin.ModelAdmin):
     list_display = ('name',)
     search_fields = ('name',)
@@ -172,6 +210,16 @@ class ClassRoomAdmin(admin.ModelAdmin):
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         wb.save(response)
         return response
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        # log thêm/sửa lớp
+        action = 'change_classroom' if change else 'add_classroom'
+        log_admin_action(request, obj, action,
+                         extra={'changed_fields': form.changed_data})
+    
+    def delete_model(self, request, obj):
+        log_admin_action(request, obj, 'delete_classroom')
+        super().delete_model(request, obj)
     def import_students_view(self, request, classroom_id):
         room = ClassRoom.objects.get(pk=classroom_id)
 
@@ -212,6 +260,27 @@ class StudentAdmin(admin.ModelAdmin):
     # Đổi tên hiển thị của model Student trong Admin
     verbose_name = "Học sinh"
     verbose_name_plural = "Các học sinh"
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        # log thêm/sửa học sinh, kèm tên và lớp
+        action = 'change_student' if change else 'add_student'
+        log_admin_action(request, obj, action, extra={
+            'student_name': obj.name,
+            'classroom':    obj.classroom.name if obj.classroom else None,
+            # nếu vẫn muốn xem fields nào change thì thêm tiếp:
+            'changed_fields': form.changed_data
+        })
+
+    def delete_model(self, request, obj):
+        # Lưu tên + lớp trước khi nó bị xóa
+        student_name = obj.name
+        classroom    = obj.classroom.name if obj.classroom else ''
+        # Ghi log với extra chứa name và classroom
+        log_admin_action(request, obj, 'delete_student', extra={
+            'student_name': student_name,
+            'classroom':    classroom
+        })
+        super().delete_model(request, obj)
 
 class MealRecordAdmin(admin.ModelAdmin):
     change_list_template = "admin/meals/mealrecord/change_list.html"
@@ -222,20 +291,29 @@ class MealRecordAdmin(admin.ModelAdmin):
     # Đổi tên hiển thị của model MealRecord trong Admin
     verbose_name = "Bữa ăn"
     verbose_name_plural = "Các bữa ăn"
-
+    def delete_model(self, request, obj):
+        log_admin_action(request, obj, 'delete_mealrecord')
+        super().delete_model(request, obj)
     def save_model(self, request, obj, form, change):
         existing_record = MealRecord.objects.filter(
              student=obj.student,
              date=obj.date,
              meal_type=obj.meal_type
-         ).first()
+        ).first()
         if existing_record:
-            existing_record.status           = obj.status
-            existing_record.non_eat          = obj.non_eat
-            existing_record.absence_reason   = obj.absence_reason  # ← thêm dòng này
+            existing_record.status         = obj.status
+            existing_record.non_eat        = obj.non_eat
+            existing_record.absence_reason = obj.absence_reason
             existing_record.save()
+            target = existing_record
         else:
-             super().save_model(request, obj, form, change)
+            super().save_model(request, obj, form, change)
+            target = obj
+
+        # log hành động bữa ăn (add/change)
+        action = 'change_mealrecord' if change else 'add_mealrecord'
+        log_admin_action(request, target, action,
+                         extra={'status': obj.status, 'non_eat': obj.non_eat})
         
         # Xác định chuỗi "YYYY-MM" từ obj.date
         year_month = obj.date.strftime("%Y-%m")
@@ -258,6 +336,7 @@ class MealRecordAdminForm(forms.ModelForm):
         # 2) ẩn luôn absence_reason nếu non_eat==0
         if self.instance and self.instance.non_eat == 0:
             self.fields.pop('absence_reason', None)
+    
 admin.site.register(ClassRoom, ClassRoomAdmin)
 admin.site.register(Student, StudentAdmin)
 admin.site.register(MealRecord, MealRecordAdmin)
@@ -273,6 +352,14 @@ try:
     my_admin_site.unregister(StudentPayment)
 except:
     pass
+@admin.register(AuditLog)
+class AuditLogAdmin(admin.ModelAdmin):
+    list_display = ('timestamp', 'user_display', 'action', 'path')
+    readonly_fields = ('user','action','path','data','timestamp')
+    ordering        = ('-timestamp',)
+    def user_display(self, obj):
+        return obj.user.username if obj.user else '—'
+    user_display.short_description = 'User'
 my_admin_site.register(StudentPayment, StudentPaymentAdmin)
 # đăng ký ClassRoomAdmin lên my_admin_site
 my_admin_site.register(ClassRoom, ClassRoomAdmin)
@@ -281,3 +368,4 @@ my_admin_site.register(Student, StudentAdmin)
 my_admin_site.register(User, UserAdmin)
 my_admin_site.register(Group, GroupAdmin)
 my_admin_site.register(MealPrice, MealPriceAdmin)
+my_admin_site.register(AuditLog, AuditLogAdmin)

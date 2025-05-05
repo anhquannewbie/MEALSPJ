@@ -116,6 +116,10 @@ $(function(){
                 $('#id_current_month_payment').val(data.current_month_payment);
                 $('#breakfast_count').text(data.breakfast_count);
                 $('#lunch_count').text(data.lunch_count);
+                $('.money, #id_prev_month_balance, #id_current_month_payment').each(function(){
+                    var v = $(this).val().replace(/,/g, '');
+                    if(v) $(this).val(formatNumberWithCommas(v));
+                });
              });
         });
     }
@@ -140,6 +144,9 @@ $(function(){
         this.setSelectionRange(pos+diff, pos+diff);
     });
     $('#payment-form').on('submit', function(){
+        $('#id_tuition_fee, #id_amount_paid').each(function(){
+            this.value = this.value.replace(/,/g, '');
+        });
         $('.money, #id_prev_month_balance, #id_current_month_payment').each(function(){
           this.value = this.value.replace(/,/g,'');
         });

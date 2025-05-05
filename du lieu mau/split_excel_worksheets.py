@@ -31,7 +31,7 @@ def save_worksheets_to_files(file_path):
         df = pd.read_excel(file_path, sheet_name=sheet_name)
         
         # Thay thế giá trị 0 thành "KP" trong các cột từ cột 3 đến cột 33 (index 2 đến 32)
-        for col in df.columns[2:33]:  # Cột 3 đến 33 (index 2 đến 32)
+        for col in df.columns[2:34]:  # Cột 3 đến 33 (index 2 đến 32)
             if col in df.columns:  # Kiểm tra cột có tồn tại
                 df[col] = df[col].replace(0, "KP")
         

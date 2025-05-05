@@ -3,6 +3,39 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 from decimal import Decimal
 from django.utils.translation import gettext_lazy as _
+from django.conf import settings
+
+
+class AuditLog(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        verbose_name="Người dùng",
+        related_name='audit_logs'
+    )
+    action = models.CharField(
+        max_length=100,
+        verbose_name="Hành động"
+    )
+    path = models.CharField(
+        max_length=200,
+        verbose_name="Đường dẫn"
+    )
+    data = models.TextField(
+        blank=True,
+        verbose_name="Dữ liệu"
+    )
+    timestamp = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Thời gian"
+    )
+
+    class Meta:
+        verbose_name        = "Audit log"
+        verbose_name_plural = "Các bản ghi audit"
+    def __str__(self):
+        return f"{self.timestamp} | {self.user or '—'} | {self.action}"
 class MealPrice(models.Model):
     effective_date  = models.DateField(
         default=timezone.now,

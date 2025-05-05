@@ -8,7 +8,7 @@ from .models import Student
 from django.views.decorators.csrf import csrf_exempt
 from datetime import date, timedelta,datetime
 from .models import MealRecord, Student
-from .models import StudentPayment,MealPrice
+from .models import StudentPayment,MealPrice,AuditLog
 from .forms import StudentPaymentForm,ClassRoom
 from django.db import connection
 import json
@@ -28,6 +28,8 @@ from django.urls import reverse
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import PermissionDenied
 from .utils import get_current_price
+from django.db import transaction
+
 @csrf_exempt
 
 
@@ -55,60 +57,108 @@ def user_login(request):
 def student_payment_edit(request, pk=None):
     classrooms = ClassRoom.objects.all()
 
-    # Lấy đối tượng để edit (nếu có)
-    if request.method == "GET" and request.GET.get('payment_id'):
-        try:
-            payment = StudentPayment.objects.get(id=request.GET.get('payment_id'))
-        except StudentPayment.DoesNotExist:
-            payment = None
-    else:
-        payment = get_object_or_404(StudentPayment, pk=pk) if pk else None
+    # Nếu sửa (pk có), load bản ghi; nếu thêm (pk=None), payment=None
+    payment = get_object_or_404(StudentPayment, pk=pk) if pk else None
 
     if request.method == "POST":
-        # Nếu tạo mới mà trùng student+month, bind luôn vào bản tồn tại
         student_id = request.POST.get('student')
         month_val  = request.POST.get('month')
-        form_instance = payment
-        if not payment and student_id and month_val:
-            dup = StudentPayment.objects.filter(
-                student_id=student_id, month=month_val
-            ).first()
-            if dup:
-                form_instance = dup
 
+        # --- 1) Tìm duplicate khác nếu có (cùng student+month nhưng khác pk hiện tại) ---
+        dup_qs = StudentPayment.objects.filter(student_id=student_id, month=month_val)
+        if payment:
+            dup_qs = dup_qs.exclude(pk=payment.pk)
+        duplicate = dup_qs.first()
+
+        # --- 2) Chọn instance để save: nếu có duplicate thì ghi đè lên nó ---
+        form_instance = duplicate if duplicate else payment
         form = StudentPaymentForm(request.POST, instance=form_instance)
+
         if form.is_valid():
-            # form.save() sẽ create nếu instance=None, hoặc update nếu instance!=None
-            payment_obj = form.save()
+            saved = form.save()
+            AuditLog.objects.create(
+                user    = request.user,
+                action  = 'edit_payment',
+                path    = request.path,
+                data    = json.dumps({
+                    'payment_id': saved.pk,
+                    'student_name':  saved.student.name,
+                    'month':      saved.month,
+                    'tuition_fee':        str(saved.tuition_fee),
+                    'amount_paid':        str(saved.amount_paid),
+                    'remaining_balance':  str(saved.remaining_balance),
+                     
+                }, ensure_ascii=False)
+            )
+            # Nếu đang edit một bản mà ghi đè lên duplicate thì xóa bản cũ ban đầu
+            if duplicate and payment and duplicate.pk != payment.pk:
+                payment.delete()
+
+            # --- 3) (Tuỳ chọn) Re-calc remaining_balance cho tất cả tháng kế tiếp ---
+            # 1) Lấy list và tính dần dư nợ
+            payments = list(
+                StudentPayment.objects
+                .filter(student=saved.student)
+                .order_by('month')
+            )
+            prior = Decimal('0')
+            for p in payments:
+                # tính tổng tiền ăn như trước
+                year, mon = map(int, p.month.split('-'))
+                recs = MealRecord.objects.filter(
+                    student=p.student,
+                    date__year=year, date__month=mon,
+                    meal_type__in=['Bữa sáng','Bữa trưa']
+                ).filter(
+                    Q(status='Đủ') | Q(status='Thiếu', non_eat=2)
+                )
+                meal_cost = sum(
+                    p.meal_price.breakfast_price if r.meal_type=='Bữa sáng' else p.meal_price.lunch_price
+                    for r in recs
+                )
+                p.remaining_balance = (
+                    p.amount_paid
+                    - p.tuition_fee
+                    - meal_cost
+                    +prior
+                )
+                prior = p.remaining_balance
+
+            # 2) Ghi một lần vào DB, tránh lock
+            with transaction.atomic():
+                StudentPayment.objects.bulk_update(payments, ['remaining_balance'])
+
             messages.success(request, "Lưu thành công")
             return redirect(request.path)
         else:
-            print("Form errors:", form.errors)
+            # gom lỗi rồi hiển thị
+            errs = sum(form.errors.values(), [])
+            messages.error(request, "Lỗi: " + "; ".join(errs))
+
     else:
         form = StudentPaymentForm(instance=payment)
 
-    # Tính số bữa sáng/trưa để hiện lên form
+    # Tính số bữa để hiển thị dưới form
     breakfast_count = lunch_count = 0
-    if form.instance and form.instance.pk and form.instance.student and form.instance.month:
-        try:
-            y, m = map(int, form.instance.month.split("-"))
-            qs = MealRecord.objects.filter(
-                student=form.instance.student,
-                date__year=y, date__month=m,
-                meal_type__in=["Bữa sáng","Bữa trưa"]
-            ).filter(Q(status="Đủ")|Q(status="Thiếu", non_eat=2))
-            breakfast_count = qs.filter(meal_type="Bữa sáng").count()
-            lunch_count     = qs.filter(meal_type="Bữa trưa").count()
-        except Exception as e:
-            print("Error counting meals:", e)
+    if form.instance and form.instance.pk:
+        y, mon = map(int, form.instance.month.split('-'))
+        breakfast_count = MealRecord.objects.filter(
+            student=form.instance.student,
+            date__year=y, date__month=mon,
+            meal_type='Bữa sáng'
+        ).filter(Q(status='Đủ')|Q(status='Thiếu', non_eat=2)).count()
+        lunch_count = MealRecord.objects.filter(
+            student=form.instance.student,
+            date__year=y, date__month=mon,
+            meal_type='Bữa trưa'
+        ).filter(Q(status='Đủ')|Q(status='Thiếu', non_eat=2)).count()
 
-    var_is_edit = bool(payment and payment.pk)
     return render(request, 'payments/student_payment_form.html', {
-        'form':             form,
-        'classrooms':       classrooms,
-        'is_edit':          var_is_edit,
-        'breakfast_count':  breakfast_count,
-        'lunch_count':      lunch_count,
+        'form':            form,
+        'classrooms':      classrooms,
+        'is_edit':         bool(payment),
+        'breakfast_count': breakfast_count,
+        'lunch_count':     lunch_count,
     })
 
 # Các view khác giữ nguyên
@@ -264,8 +314,23 @@ def bulk_meal_record_save(request):
                 absence_reason=reason_data.get(sid, '').strip()
             )
             current_month = today.strftime("%Y-%m")
-            sp = StudentPayment.objects.get(student=student, month=current_month)
-            sp.save()
+            try:
+                sp = StudentPayment.objects.get(student=student, month=current_month)
+                sp.save()  # chạy lại logic tính non_eat tổng, remaining_balance,...
+            except StudentPayment.DoesNotExist:
+                # nếu chưa có thì bỏ qua hoặc log warning
+                continue
+        student_names = [stu.name for stu in students]
+        AuditLog.objects.create(
+            user    = request.user,
+            action  = 'bulk_meal_save',
+            path    = request.path,
+            data    = json.dumps({
+                        'class': class_name,
+                        'meal_type': meal_type,
+                        'students': student_names
+                     }, ensure_ascii=False)
+        )
         return JsonResponse({"message": "success"}, status=200)
     return JsonResponse({"error": "Invalid method"}, status=400)
 
@@ -436,16 +501,42 @@ def statistics_view(request):
                     days.append(mark)
 
                 # Tạo 1 bản ghi duy nhất, gộp tất cả các trường
-                row_data = {
-                    'student':     stu,
-                    'days':        days,
-                    'total_meals': total_meals,
-                    'total_cost':  f"{int(total_cost):,}",
-                }
+                # sau vòng for d in range(1, max_day+1): ... days.append(mark)
                 if mt == 'Bữa trưa':
-                    row_data['tuition_fee']     = f"{int(tuition_fee):,}"
-                    row_data['collected']       = f"{int(collected):,}"
-                    row_data['learning_cost']  = f"{int(learning_cost):,}"
+                    # đếm bữa sáng + bữa trưa
+                    br_count = MealRecord.objects.filter(
+                        student=stu, date__year=year_i, date__month=month_i,
+                        meal_type='Bữa sáng'
+                    ).filter(Q(status='Đủ')|Q(status='Thiếu', non_eat=2)).count()
+                    lu_count = MealRecord.objects.filter(
+                        student=stu, date__year=year_i, date__month=month_i,
+                        meal_type='Bữa trưa'
+                    ).filter(Q(status='Đủ')|Q(status='Thiếu', non_eat=2)).count()
+
+                    tuition_fee = sp.tuition_fee if sp else 0
+                    food_cost   = br_count * fee_break + lu_count * fee_lunch
+                    total_due   = tuition_fee + food_cost
+                    collected   = sp.amount_paid if sp else 0
+                    remaining   = collected - total_due
+
+                    row_data = {
+                        'student':    stu,
+                        'days':       days,
+                        'total_meals': total_meals,
+                        'food_cost':  f"{food_cost:,}",
+                        'tuition_fee':f"{int(tuition_fee):,}",
+                        'total_due':  f"{int(total_due):,}",
+                        'collected':  f"{int(collected):,}",
+                        'remaining':  f"{int(remaining):,}",
+                    }
+                else:
+                    row_data = {
+                        'student':     stu,
+                        'days':        days,
+                        'total_meals': total_meals,
+                        'total_cost':  f"{int(total_cost):,}",
+                    }
+
                 rows_mt.append(row_data)
                     
 
@@ -496,13 +587,17 @@ def statistics_view(request):
                 for idx, (yy, mm) in enumerate(months):
                     ym = f"{yy}-{mm:02d}"
                     sp = StudentPayment.objects.filter(student=stu, month=ym).first()
-                    paid      = sp.amount_paid if sp else Decimal('0')
-                    tuition   = sp.tuition_fee if sp else Decimal('0')
-                    remaining = sp.remaining_balance if (sp and sp.remaining_balance is not None) else Decimal('0')
-
-                    price   = sp.meal_price if sp else get_current_price()
-                    fee_b   = Decimal(price.breakfast_price)
-                    fee_l   = Decimal(price.lunch_price)
+                    if sp:
+                        paid      = sp.amount_paid
+                        tuition   = sp.tuition_fee
+                        remaining = sp.remaining_balance or Decimal('0')
+                        price     = sp.meal_price
+                        fee_b     = Decimal(price.breakfast_price)
+                        fee_l     = Decimal(price.lunch_price)
+                    else:
+                        # nếu chưa có StudentPayment thì tất cả = 0
+                        paid      = tuition = remaining = Decimal('0')
+                        fee_b     = fee_l   = Decimal('0')
                     recs    = MealRecord.objects.filter(
                         student=stu, date__year=yy, date__month=mm,
                         meal_type__in=["Bữa sáng","Bữa trưa"]
@@ -903,9 +998,11 @@ def export_monthly_statistics_all(request):
         c.font = Font(size=14, bold=True)
 
         # Header
-        headers = ["Học sinh"] + [str(d) for d in range(1, max_day+1)] + ["Tổng", "Thành tiền"]
+        headers = ["Học sinh"] + [str(d) for d in range(1, max_day+1)] + ["Tổng"]
         if mt == "Bữa trưa":
-            headers += ["Học phí", "Đã thu", "Ăn Học"]
+            headers += ["Tiền Ăn", "Học Phí", "Thành Tiền", "Đã Thu", "Còn Lại"]
+        else:
+            headers += ["Thành tiền"]
         for col_idx, h in enumerate(headers, start=1):
             cell = ws.cell(row=3, column=col_idx, value=h)
             cell.font = Font(bold=True)
@@ -953,19 +1050,27 @@ def export_monthly_statistics_all(request):
                 days.append(mark)
 
             # thêm cột chung
-            row = [stu.name] + days + [total_meals, total_cost]
+            base = [stu.name] + days + [total_meals]
 
-            # với bữa trưa thêm 3 cột cuối
             if mt == "Bữa trưa":
-                tuition_fee   = sp.tuition_fee if sp else 0
-                collected     = sp.amount_paid  if sp else 0
-                # học phí + ăn học = tuition_fee + tổng chi phí bữa sáng + trưa
-                # tận dụng fee_break, fee_lunch và total_meals
+                # tính br_count, lu_count như trên
+                tuition_fee = sp.tuition_fee if sp else 0
+                collected   = sp.amount_paid if sp else 0
                 br_count = MealRecord.objects.filter(
                     student=stu, date__year=year_i, date__month=month_i, meal_type="Bữa sáng"
                 ).filter(Q(status="Đủ")|Q(status="Thiếu", non_eat=2)).count()
-                learning_cost = int(tuition_fee) + br_count * fee_break + total_meals * fee_lunch
-                row += [tuition_fee, collected, learning_cost]
+                lu_count = MealRecord.objects.filter(
+                    student=stu, date__year=year_i, date__month=month_i, meal_type="Bữa trưa"
+                ).filter(Q(status="Đủ")|Q(status="Thiếu", non_eat=2)).count()
+
+                food_cost = br_count * fee_break + lu_count * fee_lunch
+                total_due = tuition_fee + food_cost
+                remaining = collected - total_due
+
+                row = base + [food_cost, tuition_fee, total_due, collected, remaining]
+            else:
+                # bữa sáng
+                row = base + [total_cost]
 
             # ghi vào sheet và format số
             for col_idx, val in enumerate(row, start=1):

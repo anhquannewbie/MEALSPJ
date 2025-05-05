@@ -109,32 +109,39 @@
               <th rowspan="2" class="student-col">Học sinh</th>
               <th colspan="{{ max_day_list|length }}">Ngày</th>
               <th rowspan="2">Tổng</th>
-              <th rowspan="2">Thành tiền</th>
               {% if mt == 'Bữa trưa' %}
-                <th rowspan="2">Học phí</th>
-                <th rowspan="2">Đã thu</th>
-                <th rowspan="2">Ăn Học</th>
+                <th rowspan="2">Tiền Ăn</th>
+                <th rowspan="2">Học Phí</th>
+                <th rowspan="2">Thành Tiền</th>
+                <th rowspan="2">Đã Thu</th>
+                <th rowspan="2">Còn Lại</th>
+              {% else %}
+                <th rowspan="2">Thành tiền</th>
               {% endif %}
             </tr>
             <tr>
                 {% for d in max_day_list %}<th>{{ d }}</th>{% endfor %}
             </tr>
           </thead>
-          <tbody>
+          tbody>
             {% for row in data.rows %}
               <tr>
                 <td>{{ row.student.name }}</td>
                 {% for val in row.days %}<td>{{ val }}</td>{% endfor %}
                 <td>{{ row.total_meals }}</td>
-                <td>{{ row.total_cost }}</td>
+
                 {% if mt == 'Bữa trưa' %}
+                  <td>{{ row.food_cost }}</td>
                   <td>{{ row.tuition_fee }}</td>
+                  <td>{{ row.total_due }}</td>
                   <td>{{ row.collected }}</td>
-                  <td>{{ row.learning_cost }}</td>
+                  <td>{{ row.remaining }}</td>
+                {% else %}
+                  <td>{{ row.total_cost }}</td>
                 {% endif %}
               </tr>
-              {% endfor %}
-            </tbody>
+            {% endfor %}
+          </tbody>
             {% if data.totals %}
             <tfoot>
               <tr>
