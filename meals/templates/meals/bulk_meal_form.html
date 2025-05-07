@@ -8,6 +8,16 @@
 
 <form id="meal-form" method="POST">
   {% csrf_token %}
+  {% if is_superadmin %}
+    <div class="form-group mb-3">
+      <label for="id_record_date">Chọn ngày:</label>
+      <input type="date"
+            id="id_record_date"
+            name="record_date"
+            class="form-control"
+            value="{{ default_date }}" />
+    </div>
+  {% endif %}
   <!-- Chọn Lớp -->
   <div class="form-group mb-3">
     <label for="id_class_choice">Chọn Lớp:</label>
@@ -36,6 +46,13 @@
 </form>
 
 <script>
+  const defaultDate = '{{ default_date }}';
+  const isAdmin     = {{ is_admin|yesno:"true,false" }};
+  function getSelectedDate() {
+    return isAdmin
+      ? document.getElementById('id_record_date').value
+      : defaultDate;
+  }
 // Chạy sau khi toàn bộ DOM và script trong layout đã load xong (jQuery đã sẵn sàng)
 document.addEventListener('DOMContentLoaded', function() {
   // Hàm load dữ liệu học sinh qua AJAX
@@ -48,7 +65,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     $.ajax({
       url: "{% url 'meals:ajax_load_mealdata' %}",
-      data: { class_name: className, meal_type: mealType },
+      data: {
+        date:       getSelectedDate(),    // ← thêm dòng này
+        class_name: className,
+        meal_type:  mealType
+      },
       success: function(data) {
         var html = '<h5>Danh sách Học Sinh</h5>';
         data.forEach(function(item) {
@@ -121,7 +142,10 @@ document.addEventListener('DOMContentLoaded', function() {
   // Bắt sự kiện khi thay đổi Chọn Lớp hoặc Loại Bữa
   document.getElementById('id_class_choice').addEventListener('change', loadMealData);
   document.getElementById('id_meal_type').addEventListener('change', loadMealData);
-
+  const dateInput = document.getElementById('id_record_date');
+  if (dateInput) {
+    dateInput.addEventListener('change', loadMealData);
+  }
   // Load lần đầu nếu có giá trị
   loadMealData();
 
@@ -151,6 +175,7 @@ document.addEventListener('DOMContentLoaded', function() {
         class_name:   document.getElementById('id_class_choice').value,
         meal_type:    document.getElementById('id_meal_type').value,
         student_ids:  studentIds,
+        record_date:  getSelectedDate(),
         absence_data: JSON.stringify(absenceData),
         reason_data:  JSON.stringify(reasonData),
         csrfmiddlewaretoken: '{{ csrf_token }}'

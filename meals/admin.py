@@ -89,6 +89,40 @@ class StudentPaymentAdminForm(forms.ModelForm):
                 super().validate_unique()
             except forms.ValidationError:
                 pass
+from django.contrib.admin import SimpleListFilter
+class YearFilter(SimpleListFilter):
+    title            = 'Năm'
+    parameter_name   = 'year'
+
+    def lookups(self, request, model_admin):
+        # Lấy tập hợp các năm từ giá trị month “YYYY-MM”
+        months = model_admin.model.objects.values_list('month', flat=True).distinct()
+        years = sorted({m.split('-')[0] for m in months}, reverse=True)
+        return [(y, y) for y in years]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(month__startswith=self.value() + '-')
+        return queryset
+class MonthFilter(SimpleListFilter):
+    title            = 'Tháng'
+    parameter_name   = 'month'
+
+    def lookups(self, request, model_admin):
+        year = request.GET.get('year')
+        # chỉ lấy những month thuộc năm đã chọn (nếu có)
+        months = model_admin.model.objects.values_list('month', flat=True).distinct()
+        if year:
+            months = [m for m in months if m.startswith(f"{year}-")]
+        # chuyển thành list duy nhất, sort tăng dần
+        unique = sorted({m for m in months})
+        # trả về tuple (value, label) — ở đây label chỉ lấy phần MM
+        return [(m, m.split('-')[1]) for m in unique]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(month=self.value())
+        return queryset       
 class StudentPaymentAdmin(admin.ModelAdmin):
     form = StudentPaymentAdminForm
     list_display  = (
@@ -100,7 +134,8 @@ class StudentPaymentAdmin(admin.ModelAdmin):
         'remaining_balance_fmt',
     )
     search_fields = ('student__name','month')   # ← tìm theo tên học sinh hoặc tháng
-    list_filter   = ('month','student__classroom',)                  # filter thêm theo tháng nếu cần
+    
+    list_filter   = (YearFilter,'student__classroom',MonthFilter)  
     verbose_name  = "Công nợ học sinh"
     verbose_name_plural = "Công nợ học sinh"
     @admin.display(ordering='tuition_fee', description='Học phí')
@@ -286,7 +321,8 @@ class MealRecordAdmin(admin.ModelAdmin):
     change_list_template = "admin/meals/mealrecord/change_list.html"
     list_display = ('student', 'date', 'meal_type', 'status')
     fields = ('student','date','meal_type','status','non_eat','absence_reason')
-    list_filter = ('date', 'meal_type')
+    list_filter = ('date', 'meal_type','student__classroom')
+    date_hierarchy = 'date'
     search_fields = ('student__name',)
     # Đổi tên hiển thị của model MealRecord trong Admin
     verbose_name = "Bữa ăn"

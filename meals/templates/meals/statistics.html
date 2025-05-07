@@ -40,6 +40,46 @@
   form.my-3.d-flex .mr-2, form.my-3.d-flex label, form.my-3.d-flex select {
     margin-right: 0.75rem;
     margin-bottom: 0.5rem;
+    }
+  table.table-bordered th.student-col,
+  table.table-bordered td.student-col {
+    text-align: left !important;
+  }
+    /* Sticky cột Học sinh */
+  table.table-bordered th.student-col,
+  table.table-bordered td.student-col {
+    position: sticky;
+    position: -webkit-sticky; /* cho Safari */
+    left: 0;
+    background: #fff;
+    z-index: 2;
+  }
+  /* Header cột Học sinh luôn nổi */
+  table.table-bordered th.student-col {
+    z-index: 3;
+  }
+  table.table-bordered tfoot td:first-child {
+    position: sticky;
+    position: -webkit-sticky; /* Safari */
+    left: 0;
+    background: #fff;
+    z-index: 2;
+  }
+  table.table-bordered,
+  table.table-bordered th,
+  table.table-bordered td {
+    border: 2px solid #337ab7;  /* xanh dương đậm */
+  }
+
+  /* --- Nền sáng cho header --- */
+  table.table-bordered thead th {
+    background-color: #e6f2ff;  /* xanh dương nhạt */
+  }
+
+  /* --- Cũng cho footer luôn đồng bộ --- */
+  table.table-bordered tfoot td {
+    background-color: #e6f2ff;
+  }
 </style>
 
 <h2>Thống kê</h2>
@@ -94,7 +134,7 @@
     </a>
 
     {% for mt, data in stats.items %}
-      <h5>Thống kê {{ mt }}</h5>
+      <h5 class="text-center">Thống kê {{ mt }}</h5>
       {% if data.rows %}
         <table class="table table-bordered">
           <colgroup>
@@ -123,10 +163,10 @@
                 {% for d in max_day_list %}<th>{{ d }}</th>{% endfor %}
             </tr>
           </thead>
-          tbody>
+          <tbody>
             {% for row in data.rows %}
               <tr>
-                <td>{{ row.student.name }}</td>
+                <td class="student-col">{{ row.student.name }}</td>
                 {% for val in row.days %}<td>{{ val }}</td>{% endfor %}
                 <td>{{ row.total_meals }}</td>
 
@@ -145,12 +185,12 @@
             {% if data.totals %}
             <tfoot>
               <tr>
-                <td><strong>Tổng</strong></td>
+                <td class="student-col"><strong>Tổng</strong></td>
                 {% for cnt in data.totals %}<td><strong>{{ cnt }}</strong></td>{% endfor %}
                 <td></td>
                 {% if mt == 'Bữa trưa' %}
                   <td></td>  {# blank cho Học phí #}
-                  <td></td>  {# blank cho Đã thu #}
+                  <td></td>  {# blank cho Đã thu #}s
                   <td></td>  {# blank cho Ăn Học #}
                 {% endif %}
               </tr>
@@ -229,7 +269,7 @@
         <tbody>
           {% for row in rows_year %}
             <tr>
-              <td>{{ row.student.name }}</td>
+              <td class="student-col">{{ row.student.name }}</td>
               {% for cell in row.data %}
                 <td>{{ cell.paid }}</td><td>{{ cell.spent }}</td><td>{{ cell.remaining }}</td>
               {% endfor %}

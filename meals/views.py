@@ -29,6 +29,8 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import PermissionDenied
 from .utils import get_current_price
 from django.db import transaction
+from django.utils.dateparse import parse_date
+
 
 @csrf_exempt
 
@@ -165,7 +167,11 @@ def student_payment_edit(request, pk=None):
 def ajax_load_students(request):
     classroom_id = request.GET.get('classroom_id')
     if classroom_id:
-        students = Student.objects.filter(classroom_id=classroom_id).order_by('name')
+        qs = Student.objects.filter(classroom_id=classroom_id)
+        students = sorted(
+            qs,
+            key=lambda s: s.name.strip().split()[-1].upper()
+        )
         student_list = [{'id': s.id, 'name': s.name} for s in students]
     else:
         student_list = []
@@ -285,7 +291,8 @@ def bulk_meal_record_save(request):
         meal_type = request.POST.get('meal_type')
         student_ids = request.POST.getlist('student_ids[]')
         print("DEBUG: student_ids =", student_ids)  # Debug: in ra danh sách học sinh có tick
-        today = date.today()
+        date_str     = request.POST.get('record_date')
+        record_date  = parse_date(date_str) if date_str else date.today()
 
         absence_data_str = request.POST.get('absence_data', '{}')
         absence_data = json.loads(absence_data_str)
@@ -294,7 +301,7 @@ def bulk_meal_record_save(request):
         print("DEBUG: absence_data =", absence_data)  # Debug: in ra dữ liệu dropdown
 
         students = Student.objects.filter(classroom__name=class_name)
-        MealRecord.objects.filter(student__in=students, date=today, meal_type=meal_type).delete()
+        MealRecord.objects.filter(student__in=students, date=record_date, meal_type=meal_type).delete()
 
         for student in students:
             sid = str(student.id)
@@ -307,13 +314,13 @@ def bulk_meal_record_save(request):
             print("DEBUG: For student", sid, "status =", status, "non_eat =", non_eat)
             MealRecord.objects.create(
                 student=student,
-                date=today,
+                date=record_date,
                 meal_type=meal_type,
                 status=status,
                 non_eat=non_eat,
                 absence_reason=reason_data.get(sid, '').strip()
             )
-            current_month = today.strftime("%Y-%m")
+            current_month = record_date.strftime("%Y-%m")
             try:
                 sp = StudentPayment.objects.get(student=student, month=current_month)
                 sp.save()  # chạy lại logic tính non_eat tổng, remaining_balance,...
@@ -336,11 +343,14 @@ def bulk_meal_record_save(request):
 
 def bulk_meal_record_create(request):
     # Lấy danh sách lớp (distinct)
+    
     class_list = Student.objects.values_list('classroom__name', flat=True).distinct()
 
     return render(request, 'meals/bulk_meal_form.html', {
-        'class_list': class_list,
-        'title': 'Nhập Dữ liệu Bữa Ăn'
+        'class_list':   class_list,
+        'title':        'Nhập Dữ liệu Bữa Ăn',
+        'default_date': date.today().isoformat(),      # ex: "2025-05-07"
+        'is_admin':     request.user.is_staff,         # True nếu admin
     })
 
 def meal_record_list(request):
@@ -356,14 +366,24 @@ def load_students(request):
     class_name = request.GET.get('class_name')
     students = []
     if class_name:
-        students = Student.objects.filter(classroom__name=class_name).order_by('name')
+        qs = Student.objects.filter(classroom__name=class_name)
+        students = sorted(
+            qs,
+            key=lambda s: s.name.strip().split()[-1].upper()
+        )
     data = [{'id': student.id, 'name': student.name} for student in students]
     return JsonResponse(data, safe=False)
 def ajax_load_mealdata(request):
     class_name = request.GET.get('class_name')
     meal_type  = request.GET.get('meal_type')
-    today = date.today()
-    students   = Student.objects.filter(classroom__name=class_name).order_by('name')
+    date_str = request.GET.get('date')
+    # Nếu có date_str thì parse, không thì dùng today
+    today = parse_date(date_str) if date_str else date.today()
+    qs = Student.objects.filter(classroom__name=class_name)
+    students = sorted(
+        qs,
+        key=lambda s: s.name.strip().split()[-1].upper()
+    )
 
     data = []
     for student in students:
@@ -450,10 +470,15 @@ def statistics_view(request):
 
             for stu in students:
                 ym = f"{selected_year}-{selected_month.zfill(2)}"
+                # Lấy Payment; nếu chưa có thì fee = 0
                 sp = StudentPayment.objects.filter(student=stu, month=ym).first()
-                price     = sp.meal_price if sp else get_current_price()
-                fee_break = price.breakfast_price
-                fee_lunch = price.lunch_price
+                if sp:
+                    price     = sp.meal_price
+                    fee_break = price.breakfast_price
+                    fee_lunch = price.lunch_price
+                else:
+                    fee_break = 0
+                    fee_lunch = 0
 
                 # Với Bữa trưa: tính thêm Đã thu và Ăn Học
                 if mt == 'Bữa trưa':
@@ -491,7 +516,6 @@ def statistics_view(request):
                             total_meals += 1         # vẫn tính là đã ăn
                             cost_unit = fee_break if mt=='Bữa sáng' else fee_lunch
                             total_cost += cost_unit
-                            totals_mt[d-1] += 1
                         elif s == 'Thiếu' and ne == 1:
                             mark = 'P'
                         else:
@@ -518,28 +542,54 @@ def statistics_view(request):
                     total_due   = tuition_fee + food_cost
                     collected   = sp.amount_paid if sp else 0
                     remaining   = collected - total_due
-
-                    row_data = {
-                        'student':    stu,
-                        'days':       days,
-                        'total_meals': total_meals,
-                        'food_cost':  f"{food_cost:,}",
-                        'tuition_fee':f"{int(tuition_fee):,}",
-                        'total_due':  f"{int(total_due):,}",
-                        'collected':  f"{int(collected):,}",
-                        'remaining':  f"{int(remaining):,}",
-                    }
+                    if sp:
+                        row_data = {
+                            'student':    stu,
+                            'days':       days,
+                            'total_meals': total_meals,
+                            'food_cost':  f"{food_cost:,}",
+                            'tuition_fee':f"{int(tuition_fee):,}",
+                            'total_due':  f"{int(total_due):,}",
+                            'collected':  f"{int(collected):,}",
+                            'remaining':  f"{int(remaining):,}",
+                        }
+                    else:
+                        # chưa có payment → tất cả tiền = 0
+                        row_data = {
+                            'student':     stu,
+                            'days':        days,
+                            'total_meals': total_meals,
+                            'food_cost':   '0',
+                            'tuition_fee': '0',
+                            'total_due':   '0',
+                            'collected':   '0',
+                            'remaining':   '0',
+                        }
                 else:
-                    row_data = {
-                        'student':     stu,
-                        'days':        days,
-                        'total_meals': total_meals,
-                        'total_cost':  f"{int(total_cost):,}",
-                    }
+                    if sp:
+                        row_data = {
+                            'student':     stu,
+                            'days':        days,
+                            'total_meals': total_meals,
+                            'total_cost':  f"{int(total_cost):,}",
+                        }
+                    else:
+                        # chưa có payment → total cost = 0
+                        row_data = {
+                            'student':     stu,
+                            'days':        days,
+                            'total_meals': total_meals,
+                            'total_cost':  '0',
+                        }
 
                 rows_mt.append(row_data)
                     
 
+            # sắp theo TÊN (từ cuối của student.name)
+            rows_mt = sorted(
+                rows_mt,
+                key=lambda r: r['student'].name.strip().split()[-1].upper()
+            )
             stats[mt] = {'rows': rows_mt, 'totals': totals_mt}
 
         context.update({
@@ -664,7 +714,12 @@ def export_monthly_statistics(request):
         classroom    = ClassRoom.objects.get(id=class_id_int)
     except:
         return HttpResponse("Lớp học không hợp lệ", status=400)
-    students = Student.objects.filter(classroom=classroom).order_by('name')
+    # Lấy học sinh rồi sort theo TÊN (last word)
+    students_qs = Student.objects.filter(classroom=classroom)
+    students = sorted(
+        students_qs,
+        key=lambda s: s.name.strip().split()[-1].upper()
+    )
     
     # Lấy các MealRecord trong tháng
     recs = MealRecord.objects.filter(
@@ -787,7 +842,12 @@ def export_yearly_statistics(request):
 
     # 4. Lấy lớp & danh sách học sinh
     classroom = get_object_or_404(ClassRoom, id=int(class_id))
-    students  = Student.objects.filter(classroom=classroom).order_by('name')
+    # lấy danh sách rồi sort theo từ cuối của name (Tên) A→Z
+    students_qs = Student.objects.filter(classroom=classroom)
+    students    = sorted(
+        students_qs,
+        key=lambda s: s.name.strip().split()[-1].upper()
+    )
 
     # 5. Tạo workbook
     wb = openpyxl.Workbook()
@@ -978,7 +1038,12 @@ def export_monthly_statistics_all(request):
     max_day = calendar.monthrange(year_i, month_i)[1]
 
     classroom = get_object_or_404(ClassRoom, id=int(class_id))
-    students = Student.objects.filter(classroom=classroom).order_by('name')
+    # Lấy học sinh rồi sort theo từ cuối (Tên) A→Z
+    students_qs = Student.objects.filter(classroom=classroom)
+    students = sorted(
+        students_qs,
+        key=lambda s: s.name.strip().split()[-1].upper()
+    )
 
     wb = openpyxl.Workbook()
     # loop qua hai loại bữa ăn
@@ -1011,6 +1076,7 @@ def export_monthly_statistics_all(request):
 
         # Dữ liệu từng học sinh
         row_num = 4
+        totals_per_day = [0] * max_day
         for stu in students:
             # lấy giá
             sp = StudentPayment.objects.filter(student=stu, month=f"{year}-{int(month):02d}").first()
@@ -1036,6 +1102,7 @@ def export_monthly_statistics_all(request):
                         total_meals += 1
                         cost_unit = fee_break if mt == "Bữa sáng" else fee_lunch
                         total_cost += cost_unit
+                        totals_per_day[d-1] += 1
                     elif status == "Thiếu" and ne == 2:
                         mark = "KP"            # <-- đổi thành KP
                         total_meals += 1       # vẫn tính là đã ăn
@@ -1078,6 +1145,10 @@ def export_monthly_statistics_all(request):
                 if isinstance(val, (int, float, Decimal)):
                     c.number_format = '#,##0'
             row_num += 1
+            # Sau hết học sinh, thêm dòng Tổng
+        ws.cell(row=row_num, column=1, value="Tổng")
+        for idx, cnt in enumerate(totals_per_day, start=1):
+            ws.cell(row=row_num, column=1+idx, value=cnt)
 
     # xuất file
     response = HttpResponse(
