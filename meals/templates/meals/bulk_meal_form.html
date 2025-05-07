@@ -5,7 +5,11 @@
 {% block content %}
 
 <h2 class="mb-4">{{ title }}</h2>
-
+<div class="mb-3 text-end">
+  <a href="{% url 'meals:statistics' %}" class="btn btn-secondary">
+    📊 Thống kê
+  </a>
+</div>
 <form id="meal-form" method="POST">
   {% csrf_token %}
   {% if is_superadmin %}

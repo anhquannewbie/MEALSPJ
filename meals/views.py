@@ -350,7 +350,7 @@ def bulk_meal_record_create(request):
         'class_list':   class_list,
         'title':        'Nhập Dữ liệu Bữa Ăn',
         'default_date': date.today().isoformat(),      # ex: "2025-05-07"
-        'is_admin':     request.user.is_staff,         # True nếu admin
+        'is_superadmin':     request.user.is_superuser,         # True nếu admin
     })
 
 def meal_record_list(request):
@@ -412,7 +412,6 @@ def ajax_load_mealdata(request):
 
     return JsonResponse(data, safe=False)
 @login_required(login_url='login')
-@permission_required('meals.view_statistics', raise_exception=True)
 def statistics_view(request):
     # Danh sách lớp và năm
     classrooms  = ClassRoom.objects.all().order_by('name')
