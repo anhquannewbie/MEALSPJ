@@ -15,11 +15,16 @@
   {% if is_superadmin %}
     <div class="form-group mb-3">
       <label for="id_record_date">Chọn ngày:</label>
-      <input type="date"
-            id="id_record_date"
-            name="record_date"
-            class="form-control"
-            value="{{ default_date }}" />
+      <div class="input-group">
+        <input
+          type="date"
+          id="id_record_date"
+          name="record_date"
+          class="form-control"
+          value="{{ default_date }}"
+          onkeydown="return false;"
+        />
+      </div>
     </div>
   {% endif %}
   <!-- Chọn Lớp -->
@@ -51,7 +56,7 @@
 
 <script>
   const defaultDate = '{{ default_date }}';
-  const isAdmin     = {{ is_admin|yesno:"true,false" }};
+  const isAdmin     = {{ is_superadmin|yesno:"true,false" }};
   function getSelectedDate() {
     return isAdmin
       ? document.getElementById('id_record_date').value
