@@ -292,8 +292,8 @@ def bulk_meal_record_save(request):
         meal_type = request.POST.get('meal_type')
         student_ids = request.POST.getlist('student_ids[]')
         print("DEBUG: student_ids =", student_ids)  # Debug: in ra danh sách học sinh có tick
-        date_str     = request.POST.get('record_date')
-        record_date  = parse_date(date_str) if date_str else date.today()
+        date_str = request.POST.get('record_date') or request.POST.get('date')
+        record_date = parse_date(date_str) if date_str else date.today()
 
         absence_data_str = request.POST.get('absence_data', '{}')
         absence_data = json.loads(absence_data_str)
@@ -646,7 +646,12 @@ def statistics_view(request):
         totals    = [[0,0,0] for _ in months]
         if selected_class_id:
             cid      = int(selected_class_id)
-            students = Student.objects.filter(classroom_id=cid).order_by('name')
+            qs       = Student.objects.filter(classroom_id=cid)
+            # sort list theo token cuối của name, in uppercase để chuẩn hóa
+            students = sorted(
+                qs,
+                key=lambda s: s.name.strip().split()[-1].upper()
+            )
 
             for stu in students:
                 data_row = []
