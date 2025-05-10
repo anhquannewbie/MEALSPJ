@@ -13,14 +13,39 @@ from openpyxl import Workbook, load_workbook
 import csv
 from django.urls import reverse
 import json
+
 admin.site.site_header  = "Trang quản trị bữa ăn học sinh"
 admin.site.site_title   = "Quản lý bữa ăn"
 admin.site.index_title  = "Bảng điều khiển"
+class AuditLogMixin:
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        AuditLog.objects.create(
+            user=request.user,
+            action='change' if change else 'add',
+            path=request.path,
+            data=json.dumps({
+                'model': obj._meta.model_name,
+                'object_id': obj.pk,
+                'changes': form.changed_data,
+            })
+        )
 
+    def delete_model(self, request, obj):
+        AuditLog.objects.create(
+            user=request.user,
+            action='delete',
+            path=request.path,
+            data=json.dumps({
+                'model': obj._meta.model_name,
+                'object_id': obj.pk,
+            })
+        )
+        super().delete_model(request, obj)
 def log_admin_action(request, obj, action, extra=None):
     payload = {
-        'model': obj._meta.label,
-        'pk': obj.pk,
+        'model': obj._meta.model_name,  # <-- đổi từ .label thành .model_name
+        'object_id': obj.pk,
     }
     if extra:
         payload.update(extra)
@@ -30,11 +55,29 @@ def log_admin_action(request, obj, action, extra=None):
         path   = request.path,
         data   = json.dumps(payload, ensure_ascii=False)
     )
-class MealPriceAdmin(admin.ModelAdmin):
+class MealPriceAdmin( admin.ModelAdmin):
     list_display  = ('effective_date', 'daily_price', 'breakfast_price', 'lunch_price')
     list_editable = ('daily_price', 'breakfast_price', 'lunch_price')
     list_filter   = ('effective_date',)
     ordering      = ('-effective_date',)
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        action = 'change' if change else 'add'
+        disp   = f"Cấu hình giá ăn - {obj.daily_price}"
+        log_admin_action(request, obj, action, extra={
+            'model':          'mealprice',
+            'object_id':      obj.pk,
+            'object_display': disp,
+        })
+
+    def delete_model(self, request, obj):
+        disp = f"Cấu hình giá ăn - {obj.daily_price}"
+        log_admin_action(request, obj, 'delete', extra={
+            'model':          'mealprice',
+            'object_id':      obj.pk,
+            'object_display': disp,
+        })
+        super().delete_model(request, obj)
 class StudentInline(admin.TabularInline):
     model = Student
     extra = 0                 # không sinh form trống
@@ -168,14 +211,28 @@ class StudentPaymentAdmin(admin.ModelAdmin):
             target = obj
 
         # always log both add & change
-        action = 'change_payment' if change else 'add_payment'
-        log_admin_action(request, target, action,
-                         extra={'changed_fields': form.changed_data})
+        action = 'change' if change else 'add'
+        log_admin_action(request, target, action, extra={
+            'student_name':   target.student.name,
+            'classroom_name': target.student.classroom.name,
+            'tuition_fee':    str(target.tuition_fee),
+            'amount_paid':    str(target.amount_paid),
+            'meal_price':     str(target.meal_price.daily_price) if target.meal_price else '',
+            'month':          str(target.month),
+            'changed_fields': form.changed_data,
+        })
 
     def delete_model(self, request, obj):
-        log_admin_action(request, obj, 'delete_payment')
+        log_admin_action(request, obj, 'delete', extra={
+            'student_name':   obj.student.name,
+            'classroom_name': obj.student.classroom.name,
+            'tuition_fee':    str(obj.tuition_fee),
+            'amount_paid':    str(obj.amount_paid),
+            'meal_price':     str(obj.meal_price.daily_price) if obj.meal_price else '',
+            'month':          str(obj.month),
+        })
         super().delete_model(request, obj)
-class ClassRoomAdmin(admin.ModelAdmin):
+class ClassRoomAdmin( admin.ModelAdmin):
     list_display = ('name',)
     search_fields = ('name',)
     inlines = [StudentInline]  
@@ -247,13 +304,21 @@ class ClassRoomAdmin(admin.ModelAdmin):
         return response
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
-        # log thêm/sửa lớp
-        action = 'change_classroom' if change else 'add_classroom'
-        log_admin_action(request, obj, action,
-                         extra={'changed_fields': form.changed_data})
-    
+        action = 'change' if change else 'add'
+        disp   = obj.name
+        log_admin_action(request, obj, action, extra={
+            'model':          'classroom',
+            'object_id':      obj.pk,
+            'object_display': disp,
+        })
+
     def delete_model(self, request, obj):
-        log_admin_action(request, obj, 'delete_classroom')
+        disp = obj.name
+        log_admin_action(request, obj, 'delete', extra={
+            'model':          'classroom',
+            'object_id':      obj.pk,
+            'object_display': disp,
+        })
         super().delete_model(request, obj)
     def import_students_view(self, request, classroom_id):
         room = ClassRoom.objects.get(pk=classroom_id)
@@ -289,7 +354,8 @@ class ClassRoomAdmin(admin.ModelAdmin):
         }
         return TemplateResponse(request, "admin/meals/import_students.html", context)
 
-class StudentAdmin(admin.ModelAdmin):
+class StudentAdmin( admin.ModelAdmin):
+    list_display = ('name','classroom')
     search_fields = ('name',)
     list_filter = ('classroom',)
     # Đổi tên hiển thị của model Student trong Admin
@@ -297,27 +363,24 @@ class StudentAdmin(admin.ModelAdmin):
     verbose_name_plural = "Các học sinh"
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
-        # log thêm/sửa học sinh, kèm tên và lớp
-        action = 'change_student' if change else 'add_student'
+        action = 'change' if change else 'add'
+        disp   = f"{obj.name} - {obj.classroom.name}"
         log_admin_action(request, obj, action, extra={
-            'student_name': obj.name,
-            'classroom':    obj.classroom.name if obj.classroom else None,
-            # nếu vẫn muốn xem fields nào change thì thêm tiếp:
-            'changed_fields': form.changed_data
+            'model':          'student',
+            'object_id':      obj.pk,
+            'object_display': disp,
         })
 
     def delete_model(self, request, obj):
-        # Lưu tên + lớp trước khi nó bị xóa
-        student_name = obj.name
-        classroom    = obj.classroom.name if obj.classroom else ''
-        # Ghi log với extra chứa name và classroom
-        log_admin_action(request, obj, 'delete_student', extra={
-            'student_name': student_name,
-            'classroom':    classroom
+        disp = f"{obj.name} - {obj.classroom.name}"
+        log_admin_action(request, obj, 'delete', extra={
+            'model':          'student',
+            'object_id':      obj.pk,
+            'object_display': disp,
         })
         super().delete_model(request, obj)
 
-class MealRecordAdmin(admin.ModelAdmin):
+class MealRecordAdmin( admin.ModelAdmin):
     change_list_template = "admin/meals/mealrecord/change_list.html"
     list_display = ('student', 'date', 'meal_type', 'status')
     fields = ('student','date','meal_type','status','non_eat','absence_reason')
@@ -328,7 +391,15 @@ class MealRecordAdmin(admin.ModelAdmin):
     verbose_name = "Bữa ăn"
     verbose_name_plural = "Các bữa ăn"
     def delete_model(self, request, obj):
-        log_admin_action(request, obj, 'delete_mealrecord')
+        # Lấy loại bữa ăn (Sáng/Trưa)
+        mt = obj.get_meal_type_display().replace('Bữa ', '').capitalize()
+        # Tạo chuỗi "Đối tượng" tĩnh
+        disp = f"Bản ghi bữa ăn - {obj.student.name} - {obj.student.classroom.name} - {mt}"
+        log_admin_action(request, obj, 'delete', extra={
+            'model':          'mealrecord',
+            'object_id':      obj.pk,
+            'object_display': disp,
+        })
         super().delete_model(request, obj)
     def save_model(self, request, obj, form, change):
         existing_record = MealRecord.objects.filter(
@@ -347,9 +418,17 @@ class MealRecordAdmin(admin.ModelAdmin):
             target = obj
 
         # log hành động bữa ăn (add/change)
-        action = 'change_mealrecord' if change else 'add_mealrecord'
-        log_admin_action(request, target, action,
-                         extra={'status': obj.status, 'non_eat': obj.non_eat})
+        action = 'change' if change else 'add'
+        mt = target.get_meal_type_display().replace('Bữa ', '').capitalize()
+        disp = (
+            f"Bản ghi bữa ăn - {target.student.name} - "
+            f"{target.student.classroom.name} - {mt}"
+        )
+        log_admin_action(request, target, action, extra={
+            'model':          'mealrecord',
+            'object_id':      target.pk,
+            'object_display': disp,
+        })
         
         # Xác định chuỗi "YYYY-MM" từ obj.date
         year_month = obj.date.strftime("%Y-%m")
@@ -390,12 +469,75 @@ except:
     pass
 @admin.register(AuditLog)
 class AuditLogAdmin(admin.ModelAdmin):
-    list_display = ('timestamp', 'user_display', 'action', 'path')
-    readonly_fields = ('user','action','path','data','timestamp')
-    ordering        = ('-timestamp',)
-    def user_display(self, obj):
-        return obj.user.username if obj.user else '—'
-    user_display.short_description = 'User'
+    list_display = ('timestamp', 'user', 'action_vi', 'object_display')
+    search_fields   = ('data',)
+    readonly_fields = ('timestamp', 'user', 'action', 'path', 'data')
+    ordering = ('-timestamp',)
+    def action_vi(self, obj):
+        return {
+            'add':    'Thêm',
+            'change': 'Sửa',
+            'delete': 'Xóa',
+        }.get(obj.action, obj.action)
+    action_vi.short_description = 'HÀNH ĐỘNG'
+    
+    @admin.display(description='ĐỐI TƯỢNG')
+    def object_display(self, obj):
+        info = json.loads(obj.data or '{}')
+        # 1) Nếu view đã push sẵn object_display thì trả luôn
+        if info.get('object_display'):
+            return info['object_display']
+
+        model = info.get('model')
+        oid   = info.get('object_id')
+
+        # 2) Student
+        if model == 'student':
+            stu = Student.objects.filter(pk=oid).first()
+            return f"{stu.name} - {stu.classroom.name}" if stu else oid
+
+        # 3) Classroom
+        if model == 'classroom':
+            cr = ClassRoom.objects.filter(pk=oid).first()
+            return cr.name if cr else oid
+
+        # 4) MealRecord
+        if model == 'mealrecord':
+            rec = MealRecord.objects.filter(pk=oid)\
+                      .select_related('student','student__classroom')\
+                      .first()
+            if rec:
+                mt = rec.get_meal_type_display().replace('Bữa ', '').capitalize()
+                return f"Bản ghi bữa ăn - {rec.student.name} - {rec.student.classroom.name} - {mt}"
+            return oid
+
+        # 5) StudentPayment – parse và format số
+        if model == 'studentpayment':
+            s  = info.get('student_name','')
+            c  = info.get('classroom_name','')
+            t  = info.get('tuition_fee', '0')
+            p  = info.get('amount_paid','0')
+            m  = info.get('meal_price', '0')
+            mo = info.get('month','')
+
+            def fmt(x):
+                try:
+                    # nếu x là chuỗi số, convert rồi format dấu phẩy
+                    return f"{float(x):,.2f}"
+                except:
+                    return x
+
+            return (
+                f"Thanh Toán - {s} - {c} - "
+                f"{fmt(t)} - {fmt(p)} - {fmt(m)} - {mo}"
+            )
+
+        # 6) MealPrice
+        if model == 'mealprice':
+            price = MealPrice.objects.filter(pk=oid).first()
+            return f"Cấu hình giá ăn - {price.daily_price}" if price else oid
+
+        return oid
 my_admin_site.register(StudentPayment, StudentPaymentAdmin)
 # đăng ký ClassRoomAdmin lên my_admin_site
 my_admin_site.register(ClassRoom, ClassRoomAdmin)

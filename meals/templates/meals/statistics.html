@@ -86,12 +86,18 @@
 
 <ul class="nav nav-tabs">
   <li class="nav-item">
-    <a class="nav-link {% if mode  ==  'month' or not mode %}active{% endif %}"
-       href="?mode=month">Thống kê theo Tháng</a>
+    <a class="nav-link {% if mode == 'month' or not mode %}active{% endif %}"
+      href="?mode=month{% if hide_financial %}&from=bulk{% endif %}">
+      Thống kê theo Tháng
+    </a>
   </li>
   <li class="nav-item">
-    <a class="nav-link {% if mode  ==  'year' %}active{% endif %}"
-       href="?mode=year">Thống kê theo Năm</a>
+    {% if not hide_year %}
+      <a class="nav-link {% if mode == 'year' %}active{% endif %}"
+        href="?mode=year{% if hide_financial %}&from=bulk{% endif %}">
+        Thống kê theo Năm
+      </a>
+    {% endif %}
   </li>
 </ul>
 
@@ -101,6 +107,9 @@
   {% if mode  ==  'month' or not mode %}
     <form method="get" class="my-3">
       <input type="hidden" name="mode" value="month">
+      {% if hide_financial %}
+        <input type="hidden" name="from" value="bulk">
+      {% endif %}
       <label>Năm:</label>
       <select name="year" id="id_year">
         <option value="">-- Chọn Năm --</option>
@@ -118,10 +127,17 @@
       </select>
 
       <label>Lớp:</label>
-      <select name="class_id">
-        <option value="">-- Chọn Lớp --</option>
+      <select name="class_id" id="id_class_id" required>
+        <option value="" disabled {% if not selected_class_id %}selected{% endif %}>
+          -- Chọn Lớp --
+        </option>
         {% for room in classrooms %}
-          <option value="{{ room.id }}" {% if selected_class_id|stringformat:"s"  ==  room.id|stringformat:"s" %}selected{% endif %}>{{ room.name }}</option>
+          <option value="{{ room.id }}"
+            {% if room.id|stringformat:"s" == selected_class_id|stringformat:"s" %}
+              selected
+            {% endif %}>
+            {{ room.name }}
+          </option>
         {% endfor %}
       </select>
 
@@ -149,14 +165,18 @@
               <th rowspan="2" class="student-col">Học sinh</th>
               <th colspan="{{ max_day_list|length }}">Ngày</th>
               <th rowspan="2">Tổng</th>
-              {% if mt == 'Bữa trưa' %}
-                <th rowspan="2">Tiền Ăn</th>
-                <th rowspan="2">Học Phí</th>
-                <th rowspan="2">Thành Tiền</th>
-                <th rowspan="2">Đã Thu</th>
-                <th rowspan="2">Còn Lại</th>
-              {% else %}
-                <th rowspan="2">Thành tiền</th>
+              {% if not hide_financial %}
+                {% if mt == 'Bữa trưa' %}
+                  <th rowspan="2">Tiền Ăn</th>
+                  <th rowspan="2">Học Phí</th>
+                  <th rowspan="2">Thành Tiền</th>
+                  <th rowspan="2">Đã Thu</th>
+                  <th rowspan="2">Còn Lại</th>
+                {% else %}
+                  {% if not hide_financial %}
+                    <th rowspan="2">Thành tiền</th>
+                  {% endif %}
+                {% endif %}
               {% endif %}
             </tr>
             <tr>
@@ -169,15 +189,18 @@
                 <td class="student-col">{{ row.student.name }}</td>
                 {% for val in row.days %}<td>{{ val }}</td>{% endfor %}
                 <td>{{ row.total_meals }}</td>
-
-                {% if mt == 'Bữa trưa' %}
-                  <td>{{ row.food_cost }}</td>
-                  <td>{{ row.tuition_fee }}</td>
-                  <td>{{ row.total_due }}</td>
-                  <td>{{ row.collected }}</td>
-                  <td>{{ row.remaining }}</td>
-                {% else %}
-                  <td>{{ row.total_cost }}</td>
+                {% if not hide_financial %}
+                  {% if mt == 'Bữa trưa' %}
+                    <td>{{ row.food_cost }}</td>
+                    <td>{{ row.tuition_fee }}</td>
+                    <td>{{ row.total_due }}</td>
+                    <td>{{ row.collected }}</td>
+                    <td>{{ row.remaining }}</td>
+                  {% else %}
+                    {% if not hide_financial %}
+                      <td>{{ row.total_cost }}</td>
+                    {% endif %}
+                  {% endif %}
                 {% endif %}
               </tr>
             {% endfor %}
@@ -188,10 +211,12 @@
                 <td class="student-col"><strong>Tổng</strong></td>
                 {% for cnt in data.totals %}<td><strong>{{ cnt }}</strong></td>{% endfor %}
                 <td></td>
-                {% if mt == 'Bữa trưa' %}
-                  <td></td>  {# blank cho Học phí #}
-                  <td></td>  {# blank cho Đã thu #}s
-                  <td></td>  {# blank cho Ăn Học #}
+                {% if not hide_financial %}
+                  {% if mt == 'Bữa trưa' %}
+                    <td></td><td></td><td></td><td></td><td></td>
+                  {% else %}
+                    <td></td>
+                  {% endif %}
                 {% endif %}
               </tr>
             </tfoot>
@@ -201,7 +226,7 @@
     {% endfor %}
 
   {# --- Phần Thống kê theo Năm --- #}
-  {% elif mode  ==  'year' %}
+  {% elif mode == 'year' and not hide_year %}
   <form method="get" class="my-3 d-flex flex-wrap align-items-end">
       <input type="hidden" name="mode" value="year">
 
@@ -238,10 +263,17 @@
       </select>
       <div class="w-100"></div>
       <label class="mr-2">Lớp:</label>
-      <select name="class_id">
-        <option value="">-- Chọn Lớp --</option>
+      <select name="class_id" id="id_class_id" required>
+        <option value="" disabled {% if not selected_class_id %}selected{% endif %}>
+          -- Chọn Lớp --
+        </option>
         {% for room in classrooms %}
-          <option value="{{ room.id }}" {% if room.id|stringformat:"s" == selected_class_id|stringformat:"s" %}selected{% endif %}>{{ room.name }}</option>
+          <option value="{{ room.id }}"
+            {% if room.id|stringformat:"s" == selected_class_id|stringformat:"s" %}
+              selected
+            {% endif %}>
+            {{ room.name }}
+          </option>
         {% endfor %}
       </select>
 

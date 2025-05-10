@@ -80,16 +80,17 @@ def student_payment_edit(request, pk=None):
             saved = form.save()
             AuditLog.objects.create(
                 user    = request.user,
-                action  = 'edit_payment',
+                action  = 'change',
                 path    = request.path,
                 data    = json.dumps({
-                    'payment_id': saved.pk,
-                    'student_name':  saved.student.name,
-                    'month':      saved.month,
-                    'tuition_fee':        str(saved.tuition_fee),
-                    'amount_paid':        str(saved.amount_paid),
-                    'remaining_balance':  str(saved.remaining_balance),
-                     
+                    'model':           'studentpayment',
+                    'object_id':       saved.pk,
+                    'student_name':    saved.student.name,
+                    'classroom_name':  saved.student.classroom.name,
+                    'tuition_fee': format(saved.tuition_fee, ",.2f"),
+                    'amount_paid': format(saved.amount_paid, ",.2f"),
+                    'meal_price':  format(saved.meal_price.daily_price, ",.2f") if saved.meal_price else "0.00",
+                    'month':           month_val,
                 }, ensure_ascii=False)
             )
             # Nếu đang edit một bản mà ghi đè lên duplicate thì xóa bản cũ ban đầu
@@ -312,13 +313,30 @@ def bulk_meal_record_save(request):
                 status = "Thiếu"
                 non_eat = int(absence_data.get(sid, "2"))
             print("DEBUG: For student", sid, "status =", status, "non_eat =", non_eat)
-            MealRecord.objects.create(
+            rec = MealRecord.objects.create(
                 student=student,
                 date=record_date,
                 meal_type=meal_type,
                 status=status,
                 non_eat=non_eat,
                 absence_reason=reason_data.get(sid, '').strip()
+            )
+            action = 'change' 
+            # Log ngay sau khi tạo record
+            obj_disp = (
+                f"Bản ghi bữa ăn - {student.name} - "
+                f"{student.classroom.name} - {rec.get_meal_type_display()}"
+            )
+            AuditLog.objects.create(
+                user=request.user,
+                action=action,           # <- dùng biến action ở đây
+                path=request.path,
+                data=json.dumps({
+                    # model_name phải là 'mealrecord' để khớp đúng nhánh bên Admin
+                    'model':          rec._meta.model_name,
+                    'object_id':      rec.pk,
+                    'object_display': obj_disp
+                }, ensure_ascii=False)
             )
             current_month = record_date.strftime("%Y-%m")
             try:
@@ -328,16 +346,7 @@ def bulk_meal_record_save(request):
                 # nếu chưa có thì bỏ qua hoặc log warning
                 continue
         student_names = [stu.name for stu in students]
-        AuditLog.objects.create(
-            user    = request.user,
-            action  = 'bulk_meal_save',
-            path    = request.path,
-            data    = json.dumps({
-                        'class': class_name,
-                        'meal_type': meal_type,
-                        'students': student_names
-                     }, ensure_ascii=False)
-        )
+        
         return JsonResponse({"message": "success"}, status=200)
     return JsonResponse({"error": "Invalid method"}, status=400)
 
@@ -413,6 +422,12 @@ def ajax_load_mealdata(request):
     return JsonResponse(data, safe=False)
 @login_required(login_url='login')
 def statistics_view(request):
+    from_bulk = (request.GET.get('from') == 'bulk')
+    mode = request.GET.get('mode', 'month')
+
+    # 3. Nếu từ bulk thì ẩn year + cột tiền
+    hide_year = from_bulk
+    hide_financial = from_bulk
     # Danh sách lớp và năm
     classrooms  = ClassRoom.objects.all().order_by('name')
     meal_dates   = MealRecord.objects.values_list('date', flat=True)
@@ -436,6 +451,8 @@ def statistics_view(request):
         'selected_meal_type': selected_meal_type,
         'selected_class_id':  selected_class_id,
         'all_months':         list(range(1, 13)),
+        'hide_year':       hide_year,
+        'hide_financial':  hide_financial,
     }
 
     # Build months_list cho chế độ tháng
