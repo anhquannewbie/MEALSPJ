@@ -13,7 +13,9 @@ from openpyxl import Workbook, load_workbook
 import csv
 from django.urls import reverse
 import json
-
+import openpyxl
+from django.shortcuts import redirect
+from decimal import Decimal
 admin.site.site_header  = "Trang quản trị bữa ăn học sinh"
 admin.site.site_title   = "Quản lý bữa ăn"
 admin.site.index_title  = "Bảng điều khiển"
@@ -133,6 +135,17 @@ class StudentPaymentAdminForm(forms.ModelForm):
             except forms.ValidationError:
                 pass
 from django.contrib.admin import SimpleListFilter
+
+class StudentPaymentImportForm(forms.Form):
+    month = forms.CharField(
+        label="Tháng",
+        widget=forms.TextInput(attrs={'type': 'month'})
+    )
+    classroom = forms.ModelChoiceField(
+        queryset=ClassRoom.objects.all(),
+        label="Lớp"
+    )
+    file = forms.FileField(label="File Excel")
 class YearFilter(SimpleListFilter):
     title            = 'Năm'
     parameter_name   = 'year'
@@ -167,6 +180,7 @@ class MonthFilter(SimpleListFilter):
             return queryset.filter(month=self.value())
         return queryset       
 class StudentPaymentAdmin(admin.ModelAdmin):
+
     form = StudentPaymentAdminForm
     list_display  = (
         'student',
@@ -177,7 +191,7 @@ class StudentPaymentAdmin(admin.ModelAdmin):
         'remaining_balance_fmt',
     )
     search_fields = ('student__name','month')   # ← tìm theo tên học sinh hoặc tháng
-    
+    change_list_template = "admin/meals/studentpayment_changelist.html"
     list_filter   = (YearFilter,'student__classroom',MonthFilter)  
     verbose_name  = "Công nợ học sinh"
     verbose_name_plural = "Công nợ học sinh"
@@ -221,7 +235,104 @@ class StudentPaymentAdmin(admin.ModelAdmin):
             'month':          str(target.month),
             'changed_fields': form.changed_data,
         })
+    def get_urls(self):
+        urls = super().get_urls()
+        custom = [
+            path(
+                'import-payments/',
+                self.admin_site.admin_view(self.import_payments_view),
+                name='meals_studentpayment_import'
+            ),
+        ]
+        return custom + urls
 
+    def import_payments_view(self, request):
+        if request.method == 'POST':
+            form = StudentPaymentImportForm(request.POST, request.FILES)
+            if form.is_valid():
+                month = form.cleaned_data['month']
+                classroom = form.cleaned_data['classroom']
+                wb = openpyxl.load_workbook(request.FILES['file'])
+                sheet = wb.active
+
+                overridden = []
+                imported_count = 0
+
+                for row in sheet.iter_rows(min_row=2, values_only=True):
+                    student_name, raw_amount = row[:2]
+                    if not student_name or raw_amount is None:
+                        continue
+
+                    # parse số tiền (loại bỏ dấu phẩy nếu có)
+                    amount = Decimal(str(raw_amount).replace(",", ""))
+
+                    try:
+                        stu = Student.objects.get(classroom=classroom, name=student_name.strip())
+                    except Student.DoesNotExist:
+                        # bỏ qua những tên không khớp
+                        continue
+
+                    # kiểm tra overwrite
+                    existed = StudentPayment.objects.filter(student=stu, month=month).exists()
+                    if existed:
+                        overridden.append(student_name)
+
+                    # 1) Xác định meal_price_id  tuition_fee trước
+                    prior = (StudentPayment.objects
+                            .filter(student=stu)
+                            .exclude(month=month)
+                            .order_by('-month')
+                            .first())
+                    if prior:
+                        price_id, fee = prior.meal_price_id, prior.tuition_fee
+                    else:
+                        price_id, fee = 2, 0
+
+                    # 2) Tạo mới hoặc update, gán luôn cả price  fee trong defaults
+                    sp, created = StudentPayment.objects.get_or_create(
+                        student=stu,
+                        month=month,
+                        defaults={
+                            'amount_paid':     amount,
+                            'meal_price_id':   price_id,
+                            'tuition_fee':     fee,
+                        }
+                    )
+                    if not created:
+                        sp.amount_paid     = amount
+                        sp.meal_price_id   = price_id
+                        sp.tuition_fee     = fee
+
+                    # 3) Lưu, StudentPayment.save() của bạn sẽ tính remaining_balance mà không mắc lỗi
+                    sp.save()
+                    imported_count += 1
+
+                # Recalc toàn bộ bảng (đảm bảo các tháng sau cũng update đúng)
+                all_pays = StudentPayment.objects.all().order_by('student__id','month')
+                for p in all_pays:
+                    p.save()
+
+                if overridden:
+                    self.message_user(
+                        request,
+                        f"Sẽ override dữ liệu của: {', '.join(overridden)}",
+                        level=messages.WARNING
+                    )
+                self.message_user(
+                    request,
+                    f"Import thành công {imported_count} bản ghi.",
+                    level=messages.SUCCESS
+                )
+                return redirect('..')
+        else:
+            form = StudentPaymentImportForm()
+
+        context = dict(
+            self.admin_site.each_context(request),
+            form=form,
+            title="Import tiền đã đóng học sinh"
+        )
+        return TemplateResponse(request, "admin/meals/import_payments.html", context)
     def delete_model(self, request, obj):
         log_admin_action(request, obj, 'delete', extra={
             'student_name':   obj.student.name,
@@ -392,9 +503,12 @@ class MealRecordAdmin( admin.ModelAdmin):
     verbose_name_plural = "Các bữa ăn"
     def delete_model(self, request, obj):
         # Lấy loại bữa ăn (Sáng/Trưa)
-        mt = obj.get_meal_type_display().replace('Bữa ', '').capitalize()
-        # Tạo chuỗi "Đối tượng" tĩnh
-        disp = f"Bản ghi bữa ăn - {obj.student.name} - {obj.student.classroom.name} - {mt}"
+        date_str = obj.date.strftime('%d/%m/%Y')
+        mt       = obj.get_meal_type_display().replace('Bữa ', '').capitalize()
+        disp = (
+            f"Bản ghi bữa ăn - {date_str} - "
+            f"{obj.student.name} - {obj.student.classroom.name} - {mt}"
+        )
         log_admin_action(request, obj, 'delete', extra={
             'model':          'mealrecord',
             'object_id':      obj.pk,
@@ -419,10 +533,12 @@ class MealRecordAdmin( admin.ModelAdmin):
 
         # log hành động bữa ăn (add/change)
         action = 'change' if change else 'add'
-        mt = target.get_meal_type_display().replace('Bữa ', '').capitalize()
+        # Format ngày thành dd/mm/YYYY
+        date_str = target.date.strftime('%d/%m/%Y')
+        mt       = target.get_meal_type_display().replace('Bữa ', '').capitalize()
         disp = (
-            f"Bản ghi bữa ăn - {target.student.name} - "
-            f"{target.student.classroom.name} - {mt}"
+            f"Bản ghi bữa ăn - {date_str} - "
+            f"{target.student.name} - {target.student.classroom.name} - {mt}"
         )
         log_admin_action(request, target, action, extra={
             'model':          'mealrecord',

@@ -324,8 +324,10 @@ def bulk_meal_record_save(request):
             action = 'change' 
             # Log ngay sau khi tạo record
             obj_disp = (
+                f"Bản ghi bữa ăn - {rec.date.strftime('%d/%m/%Y')} - "
                 f"Bản ghi bữa ăn - {student.name} - "
                 f"{student.classroom.name} - {rec.get_meal_type_display()}"
+                
             )
             AuditLog.objects.create(
                 user=request.user,
@@ -479,7 +481,14 @@ def statistics_view(request):
                 date__year=year_i,
                 date__month=month_i
             )
-            record_map = {(r.student_id, r.date.day): (r.status, r.non_eat) for r in recs}
+            record_map = {
+                (r.student_id, r.date.day): {
+                    'status': r.status,
+                    'non_eat': r.non_eat,
+                    'reason': r.absence_reason or ''
+                }
+                for r in recs
+            }
 
             rows_mt = []
             totals_mt = [0] * max_day
@@ -518,27 +527,36 @@ def statistics_view(request):
                 total_cost  = 0
 
                 for d in range(1, max_day + 1):
-                    s_ne = record_map.get((stu.id, d))
-                    if s_ne:
-                        s, ne = s_ne
-                        if s == 'Đủ':
-                            mark = 'X'
-                            total_meals += 1
-                            cost_unit = fee_break if mt=='Bữa sáng' else fee_lunch
-                            total_cost += cost_unit
-                            totals_mt[d-1] += 1
-                        elif s == 'Thiếu' and ne == 2:
-                            mark = 'KP'              # <-- đổi thành KP
-                            total_meals += 1         # vẫn tính là đã ăn
-                            cost_unit = fee_break if mt=='Bữa sáng' else fee_lunch
-                            total_cost += cost_unit
-                        elif s == 'Thiếu' and ne == 1:
-                            mark = 'P'
-                        else:
-                            mark = '0'
+                    info = record_map.get((stu.id, d), {})
+                    status = info.get('status')
+                    ne     = info.get('non_eat')
+                    reason = info.get('reason', '')
+
+                    if status == 'Đủ':
+                        display     = 'X'
+                        total_meals += 1
+                        cost_unit    = fee_break if mt == 'Bữa sáng' else fee_lunch
+                        total_cost  += cost_unit
+                        totals_mt[d-1] += 1
+                        tooltip      = ''
+                    elif status == 'Thiếu' and ne == 2:
+                        display     = 'KP'
+                        total_meals += 1
+                        cost_unit    = fee_break if mt == 'Bữa sáng' else fee_lunch
+                        total_cost  += cost_unit
+                        #totals_mt[d-1] += 1
+                        tooltip      = reason
+                    elif status == 'Thiếu' and ne == 1:
+                        display = 'P'
+                        tooltip = reason
                     else:
-                        mark = '0'
-                    days.append(mark)
+                        display = '0'
+                        tooltip = ''
+
+                    days.append({
+                        'display': display,
+                        'reason': tooltip
+                    })
 
                 # Tạo 1 bản ghi duy nhất, gộp tất cả các trường
                 # sau vòng for d in range(1, max_day+1): ... days.append(mark)

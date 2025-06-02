@@ -143,12 +143,12 @@
 
       <button type="submit" class="btn btn-primary">Xem Thống Kê</button>
     </form>
-
-    <a href="{% url 'meals:export_monthly_all' %}?year={{ selected_year }}&month={{ selected_month }}&class_id={{ selected_class_id }}"
-      class="btn btn-success mb-3">
-      Xuất Excel Cả Sáng & Trưa
-    </a>
-
+    {% if not hide_financial %}
+      <a href="{% url 'meals:export_monthly_all' %}?year={{ selected_year }}&month={{ selected_month }}&class_id={{ selected_class_id }}"
+        class="btn btn-success mb-3">
+        Xuất Excel Cả Sáng & Trưa
+      </a>
+    {% endif %}
     {% for mt, data in stats.items %}
       <h5 class="text-center">Thống kê {{ mt }}</h5>
       {% if data.rows %}
@@ -187,7 +187,16 @@
             {% for row in data.rows %}
               <tr>
                 <td class="student-col">{{ row.student.name }}</td>
-                {% for val in row.days %}<td>{{ val }}</td>{% endfor %}
+                {% for cell in row.days %}
+                  <td
+                    {% if cell.reason %}
+                      title="{{ cell.reason }}"
+                      style="cursor: help;"
+                    {% endif %}
+                  >
+                    {{ cell.display }}
+                  </td>
+                {% endfor %}
                 <td>{{ row.total_meals }}</td>
                 {% if not hide_financial %}
                   {% if mt == 'Bữa trưa' %}
