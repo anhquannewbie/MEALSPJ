@@ -3,197 +3,297 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
+<style>
+    /* Style cho các nhóm biểu mẫu */
+    .form-group {
+        margin-bottom: 0rem;
+        padding: 0rem 0;
+    }
 
-<h2 class="mb-4">{{ title }}</h2>
-<div class="mb-3 text-end">
-  <a href="{% url 'meals:statistics' %}?from=bulk" class="btn btn-secondary">
-    📊 Thống kê
-  </a>
-</div>
+    .form-group label {
+        font-weight: bold;
+    }
+
+    /* Giới hạn chiều rộng của các điều khiển biểu mẫu */
+    .form-control, .form-select {
+        max-width: 300px;
+    }
+
+    /* Style cho danh sách học sinh */
+    #student-list {
+        padding: 0.5rem 0;
+    }
+
+    #student-list .form-check {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.3rem;
+        min-height: 30px;
+        flex-wrap: nowrap;
+    }
+
+    #student-list .form-check-input {
+        margin-right: 0.5rem;
+        flex: 0 0 20px;
+    }
+
+    #student-list .form-check-label {
+        margin-right: 1rem;
+        flex: 0 0 200px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #student-list .absence-dropdown {
+        flex: 0 0 120px;
+        margin-right: 1rem;
+    }
+
+    #student-list .reason-input {
+        flex: 0 0 180px;
+        visibility: hidden;
+    }
+
+    #student-list .reason-input.visible {
+        visibility: visible;
+    }
+
+    /* Style cho dòng tổng kết */
+    #summary-row {
+        font-weight: bold;
+        margin-top: 1rem;
+        padding: 0.5rem 0;
+        text-align: left;
+    }
+
+    /* Căn lề trái biểu mẫu và thêm viền bo tròn */
+    #meal-form {
+        max-width: 600px;
+        margin: 0;
+        text-align: left;
+        border: 2px solid #ddd;
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        background-color: #fff;
+    }
+
+    /* Style cho phần header */
+    #meal-form-header {
+        padding: 0.5rem;
+        border-bottom: none;
+    }
+
+    /* Style cho phần nội dung */
+    #meal-form-content {
+        padding: 1rem;
+        flex-grow: 1;
+        background-color: #f5f5f5;
+    }
+
+    /* Đổi màu nút Thống kê thành xanh lá */
+    .statistics-btn {
+        background-color: #28a745;
+        border-color: #28a745;
+        color: #fff;
+    }
+
+    .statistics-btn:hover {
+        background-color: #218838;
+        border-color: #1e7e34;
+    }
+
+    /* Điều chỉnh cho màn hình nhỏ */
+    @media (max-width: 768px) {
+        #meal-form {
+            max-width: 100%;
+            padding: 0;
+        }
+        #meal-form-header,
+        #meal-form-content {
+            padding: 0.5rem 1rem;
+        }
+        #student-list .form-check-label {
+            flex: 0 0 150px;
+        }
+        #student-list .absence-dropdown {
+            flex: 0 0 100px;
+        }
+        #student-list .reason-input {
+            flex: 0 0 150px;
+        }
+    }
+</style>
+
 <form id="meal-form" method="POST">
-  {% csrf_token %}
-  {% if is_superadmin %}
-    <div class="form-group mb-3">
-      <label for="id_record_date">Chọn ngày:</label>
-      <div class="input-group">
-        <input
-          type="date"
-          id="id_record_date"
-          name="record_date"
-          class="form-control"
-          value="{{ default_date }}"
-          onkeydown="return false;"
-        />
-      </div>
+    <div id="meal-form-header">
+        <h2 class="mb-2">{{ title }}</h2>
     </div>
-  {% endif %}
-  <!-- Chọn Lớp -->
-  <div class="form-group mb-3">
-    <label for="id_class_choice">Chọn Lớp:</label>
-    <select id="id_class_choice" class="form-control">
-      <option value="">-- Chọn Lớp --</option>
-      {% for cls in class_list %}
-        <option value="{{ cls }}">{{ cls }}</option>
-      {% endfor %}
-    </select>
-  </div>
-
-  <!-- Chọn Loại Bữa Ăn -->
-  <div class="form-group mb-3">
-    <label for="id_meal_type">Loại Bữa Ăn:</label>
-    <select id="id_meal_type" class="form-control">
-      <option value="">-- Chọn Bữa Ăn --</option>
-      <option value="Bữa sáng">Bữa sáng</option>
-      <option value="Bữa trưa">Bữa trưa</option>
-    </select>
-  </div>
-
-  <!-- Danh sách học sinh sẽ load vào đây -->
-  <div id="student-list" class="mb-3"></div>
-
-  <button id="btn-save" class="btn btn-primary">Lưu Dữ Liệu</button>
+    <div id="meal-form-content">
+        <div class="mb-1 text-end">
+            <a href="{% url 'meals:statistics' %}?from=bulk" class="btn btn-secondary statistics-btn">
+                📊 Thống kê
+            </a>
+        </div>
+        {% csrf_token %}
+        {% if is_superadmin %}
+            <div class="form-group mb-3">
+                <label for="id_record_date">Chọn ngày:</label>
+                <div class="input-group">
+                    <input
+                        type="date"
+                        id="id_record_date"
+                        name="record_date"
+                        class="form-control"
+                        value="{{ default_date }}"
+                        onkeydown="return false;"
+                    />
+                </div>
+            </div>
+        {% endif %}
+        <div class="form-group mb-3">
+            <label for="id_class_choice">Chọn Lớp:</label>
+            <select id="id_class_choice" class="form-control">
+                <option value="">-- Chọn Lớp --</option>
+                {% for cls in class_list %}
+                    <option value="{{ cls }}">{{ cls }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group mb-3">
+            <label for="id_meal_type">Loại Bữa Ăn:</label>
+            <select id="id_meal_type" class="form-control">
+                <option value="">-- Chọn Bữa Ăn --</option>
+                <option value="Bữa sáng">Bữa sáng</option>
+                <option value="Bữa trưa">Bữa trưa</option>
+            </select>
+        </div>
+        <div id="student-list" class="mb-3"></div>
+        <button id="btn-save" class="btn btn-primary">Lưu Dữ Liệu</button>
+    </div>
 </form>
 
 <script>
-  const defaultDate = '{{ default_date }}';
-  const isAdmin     = {{ is_superadmin|yesno:"true,false" }};
-  function getSelectedDate() {
-    return isAdmin
-      ? document.getElementById('id_record_date').value
-      : defaultDate;
-  }
-// Chạy sau khi toàn bộ DOM và script trong layout đã load xong (jQuery đã sẵn sàng)
-document.addEventListener('DOMContentLoaded', function() {
-  // Hàm load dữ liệu học sinh qua AJAX
-  function loadMealData() {
-    var className = document.getElementById('id_class_choice').value;
-    var mealType  = document.getElementById('id_meal_type').value;
-    if (!className || !mealType) {
-      document.getElementById('student-list').innerHTML = '';
-      return;
+    const defaultDate = '{{ default_date }}';
+    const isAdmin = {{ is_superadmin|yesno:"true,false" }};
+    function getSelectedDate() {
+        return isAdmin ? document.getElementById('id_record_date').value : defaultDate;
     }
-    $.ajax({
-      url: "{% url 'meals:ajax_load_mealdata' %}",
-      data: {
-        date:       getSelectedDate(),    // ← thêm dòng này
-        class_name: className,
-        meal_type:  mealType
-      },
-      success: function(data) {
-        var html = '<h5>Danh sách Học Sinh</h5>';
-        data.forEach(function(item) {
-          html += `
-            <div class="form-check d-flex align-items-center mb-2">
-              <input class="form-check-input student-checkbox" type="checkbox"
-                     id="student_${item.id}" name="student_ids[]" value="${item.id}" ${item.checked ? 'checked' : ''} />
-              <label class="form-check-label me-2" for="student_${item.id}">${item.name}</label>
-              <select class="form-select absence-dropdown" name="absence_${item.id}" style="max-width:150px;" ${item.checked ? 'disabled' : ''}>
-                <option value="1" ${item.non_eat == 1 ? 'selected' : ''}>Có phép</option>
-                <option value="2" ${item.non_eat == 2 ? 'selected' : ''}>Không phép</option>
-              </select>
-              <div class="reason-group" style="margin-left:10px;">
-              <input type="text" class="form-control reason-input" name="reason_${item.id}" placeholder="Lý do nghỉ" value="${item.reason}" style="display: none; max-width:200px; margin-left:10px;" />
-              </div>
-            </div>
-          `;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        function loadMealData() {
+            var className = document.getElementById('id_class_choice').value;
+            var mealType = document.getElementById('id_meal_type').value;
+            if (!className || !mealType) {
+                document.getElementById('student-list').innerHTML = '';
+                return;
+            }
+            $.ajax({
+                url: "{% url 'meals:ajax_load_mealdata' %}",
+                data: {
+                    date: getSelectedDate(),
+                    class_name: className,
+                    meal_type: mealType
+                },
+                success: function(data) {
+                    var html = '<h5>Danh sách Học Sinh</h5>';
+                    data.forEach(function(item) {
+                        html += `
+                            <div class="form-check">
+                                <input class="form-check-input student-checkbox" type="checkbox"
+                                       id="student_${item.id}" name="student_ids[]" value="${item.id}" ${item.checked ? 'checked' : ''} />
+                                <label class="form-check-label" for="student_${item.id}">${item.name}</label>
+                                <select class="form-select absence-dropdown" name="absence_${item.id}" ${item.checked ? 'disabled' : ''}>
+                                    <option value="1" ${item.non_eat == 1 ? 'selected' : ''}>Có phép</option>
+                                    <option value="2" ${item.non_eat == 2 ? 'selected' : ''}>Không phép</option>
+                                </select>
+                                <div class="reason-group">
+                                    <input type="text" class="form-control reason-input ${item.checked ? '' : 'visible'}" 
+                                           name="reason_${item.id}" placeholder="Lý do nghỉ" value="${item.reason}" />
+                                </div>
+                            </div>
+                        `;
+                    });
+                    html += `
+                        <div id="summary-row">
+                            Tổng số học sinh được chọn: <span id="total-selected">0</span>
+                        </div>
+                    `;
+                    document.getElementById('student-list').innerHTML = html;
+                    updateTotal();
+                }
+            });
+        }
+
+        function updateTotal() {
+            var checkedBoxes = document.querySelectorAll('.student-checkbox:checked');
+            var total = checkedBoxes.length;
+            document.getElementById('total-selected').innerText = total;
+        }
+
+        document.getElementById('student-list').addEventListener('change', function(e) {
+            if (e.target.matches('input.student-checkbox')) {
+                var sid = e.target.value;
+                var sel = document.querySelector(`select[name='absence_${sid}']`);
+                var inp = document.querySelector(`input[name='reason_${sid}']`);
+                if (e.target.checked) {
+                    sel.disabled = true;
+                    sel.value = "1"; // Đặt lại trạng thái về "Có phép" khi check
+                    inp.classList.remove('visible');
+                    inp.value = '';
+                } else {
+                    sel.disabled = false;
+                    inp.classList.add('visible');
+                }
+                updateTotal();
+            }
         });
-        document.getElementById('student-list').innerHTML = html;
-        document.querySelectorAll('#student-list .student-checkbox').forEach(function(cb) {
-          var sid = cb.value;
-          var inp = document.querySelector(`input[name="reason_${sid}"]`);
-          inp.style.display = cb.checked ? 'none' : 'inline-block';
+
+        document.getElementById('id_class_choice').addEventListener('change', loadMealData);
+        document.getElementById('id_meal_type').addEventListener('change', loadMealData);
+        const dateInput = document.getElementById('id_record_date');
+        if (dateInput) {
+            dateInput.addEventListener('change', loadMealData);
+        }
+        loadMealData();
+
+        document.getElementById('btn-save').addEventListener('click', function(e) {
+            e.preventDefault();
+            if (!confirm('Bạn có chắc muốn lưu dữ liệu cho các học sinh?')) return;
+
+            var studentIds = [];
+            var absenceData = {};
+            var reasonData = {};
+
+            document.querySelectorAll('input.student-checkbox:checked').forEach(function(chk) {
+                studentIds.push(chk.value);
+            });
+            document.querySelectorAll("select[name^='absence_']").forEach(function(sel) {
+                var sid = sel.name.split('_')[1];
+                absenceData[sid] = sel.value;
+            });
+            document.querySelectorAll("input[name^='reason_']").forEach(function(inp) {
+                var sid = inp.name.split('_')[1];
+                reasonData[sid] = inp.value;
+            });
+
+            $.ajax({
+                url: "{% url 'meals:meal_bulk_save' %}",
+                method: 'POST',
+                data: {
+                    class_name: document.getElementById('id_class_choice').value,
+                    meal_type: document.getElementById('id_meal_type').value,
+                    student_ids: studentIds,
+                    record_date: getSelectedDate(),
+                    absence_data: JSON.stringify(absenceData),
+                    reason_data: JSON.stringify(reasonData),
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function() { alert('Đã lưu thành công!'); },
+                error: function() { alert('Lưu không thành công, vui lòng thử lại!'); }
+            });
         });
-      }
     });
-  }
-
-  // Khi student checkbox thay đổi: enable/disable dropdown và hiển thị lý do nếu untick
-  document.getElementById('student-list').addEventListener('change', function(e) {
-    if (e.target.matches('input.student-checkbox')) {
-      var sid = e.target.value;
-      var sel = document.querySelector("select[name='absence_" + sid + "']");
-      var inp = document.querySelector("input[name='reason_" + sid + "']");
-      if (e.target.checked) {
-        sel.disabled = true;
-        inp.style.display = 'none'; inp.value = '';
-      } else {
-        sel.disabled = false;
-        inp.style.display = 'inline-block';
-      }
-    }
-  });
-
-  // Khi dropdown lý do nghỉ thay đổi: điều chỉnh show/hide ô nhập lý do
-  document.getElementById('student-list').addEventListener('change', function(e) {
-    if (!e.target.matches("select[name^='absence_']")) return;
-    var sid = e.target.name.split('_')[1];
-    var inp = document.querySelector("input[name='reason_" + sid + "']");
-    if (e.target.value != '0') {
-      inp.style.display = 'inline-block';
-    } else {
-      inp.style.display = 'none'; inp.value = '';
-    }
-  document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.student-checkbox').forEach(function(cb) {
-      // lấy luôn cái input reason tương ứng
-      const id = cb.value;
-      const reasonInput = document.querySelector(`input[name="reason_${id}"]`);
-      // khởi tạo lần đầu
-      reasonInput.style.display = cb.checked ? 'inline-block' : 'none';
-      // gán sự kiện
-      cb.addEventListener('change', function() {
-        reasonInput.style.display = this.checked ? 'inline-block' : 'none';
-      });
-    });
-  });
-});
-
-  // Bắt sự kiện khi thay đổi Chọn Lớp hoặc Loại Bữa
-  document.getElementById('id_class_choice').addEventListener('change', loadMealData);
-  document.getElementById('id_meal_type').addEventListener('change', loadMealData);
-  const dateInput = document.getElementById('id_record_date');
-  if (dateInput) {
-    dateInput.addEventListener('change', loadMealData);
-  }
-  // Load lần đầu nếu có giá trị
-  loadMealData();
-
-  // Xử lý nút Lưu
-  document.getElementById('btn-save').addEventListener('click', function(e) {
-    e.preventDefault();
-    if (!confirm('Bạn có chắc muốn lưu dữ liệu cho các học sinh?')) return;
-
-    var studentIds  = [];
-    var absenceData = {};
-    var reasonData  = {};
-
-    document.querySelectorAll('input.student-checkbox:checked').forEach(function(chk) {
-      studentIds.push(chk.value);
-    });
-    document.querySelectorAll("select[name^='absence_']").forEach(function(sel) {
-      var sid = sel.name.split('_')[1]; absenceData[sid] = sel.value;
-    });
-    document.querySelectorAll("input[name^='reason_']").forEach(function(inp) {
-      var sid = inp.name.split('_')[1]; reasonData[sid] = inp.value;
-    });
-
-    $.ajax({
-      url: "{% url 'meals:meal_bulk_save' %}",
-      method: 'POST',
-      data: {
-        class_name:   document.getElementById('id_class_choice').value,
-        meal_type:    document.getElementById('id_meal_type').value,
-        student_ids:  studentIds,
-        record_date:  getSelectedDate(),
-        absence_data: JSON.stringify(absenceData),
-        reason_data:  JSON.stringify(reasonData),
-        csrfmiddlewaretoken: '{{ csrf_token }}'
-      },
-      success: function() { alert('Đã lưu thành công!'); },
-      error:   function() { alert('Lưu không thành công, vui lòng thử lại!'); }
-    });
-  });
-});
 </script>
-
 {% endblock %}
