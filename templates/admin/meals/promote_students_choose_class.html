@@ -1,0 +1,26 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+  <h1>{% trans "Chọn lớp đích để lên lớp" %} – {{ original.name }}</h1>
+
+  <p>Đã chọn <strong>{{ student_count }}</strong> học sinh từ lớp “{{ original.name }}”.</p>
+
+  <form method="post" style="margin-top: 1em;">
+    {% csrf_token %}
+    <div>
+      <label for="id_target_class_id">{% trans "Lớp mới:" %}</label>
+      <select name="target_class_id" id="id_target_class_id">
+        <option value="" disabled selected>-- Chọn Lớp --</option>
+        {% for room in target_rooms %}
+          <option value="{{ room.id }}">{{ room.name }} ({{ room.year }})</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="margin-top: 1em;">
+      <button type="submit" class="default">{% trans "Xác nhận Lên Lớp" %}</button>
+      <a href="../../{{ original.id }}/change/" class="button">{% trans "Hủy" %}</a>
+    </div>
+  </form>
+{% endblock %}

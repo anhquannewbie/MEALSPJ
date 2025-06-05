@@ -30,7 +30,7 @@ from django.core.exceptions import PermissionDenied
 from .utils import get_current_price
 from django.db import transaction
 from django.utils.dateparse import parse_date
-
+from django.db.models.functions import ExtractMonth, ExtractYear
 
 @csrf_exempt
 
@@ -431,14 +431,28 @@ def statistics_view(request):
     hide_year = from_bulk
     hide_financial = from_bulk
     # Danh sách lớp và năm
-    classrooms  = ClassRoom.objects.all().order_by('name')
-    meal_dates   = MealRecord.objects.values_list('date', flat=True)
-    years_set    = set(d.year for d in meal_dates)
-    years_list   = sorted(years_set)
+    # --- MỚI: Lấy năm từ ClassRoom thay vì MealRecord ---
+    # Đọc selected_year trước để filter lớp
+    selected_year = request.GET.get('year')
 
-    # Đọc chung params
+    # Lấy danh sách năm duy nhất từ ClassRoom.year, sắp xếp giảm dần
+    years_list = ClassRoom.objects.values_list('year', flat=True).distinct().order_by('-year')
+
+    # Lấy danh sách lớp (ClassRoom) chỉ thuộc năm đã chọn (nếu selected_year đúng); nếu không, trả về rỗng
+    if selected_year:
+        try:
+            year_int = int(selected_year)
+            classrooms = ClassRoom.objects.filter(year=year_int).order_by('name')
+        except ValueError:
+            classrooms = ClassRoom.objects.none()
+    else:
+        classrooms = ClassRoom.objects.none()
+
+    # Thời điểm này, đã có years_list và classrooms lọc theo năm
+
+    #Đọc chung params
     mode               = request.GET.get('mode', 'month')
-    selected_year      = request.GET.get('year')
+    #selected_year      = request.GET.get('year')
     selected_month     = request.GET.get('month')
     selected_meal_type = request.GET.get('meal_type')
     selected_class_id  = request.GET.get('class_id')
@@ -458,9 +472,23 @@ def statistics_view(request):
     }
 
     # Build months_list cho chế độ tháng
-    if selected_year:
-        year_meals = MealRecord.objects.filter(date__year=int(selected_year))
-        context['months_list'] = sorted({m.date.month for m in year_meals})
+    if selected_class_id:
+        # 1) Lọc MealRecord theo lớp -> lấy distinct (year, month)
+        #    Cách 1: dùng ORM annotate + values + distinct
+        meals_qs = MealRecord.objects.filter(student__classroom_id=selected_class_id)
+        dates = meals_qs \
+            .annotate(year=ExtractYear('date'), month=ExtractMonth('date')) \
+            .values('year', 'month') \
+            .distinct()
+
+        # 2) Chuyển thành list các tuple (year, month) rồi sort theo thời gian
+        ym_tuples = [(d['year'], d['month']) for d in dates]
+        # Sắp xếp tăng dần theo (year, month)
+        ym_tuples.sort(key=lambda x: (x[0], x[1]))
+
+        # 3) Format thành chuỗi "M/YYYY" (không có leading zero) hoặc "MM/YYYY" nếu cần
+        months_list = [f"{m}/{y}" for (y, m) in ym_tuples]
+        context['months_list'] = months_list
     else:
         context['months_list'] = []
 
@@ -468,9 +496,10 @@ def statistics_view(request):
     if mode == 'month' and selected_year and selected_month and selected_class_id:
         class_id_int = int(selected_class_id)
         students     = Student.objects.filter(classroom_id=class_id_int).order_by('name')
-        year_i       = int(selected_year)
-        month_i      = int(selected_month)
-        max_day      = calendar.monthrange(year_i, month_i)[1]
+        m_str, y_str = selected_month.split('/')
+        month_i = int(m_str)
+        year_i  = int(y_str)
+        max_day = calendar.monthrange(year_i, month_i)[1]
 
         # Tính thống kê cho cả hai loại bữa sáng và bữa trưa
         stats = {}
@@ -494,7 +523,7 @@ def statistics_view(request):
             totals_mt = [0] * max_day
 
             for stu in students:
-                ym = f"{selected_year}-{selected_month.zfill(2)}"
+                ym = f"{year_i}-{month_i:02d}"
                 # Lấy Payment; nếu chưa có thì fee = 0
                 sp = StudentPayment.objects.filter(student=stu, month=ym).first()
                 if sp:
@@ -723,11 +752,19 @@ def statistics_view(request):
 
     return render(request, 'meals/statistics.html', context)
 def ajax_load_months(request):
-    year = request.GET.get('year')
-    # Lọc MealRecord date__year=year
-    year_meals = MealRecord.objects.filter(date__year=int(year))
-    months_set = {m.date.month for m in year_meals}
-    months_list = sorted(list(months_set))
+    class_id = request.GET.get('class_id')
+    if not class_id:
+        return JsonResponse([], safe=False)
+
+    meals_qs = MealRecord.objects.filter(student__classroom_id=class_id)
+    dates = meals_qs \
+        .annotate(year=ExtractYear('date'), month=ExtractMonth('date')) \
+        .values('year', 'month') \
+        .distinct()
+    ym_tuples = [(d['year'], d['month']) for d in dates]
+    ym_tuples.sort(key=lambda x: (x[0], x[1]))  # sort theo (year, month)
+
+    months_list = [f"{m}/{y}" for (y, m) in ym_tuples]
     return JsonResponse(months_list, safe=False)
 import calendar
 import openpyxl
@@ -1064,7 +1101,26 @@ def ajax_load_meal_stats(request):
         }
 
     return JsonResponse(data)
+def ajax_get_classes_by_year(request):
+    """
+    Trả về JSON list các ClassRoom có year = ?year=YYYY
+    Dạng: [{'id': 3, 'name': 'Lớp 1A'}, {'id': 5, 'name': 'Lớp 2B'}, …]
+    """
+    year = request.GET.get('year')
+    try:
+        year_int = int(year)
+    except (TypeError, ValueError):
+        return JsonResponse([], safe=False)
 
+    qs = ClassRoom.objects.filter(year=year_int).order_by('name')
+    data = []
+    for cls in qs:
+        # Nếu bạn muốn hiển thị cả “(2025)” trong tên, đổi thành str(cls)
+        data.append({
+            'id': cls.id,
+            'name': cls.name
+        })
+    return JsonResponse(data, safe=False)
 def export_monthly_statistics_all(request):
     year = request.GET.get('year')
     month = request.GET.get('month')

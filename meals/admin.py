@@ -14,8 +14,11 @@ import csv
 from django.urls import reverse
 import json
 import openpyxl
-from django.shortcuts import redirect
+from django.shortcuts import redirect,render
+from django.shortcuts import render
+from datetime import date, timedelta,datetime
 from decimal import Decimal
+from django.db.models import Q
 admin.site.site_header  = "Trang quản trị bữa ăn học sinh"
 admin.site.site_title   = "Quản lý bữa ăn"
 admin.site.index_title  = "Bảng điều khiển"
@@ -350,7 +353,171 @@ class ClassRoomAdmin( admin.ModelAdmin):
     verbose_name = "Lớp học"
     verbose_name_plural = "Các lớp học"
     change_form_template = "admin/meals/classroom_change_form.html"
+    def promote_students_choose_class_view(self, request, classroom_id):
+        """
+        Bước 2: Sau khi đã có danh sách student_ids trong session,
+        hiển thị form chọn lớp đích. Khi POST, clone Student và clone StudentPayment +
+        MealRecord tháng gần nhất, sau đó redirect về trang change của lớp gốc.
+        """
 
+        source_room = ClassRoom.objects.get(pk=classroom_id)
+        student_ids = request.session.get('promote_student_ids', [])
+
+        if request.method == 'POST':
+            target_class_id = request.POST.get('target_class_id')
+            if not target_class_id:
+                messages.error(request, "Bạn phải chọn lớp đích.")
+                return redirect(reverse('admin:meals_classroom_promote_choose_class',
+                                        kwargs={'classroom_id': classroom_id}))
+            try:
+                target_room = ClassRoom.objects.get(pk=int(target_class_id))
+            except (ValueError, ClassRoom.DoesNotExist):
+                messages.error(request, "Lớp đích không hợp lệ.")
+                return redirect(reverse('admin:meals_classroom_promote_choose_class',
+                                        kwargs={'classroom_id': classroom_id}))
+
+            # Lấy danh sách Student cần promote
+            students_to_promote = Student.objects.filter(id__in=student_ids)
+            new_students = []
+
+            for old_student in students_to_promote:
+                # 1) Clone Student (giữ các field cơ bản)
+                new_student = Student.objects.create(
+                    name=old_student.name,
+                    classroom=target_room,
+                    # Nếu Student có thêm field như birthday, address..., copy tương ứng
+                    # birthday=old_student.birthday,
+                    # address=old_student.address,
+                    # ...
+                )
+                new_students.append(new_student)
+
+                # 2) Lấy StudentPayment gần nhất của old_student
+                latest_payment = (
+                    StudentPayment.objects
+                    .filter(student=old_student)
+                    .order_by('-month')
+                    .first()
+                )
+
+                if latest_payment:
+                    # 3) Clone tạm StudentPayment ban đầu (giữ nguyên tất cả fields)
+                    new_payment = StudentPayment.objects.create(
+                        student=new_student,
+                        month=latest_payment.month,
+                        tuition_fee=latest_payment.tuition_fee,
+                        amount_paid=latest_payment.amount_paid,
+                        remaining_balance=latest_payment.remaining_balance,
+                        meal_price=latest_payment.meal_price
+                    )
+
+                    # 4) Clone tất cả MealRecord của tháng gần nhất từ old_student sang new_student
+                    year_str, month_str = latest_payment.month.split('-')
+                    year_int = int(year_str)
+                    month_int = int(month_str)
+
+                    meal_records = MealRecord.objects.filter(
+                        student=old_student,
+                        date__year=year_int,
+                        date__month=month_int
+                    )
+                    for mr in meal_records:
+                        MealRecord.objects.create(
+                            student=new_student,
+                            date=mr.date,
+                            meal_type=mr.meal_type,
+                            status=mr.status,
+                            non_eat=mr.non_eat,
+                            absence_reason=mr.absence_reason
+                        )
+
+                    # ----- (5) VẶN RECALC CHO ĐÚNG: Ăn học = tuition_fee + spent_meals -----
+
+                    # (i) Tính spent_meals_new (tổng tiền ăn của new_student trong tháng đó)
+                    recs_new = MealRecord.objects.filter(
+                        student=new_student,
+                        date__year=year_int,
+                        date__month=month_int,
+                        meal_type__in=["Bữa sáng", "Bữa trưa"]
+                    ).filter(
+                        Q(status='Đủ') | Q(status='Thiếu', non_eat=2)
+                    )
+                    fee_b = Decimal(new_payment.meal_price.breakfast_price)
+                    fee_l = Decimal(new_payment.meal_price.lunch_price)
+                    spent_meals_new = sum(
+                        fee_b if r.meal_type == "Bữa sáng" else fee_l
+                        for r in recs_new
+                    )
+
+                    # (ii) Muốn giữ desired_remaining đúng bằng old_payment.remaining_balance
+                    desired_remaining = latest_payment.remaining_balance
+
+                    # (iii) Công thức recalc hệ thống: 
+                    #      remaining_balance_new = amount_paid − (tuition_fee_new + spent_meals_new) + prior
+                    #      với prior = 0 (thanh toán đầu tháng)
+                    prior = Decimal('0')
+                    new_tuition_fee = (
+                        new_payment.amount_paid
+                        - spent_meals_new
+                        + prior
+                        - desired_remaining
+                    )
+
+                    # (iv) Gán lại tuition_fee và remaining_balance cho new_payment
+                    new_payment.tuition_fee = new_tuition_fee
+                    new_payment.remaining_balance = desired_remaining
+                    new_payment.save()
+                    # ----- KẾT THÚC VẶN RECALC -----
+
+            # Xóa session để tránh promote lại
+            del request.session['promote_student_ids']
+
+            messages.success(
+                request,
+                f"Đã tạo {len(new_students)} học sinh mới trong “{target_room.name}”, giữ nguyên dữ liệu cũ."
+            )
+            return redirect(f'../../{classroom_id}/change/')
+
+        # Nếu GET: hiển thị form chọn lớp đích
+        all_other_rooms = ClassRoom.objects.exclude(pk=classroom_id).order_by('name', 'year')
+        context = {
+            **self.admin_site.each_context(request),
+            'opts': self.model._meta,
+            'original': source_room,
+            'target_rooms': all_other_rooms,
+            'student_count': len(student_ids),
+        }
+        return render(request, "admin/meals/promote_students_choose_class.html", context)
+    def promote_students_select_view(self, request, classroom_id):
+        """
+        Bước 1: Show một form list các Student của lớp <classroom_id> với checkbox.
+        Khi submit (POST), redirect sang bước chọn lớp đích (choose_target_class).
+        """
+        room = ClassRoom.objects.get(pk=classroom_id)
+
+        if request.method == 'POST':
+            # Lấy danh sách student_id đã tick
+            selected_ids = request.POST.getlist('students')
+            if not selected_ids:
+                messages.error(request, "Bạn phải chọn ít nhất một học sinh để lên lớp.")
+                return redirect(f'../../{classroom_id}/promote_students/')
+
+            # Chuyển sang bước 2, gắn student_ids vào session hay querystring
+            # Ở đây mình sẽ dùng session để tạm giữ danh sách.
+            request.session['promote_student_ids'] = selected_ids
+            return redirect(reverse('myadmin:meals_classroom_promote_choose_class',
+                                     kwargs={'classroom_id': classroom_id}))
+
+        # GET: hiển thị form chứa danh sách student checkbox
+        students_qs = Student.objects.filter(classroom=room).order_by('name')
+        context = {
+            **self.admin_site.each_context(request),
+            'opts': self.model._meta,
+            'original': room,
+            'students': students_qs,
+        }
+        # Template sẽ hiển thị checkbox list rồi POST lại về chính URL này
+        return render(request, "admin/meals/promote_students_select.html", context)
     def get_urls(self):
         urls = super().get_urls()
         custom = [
@@ -369,6 +536,16 @@ class ClassRoomAdmin( admin.ModelAdmin):
                 self.admin_site.admin_view(self.import_students_view),
                 name='meals_classroom_import_students'
             ),
+            path(
+                '<int:classroom_id>/promote_students/',
+                self.admin_site.admin_view(self.promote_students_select_view),
+                name='meals_classroom_promote_students'
+            ),
+            path(
+                '<int:classroom_id>/promote_students/choose_target_class/',
+                self.admin_site.admin_view(self.promote_students_choose_class_view),
+                name='meals_classroom_promote_choose_class'
+                ),
         ]
         # Đặt custom URLs lên trước để không bị chặn bởi mặc định
         return custom + urls

@@ -22,6 +22,12 @@
         Import Học sinh
       </a>
     </li>
+    <li>
+     <a href="{% url 'myadmin:meals_classroom_promote_students' classroom_id=original.id %}"
+        class="addlink">
+       Lên Lớp
+     </a>
+   </li>
   {% endif %}
 {% endblock %}
 

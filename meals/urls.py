@@ -23,7 +23,7 @@ urlpatterns = [
     # Student payments
     path('student-payment/edit/', login_required(views.student_payment_edit), name='student_payment_edit'),
     path('student-payment/edit/<int:pk>/', login_required(views.student_payment_edit), name='student_payment_edit'),
-
+    path('ajax/get-classes-by-year/', views.ajax_get_classes_by_year, name='ajax_get_classes_by_year'),
     # Statistics and exports
     path('statistics/', login_required(views.statistics_view), name='statistics'),
     path('export/yearly/', login_required(views.export_yearly_statistics), name='export_yearly_statistics'),

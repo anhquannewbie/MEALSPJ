@@ -106,49 +106,43 @@
   {# --- Phần Thống kê theo Tháng --- #}
   {% if mode  ==  'month' or not mode %}
     <form method="get" class="my-3">
-      <input type="hidden" name="mode" value="month">
-      {% if hide_financial %}
-        <input type="hidden" name="from" value="bulk">
-      {% endif %}
-      <label>Năm:</label>
-      <select name="year" id="id_year">
-        <option value="">-- Chọn Năm --</option>
-        {% for y in years_list %}
-          <option value="{{ y }}" {% if selected_year|stringformat:"s"  ==  y|stringformat:"s" %}selected{% endif %}>{{ y }}</option>
-        {% endfor %}
-      </select>
+  <input type="hidden" name="mode" value="month">
+  {% if hide_financial %}
+    <input type="hidden" name="from" value="bulk">
+  {% endif %}
 
-      <label>Tháng:</label>
-      <select name="month" id="id_month">
-        <option value="">-- Chọn Tháng --</option>
-        {% for m in months_list %}
-          <option value="{{ m }}" {% if selected_month|stringformat:"s"  ==  m|stringformat:"s" %}selected{% endif %}>{{ m }}</option>
-        {% endfor %}
-      </select>
+  <label>Năm:</label>
+  <select name="year" id="id_year" required>
+    <option value="" disabled {% if not selected_year %}selected{% endif %}>-- Chọn Năm --</option>
+    {% for y in years_list %}
+      <option value="{{ y }}" {% if y|stringformat:"s" == selected_year|stringformat:"s" %}selected{% endif %}>{{ y }}</option>
+    {% endfor %}
+  </select>
 
-      <label>Lớp:</label>
-      <select name="class_id" id="id_class_id" required>
-        <option value="" disabled {% if not selected_class_id %}selected{% endif %}>
-          -- Chọn Lớp --
-        </option>
-        {% for room in classrooms %}
-          <option value="{{ room.id }}"
-            {% if room.id|stringformat:"s" == selected_class_id|stringformat:"s" %}
-              selected
-            {% endif %}>
-            {{ room.name }}
-          </option>
-        {% endfor %}
-      </select>
+  <label>Lớp:</label>
+  <select name="class_id" id="id_class_id" required>
+    <option value="" disabled {% if not selected_class_id %}selected{% endif %}>-- Chọn Lớp --</option>
+    {% for room in classrooms %}
+      <option value="{{ room.id }}" {% if room.id|stringformat:"s" == selected_class_id|stringformat:"s" %}selected{% endif %}>{{ room.name }}</option>
+    {% endfor %}
+  </select>
 
-      <button type="submit" class="btn btn-primary">Xem Thống Kê</button>
-    </form>
-    {% if not hide_financial %}
-      <a href="{% url 'meals:export_monthly_all' %}?year={{ selected_year }}&month={{ selected_month }}&class_id={{ selected_class_id }}"
-        class="btn btn-success mb-3">
-        Xuất Excel Cả Sáng & Trưa
-      </a>
-    {% endif %}
+  <label>Tháng:</label>
+  <select name="month" id="id_month">
+    <option value="">-- Chọn Tháng --</option>
+    {% for m in months_list %}
+      <option value="{{ m }}" {% if m|stringformat:"s" == selected_month|stringformat:"s" %}selected{% endif %}>{{ m }}</option>
+    {% endfor %}
+  </select>
+
+  <button type="submit" class="btn btn-primary">Xem Thống Kê</button>
+</form>
+  {% if not hide_financial %}
+    <a href="{% url 'meals:export_monthly_all' %}?year={{ selected_year }}&month={{ selected_month }}&class_id={{ selected_class_id }}"
+      class="btn btn-success mb-3">
+      Xuất Excel Cả Sáng & Trưa
+    </a>
+  {% endif %}
     {% for mt, data in stats.items %}
       <h5 class="text-center">Thống kê {{ mt }}</h5>
       {% if data.rows %}
@@ -337,42 +331,164 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 $(function(){
-  $("#id_start_year").change(function(){
-    var y = $(this).val(), $m = $('#id_start_month');
-    if(!y){ $m.html('<option value="">-- Chọn Tháng --</option>'); return; }
-    $.get("{% url 'meals:ajax_load_months' %}", {year:y})
-      .done(data => {
+  var $startYear   = $("#id_start_year"),
+      $endYear     = $("#id_end_year"),
+      $yearMonth   = $("select#id_year"),
+      $startClass  = $("#id_class_id"),      // chung cho cả tab “Tháng” và “Năm”
+      $startMonthY = $("#id_start_month"),   // “Tháng bắt đầu” (tab Năm)
+      $endMonthY   = $("#id_end_month"),     // “Tháng kết thúc” (tab Năm)
+      $monthThang  = $("#id_month");         // “Tháng” (tab Tháng)
+
+  // ----- TAB “Thống kê theo Năm” -----
+  // (1) Khi chọn Năm bắt đầu → load Tháng bắt đầu và Lớp
+  $startYear.change(function(){
+    var y = $(this).val();
+    // Reset dropdown Tháng bắt đầu & Lớp
+    $startMonthY.html('<option value="">-- Chọn Tháng --</option>');
+    $startClass.html('<option value="" disabled selected>-- Chọn Lớp --</option>');
+
+    if (!y) return;
+
+    // Load Tháng bắt đầu
+    $.get("{% url 'meals:ajax_load_months' %}", { year: y })
+      .done(function(data){
         var html = '<option value="">-- Chọn Tháng --</option>';
-        data.forEach(v => html += `<option value="${v}">${v}</option>`);
-        $m.html(html);
+        data.forEach(function(v){
+          html += `<option value="${v}">${v}</option>`;
+        });
+        $startMonthY.html(html);
+      })
+      .fail(function(){
+        console.error("Không tải được danh sách tháng (start)!");
       });
-  });
-  $("#id_end_year").change(function(){
-    var y = $(this).val(), $m = $('#id_end_month');
-    if(!y){ $m.html('<option value="">-- Chọn Tháng --</option>'); return; }
-    $.get("{% url 'meals:ajax_load_months' %}", {year:y})
-      .done(data => {
-        var html = '<option value="">-- Chọn Tháng --</option>';
-        data.forEach(v => html += `<option value="${v}">${v}</option>`);
-        $m.html(html);
+
+    // Load Lớp (cùng id_class_id chung cho tab Năm & Tháng)
+    $.get("{% url 'ajax_get_classes_by_year' %}", { year: y })
+      .done(function(data){
+        var html = '<option value="" disabled selected>-- Chọn Lớp --</option>';
+        data.forEach(function(item){
+          html += `<option value="${item.id}">${item.name}</option>`;
+        });
+        $startClass.html(html);
+
+        // Nếu đã có selected_class_id (reload), giữ lại và trigger load Tháng (tab Tháng)
+        {% if selected_class_id %}
+          $startClass.val("{{ selected_class_id }}").trigger('change');
+        {% endif %}
+      })
+      .fail(function(){
+        console.error("Không tải được danh sách lớp (tab Năm)!");
       });
-  });
-  $("select#id_year").change(function(){
-    var yearVal = $(this).val();
-    if(!yearVal){
-      $("#id_month").html('<option value="">-- Chọn Tháng --</option>');
-      return;
-    }
-    $.get("{% url 'meals:ajax_load_months' %}", {year: yearVal})
-     .done(function(data){
-       var html = '<option value="">-- Chọn Tháng --</option>';
-       data.forEach(m => html += `<option value="${m}">${m}</option>`);
-       $("#id_month").html(html);
-     });
   });
 
-  if ($('#id_start_year').val()) $('#id_start_year').trigger('change');
-  if ($('#id_end_year').val())   $('#id_end_year').trigger('change');
+  // (2) Khi chọn Tháng bắt đầu, không cần làm gì thêm (chỉ chọn hiển thị)
+
+  // (3) Khi chọn Năm kết thúc → load Tháng kết thúc và Lớp
+  $endYear.change(function(){
+    var y = $(this).val();
+    // Reset dropdown Tháng kết thúc & Lớp
+    $endMonthY.html('<option value="">-- Chọn Tháng --</option>');
+    $startClass.html('<option value="" disabled selected>-- Chọn Lớp --</option>');
+
+    if (!y) return;
+
+    // Load Tháng kết thúc
+    $.get("{% url 'meals:ajax_load_months' %}", { year: y })
+      .done(function(data){
+        var html = '<option value="">-- Chọn Tháng --</option>';
+        data.forEach(function(v){
+          html += `<option value="${v}">${v}</option>`;
+        });
+        $endMonthY.html(html);
+      })
+      .fail(function(){
+        console.error("Không tải được danh sách tháng (end)!");
+      });
+
+    // Load Lớp (cùng dropdown id_class_id)
+    $.get("{% url 'ajax_get_classes_by_year' %}", { year: y })
+      .done(function(data){
+        var html = '<option value="" disabled selected>-- Chọn Lớp --</option>';
+        data.forEach(function(item){
+          html += `<option value="${item.id}">${item.name}</option>`;
+        });
+        $startClass.html(html);
+
+        {% if selected_class_id %}
+          $startClass.val("{{ selected_class_id }}").trigger('change');
+        {% endif %}
+      })
+      .fail(function(){
+        console.error("Không tải được danh sách lớp (tab Năm, end)!");
+      });
+  });
+
+
+  // ----- TAB “Thống kê theo Tháng” -----
+  // (4) Khi chọn Năm (id_year) → load Lớp
+  $yearMonth.change(function(){
+    var y = $(this).val();
+    // Reset dropdown Lớp & Tháng
+    $startClass.html('<option value="" disabled selected>-- Chọn Lớp --</option>');
+    $monthThang.html('<option value="">-- Chọn Tháng --</option>');
+    if (!y) return;
+
+    // Load Lớp theo năm
+    $.get("{% url 'ajax_get_classes_by_year' %}", { year: y })
+      .done(function(data){
+        var html = '<option value="" disabled selected>-- Chọn Lớp --</option>';
+        data.forEach(function(item){
+          html += `<option value="${item.id}">${item.name}</option>`;
+        });
+        $startClass.html(html);
+
+        {% if selected_class_id %}
+          $startClass.val("{{ selected_class_id }}").trigger('change');
+        {% endif %}
+      })
+      .fail(function(){
+        console.error("Không tải được danh sách lớp (tab Tháng)!");
+      });
+  });
+
+  // (5) Khi chọn Lớp → load Tháng (tab Tháng)
+  $startClass.change(function(){
+    var classVal = $(this).val();
+    $monthThang.html('<option value="">-- Chọn Tháng --</option>');
+    if (!classVal) return;
+
+    $.get("{% url 'meals:ajax_load_months' %}", { class_id: classVal })
+      .done(function(data){
+        var html = '<option value="">-- Chọn Tháng --</option>';
+        data.forEach(function(m){
+          html += `<option value="${m}">${m}</option>`;
+        });
+        $monthThang.html(html);
+
+        {% if selected_month %}
+          $monthThang.val("{{ selected_month }}");
+        {% endif %}
+      })
+      .fail(function(){
+        console.error("Không tải được danh sách tháng (tab Tháng)!");
+      });
+  });
+
+
+  // ----- GIỮ STATE KHI RELOAD -----
+  // Nếu page load có selected_start_year → trigger change
+  {% if selected_start_year %}
+    $startYear.val("{{ selected_start_year }}").trigger('change');
+  {% endif %}
+  // Nếu page load có selected_end_year → trigger change
+  {% if selected_end_year %}
+    $endYear.val("{{ selected_end_year }}").trigger('change');
+  {% endif %}
+  // Nếu page load có selected_year (tab Tháng) → trigger change
+  {% if selected_year %}
+    $yearMonth.val("{{ selected_year }}").trigger('change');
+  {% endif %}
 });
 </script>
+
 {% endblock %}
