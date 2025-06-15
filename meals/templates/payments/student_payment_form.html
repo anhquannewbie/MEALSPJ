@@ -23,7 +23,10 @@
 
 <form method="post" id="payment-form">
     {% csrf_token %}
-
+    <div class="form-group">
+       {{ form.term.label_tag }}
+       {{ form.term }}
+    </div>
     <div class="form-group">
         {{ form.classroom.label_tag }}
         {{ form.classroom }}
@@ -85,6 +88,26 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 $(function(){
+    // --- 1) Khi chọn Year, gọi AJAX load Classroom ---
+   $('#id_term').on('change', function(){
+       var term = $(this).val();
+       var $classSelect = $('#id_classroom');
+       // Reset dropdown ClassRoom
+       $classSelect.html('<option value="">--- Chọn Lớp ---</option>');
+
+       $.get("{% url 'meals:ajax_get_classes_by_term' %}", { term: term })
+             .done(function(data){
+                // data là một array dạng [ {id:…, name:…}, … ]
+                data.forEach(function(obj){
+                    var opt = $('<option></option>')
+                                .attr('value', obj.id)
+                                .text(obj.name);
+                    $classSelect.append(opt);
+                });
+             });
+       // Khi đổi Year thì cũng reset dropdown Student
+       $('#id_student').html('<option value="">--- Chọn Học sinh ---</option>');
+    });
     // Load students khi chọn lớp
     $('#id_classroom').change(function(){
         var cid = $(this).val(), $stu = $('#id_student');

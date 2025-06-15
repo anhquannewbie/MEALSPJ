@@ -2,7 +2,7 @@ from meals.admin import my_admin_site
 from django.urls import path, include
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import login_required, permission_required
-from meals.views import logout_view,export_monthly_statistics_all,ajax_get_classes_by_year
+from meals.views import logout_view,export_monthly_statistics_all,ajax_get_classes_by_term
 # Views
 from meals_system.views import home
 from meals.views import (
@@ -36,7 +36,7 @@ urlpatterns = [
     path('ajax/load-mealdata/', ajax_load_mealdata, name='ajax_load_mealdata'),
     path('ajax/load-months/', ajax_load_months, name='ajax_load_months'),
     path('logout/', logout_view, name='logout'),
-    path('ajax/get-classes-by-year/', ajax_get_classes_by_year, name='ajax_get_classes_by_year'),
+    path('ajax/get-classes-by-term/', ajax_get_classes_by_term, name='ajax_get_classes_by_term'),
     # Statistics and exports
     path(
       'statistics/',

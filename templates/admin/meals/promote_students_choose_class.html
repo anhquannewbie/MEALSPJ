@@ -13,7 +13,7 @@
       <select name="target_class_id" id="id_target_class_id">
         <option value="" disabled selected>-- Chọn Lớp --</option>
         {% for room in target_rooms %}
-          <option value="{{ room.id }}">{{ room.name }} ({{ room.year }})</option>
+          <option value="{{ room.id }}">{{ room.name }} ({{ room.term }})</option>
         {% endfor %}
       </select>
     </div>

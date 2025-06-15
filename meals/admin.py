@@ -347,8 +347,9 @@ class StudentPaymentAdmin(admin.ModelAdmin):
         })
         super().delete_model(request, obj)
 class ClassRoomAdmin( admin.ModelAdmin):
-    list_display = ('name',)
-    search_fields = ('name',)
+    list_display  = ('name', 'term')
+    list_filter   = ('term',)
+    search_fields = ('name', 'term',)
     inlines = [StudentInline]  
     verbose_name = "Lớp học"
     verbose_name_plural = "Các lớp học"
@@ -476,10 +477,10 @@ class ClassRoomAdmin( admin.ModelAdmin):
                 request,
                 f"Đã tạo {len(new_students)} học sinh mới trong “{target_room.name}”, giữ nguyên dữ liệu cũ."
             )
-            return redirect(f'../../{classroom_id}/change/')
+            return redirect(reverse('admin:meals_classroom_change', args=(classroom_id,)))
 
         # Nếu GET: hiển thị form chọn lớp đích
-        all_other_rooms = ClassRoom.objects.exclude(pk=classroom_id).order_by('name', 'year')
+        all_other_rooms = ClassRoom.objects.exclude(pk=classroom_id).order_by('name', 'term')
         context = {
             **self.admin_site.each_context(request),
             'opts': self.model._meta,

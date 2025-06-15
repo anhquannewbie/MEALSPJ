@@ -19,11 +19,11 @@ urlpatterns = [
     path('ajax/load-payment-details/', login_required(views.ajax_load_payment_details), name='ajax_load_payment_details'),
     path('ajax/load-mealdata/', login_required(views.ajax_load_mealdata), name='ajax_load_mealdata'),
     path('ajax/load-months/', login_required(views.ajax_load_months), name='ajax_load_months'),
-
+    path('ajax/get-months/', views.ajax_get_months, name='ajax_get_months'),
     # Student payments
     path('student-payment/edit/', login_required(views.student_payment_edit), name='student_payment_edit'),
     path('student-payment/edit/<int:pk>/', login_required(views.student_payment_edit), name='student_payment_edit'),
-    path('ajax/get-classes-by-year/', views.ajax_get_classes_by_year, name='ajax_get_classes_by_year'),
+    path('ajax/get-classes-by-term/', views.ajax_get_classes_by_term, name='ajax_get_classes_by_term'),
     # Statistics and exports
     path('statistics/', login_required(views.statistics_view), name='statistics'),
     path('export/yearly/', login_required(views.export_yearly_statistics), name='export_yearly_statistics'),

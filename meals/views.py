@@ -353,15 +353,27 @@ def bulk_meal_record_save(request):
     return JsonResponse({"error": "Invalid method"}, status=400)
 
 def bulk_meal_record_create(request):
-    # Lấy danh sách lớp (distinct)
-    
-    class_list = Student.objects.values_list('classroom__name', flat=True).distinct()
+    # 1) Lấy distinct list các term (Học kỳ/Niên khóa)
+    terms_list    = ClassRoom.objects.values_list('term', flat=True).distinct().order_by('-term')
+    selected_term = request.GET.get('term', '')
+
+    # 2) Nếu user đã chọn term thì load lớp; còn không thì để rỗng
+    if selected_term:
+        # Lấy cả id và name để JS/HTML dễ render <option value="{{ id }}">{{ name }}</option>
+        class_list = ClassRoom.objects \
+            .filter(term=selected_term) \
+            .order_by('name') \
+            .values('id', 'name')
+    else:
+        class_list = []
 
     return render(request, 'meals/bulk_meal_form.html', {
-        'class_list':   class_list,
-        'title':        'Nhập Dữ liệu Bữa Ăn',
-        'default_date': date.today().isoformat(),      # ex: "2025-05-07"
-        'is_superadmin':     request.user.is_superuser,         # True nếu admin
+        'terms_list':    terms_list,
+        'selected_term': selected_term,
+        'class_list':    class_list,
+        'title':         'Nhập Dữ liệu Bữa Ăn',
+        'default_date':  date.today().isoformat(),
+        'is_superadmin': request.user.is_superuser,
     })
 
 def meal_record_list(request):
@@ -433,16 +445,14 @@ def statistics_view(request):
     # Danh sách lớp và năm
     # --- MỚI: Lấy năm từ ClassRoom thay vì MealRecord ---
     # Đọc selected_year trước để filter lớp
-    selected_year = request.GET.get('year')
-
+    selected_term = request.GET.get('term')
     # Lấy danh sách năm duy nhất từ ClassRoom.year, sắp xếp giảm dần
-    years_list = ClassRoom.objects.values_list('year', flat=True).distinct().order_by('-year')
+    terms_list    = ClassRoom.objects.values_list('term', flat=True).distinct().order_by('-term')
 
     # Lấy danh sách lớp (ClassRoom) chỉ thuộc năm đã chọn (nếu selected_year đúng); nếu không, trả về rỗng
-    if selected_year:
+    if selected_term:
         try:
-            year_int = int(selected_year)
-            classrooms = ClassRoom.objects.filter(year=year_int).order_by('name')
+            classrooms = ClassRoom.objects.filter(term=selected_term).order_by('name')
         except ValueError:
             classrooms = ClassRoom.objects.none()
     else:
@@ -460,9 +470,9 @@ def statistics_view(request):
     # Context cơ bản
     context = {
         'classrooms':         classrooms,
-        'years_list':         years_list,
+        'terms_list':        terms_list,
         'mode':               mode,
-        'selected_year':      selected_year,
+        'selected_term':     selected_term,
         'selected_month':     selected_month,
         'selected_meal_type': selected_meal_type,
         'selected_class_id':  selected_class_id,
@@ -493,7 +503,7 @@ def statistics_view(request):
         context['months_list'] = []
 
     # --- Thống kê theo tháng (giữ nguyên) ---
-    if mode == 'month' and selected_year and selected_month and selected_class_id:
+    if mode == 'month' and selected_term and selected_month and selected_class_id:
         class_id_int = int(selected_class_id)
         students     = Student.objects.filter(classroom_id=class_id_int).order_by('name')
         m_str, y_str = selected_month.split('/')
@@ -662,10 +672,9 @@ def statistics_view(request):
 
     # --- Thống kê theo năm (mới) ---
     if mode == 'year':
-        s_year   = request.GET.get('start_year')
-        s_month  = request.GET.get('start_month')
-        e_year   = request.GET.get('end_year')
-        e_month  = request.GET.get('end_month')
+        # Các param truyền lên chỉ có start_month/end_month dưới dạng "M/YYYY"
+        start_str = request.GET.get('start_month')
+        end_str   = request.GET.get('end_month')
 
         today = date.today()
         def_e_year  = today.year
@@ -675,12 +684,16 @@ def statistics_view(request):
         if sm <= 0:
             sm += 12; sy -= 1
 
-        if not (s_year and s_month and e_year and e_month):
+        if start_str and end_str:
+            # parse "M/YYYY" thành số tháng, năm
+            m0, y0 = map(int, start_str.split('/'))
+            m1, y1 = map(int, end_str.split('/'))
+            start_year, start_month = y0, m0
+            end_year,   end_month   = y1, m1
+        else:
+            # fallback: dải 9 tháng gần nhất
             start_year, start_month = sy, sm
             end_year,   end_month   = def_e_year, def_e_month
-        else:
-            start_year, start_month = int(s_year), int(s_month)
-            end_year,   end_month   = int(e_year), int(e_month)
 
         months = []
         y, m = start_year, start_month
@@ -740,17 +753,45 @@ def statistics_view(request):
 
         totals_fmt = [[f"{x:,}" for x in triple] for triple in totals]
 
+        # Đưa selected_start_month/end_month về chuỗi "M/YYYY" để JS chọn đúng option
+        sel_start = start_str if start_str else f"{start_month}/{start_year}"
+        sel_end   = end_str   if end_str   else f"{end_month}/{end_year}"
         context.update({
-            'selected_start_year':  start_year,
-            'selected_start_month': start_month,
-            'selected_end_year':    end_year,
-            'selected_end_month':   end_month,
+            'selected_start_month': sel_start,
+            'selected_end_month':   sel_end,
             'months':               [{'year': y, 'month': m} for y,m in months],
             'rows_year':            rows_year,
             'totals_year_data':     totals_fmt,
         })
 
     return render(request, 'meals/statistics.html', context)
+def ajax_get_months(request):
+    term     = request.GET.get('term')
+    class_id = request.GET.get('class_id')
+    if not class_id:
+        return JsonResponse([], safe=False)
+
+    # Lọc bản ghi theo lớp qua student, và nếu có term thì filter thêm
+    qs = MealRecord.objects.filter(student__classroom_id=class_id)
+    if term:
+        qs = qs.filter(student__classroom__term=term)
+
+    # Annotate tháng và năm từ field date
+    qs = qs.annotate(
+        m=ExtractMonth('date'),
+        y=ExtractYear('date'),
+    )
+
+    # Lấy distinct các cặp (m,y) rồi sort theo y,m
+    months = (
+        qs.values_list('m', 'y')
+          .distinct()
+          .order_by('y', 'm')
+    )
+
+    # Build list string "M/YYYY"
+    data = [f"{m}/{y}" for m, y in months]
+    return JsonResponse(data, safe=False)
 def ajax_load_months(request):
     class_id = request.GET.get('class_id')
     if not class_id:
@@ -1101,18 +1142,12 @@ def ajax_load_meal_stats(request):
         }
 
     return JsonResponse(data)
-def ajax_get_classes_by_year(request):
-    """
-    Trả về JSON list các ClassRoom có year = ?year=YYYY
-    Dạng: [{'id': 3, 'name': 'Lớp 1A'}, {'id': 5, 'name': 'Lớp 2B'}, …]
-    """
-    year = request.GET.get('year')
-    try:
-        year_int = int(year)
-    except (TypeError, ValueError):
+def ajax_get_classes_by_term(request):
+    term = request.GET.get('term')
+    if not term:
         return JsonResponse([], safe=False)
 
-    qs = ClassRoom.objects.filter(year=year_int).order_by('name')
+    qs = ClassRoom.objects.filter(term=term).order_by('name')
     data = []
     for cls in qs:
         # Nếu bạn muốn hiển thị cả “(2025)” trong tên, đổi thành str(cls)
