@@ -63,6 +63,7 @@ class MealPrice(models.Model):
         return f"{self.effective_date:%Y-%m-%d} → {self.daily_price:,}₫/ngày"
 class StudentPayment(models.Model):
     class Meta:
+        ordering = ['-id']
         unique_together = ('student', 'month')
         verbose_name = "Công nợ học sinh"
         verbose_name_plural = "Công nợ học sinh"
@@ -167,6 +168,7 @@ class ClassRoom(models.Model):
     def __str__(self):
         return f"{self.name} ({self.term})"
     class Meta:
+        ordering = ['-id']
         verbose_name = _('Lớp học')
         verbose_name_plural = _('Lớp học')
         # Đảm bảo trong cùng 1 năm, không có 2 lớp trùng tên
@@ -178,6 +180,7 @@ class Student(models.Model):
     def __str__(self):
         return f"{self.name} ({self.classroom})"
     class Meta:
+        ordering = ['-id']
         verbose_name = _('Học sinh')
         verbose_name_plural = _('Học sinh')
 class MealRecord(models.Model):
@@ -210,5 +213,6 @@ class MealRecord(models.Model):
     def __str__(self):
         return f"{self.student.name} - {self.meal_type} - {self.date}"
     class Meta:
+        ordering = ['-id']
         verbose_name = _("Bữa ăn")                # tên số ít
         verbose_name_plural = _("Bữa ăn")         # tên số nhiều (hiển thị ở admin)

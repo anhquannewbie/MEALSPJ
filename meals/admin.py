@@ -19,9 +19,29 @@ from django.shortcuts import render
 from datetime import date, timedelta,datetime
 from decimal import Decimal
 from django.db.models import Q
+from django_admin_listfilter_dropdown.filters import (
+    DropdownFilter, RelatedDropdownFilter)
 admin.site.site_header  = "Trang quản trị bữa ăn học sinh"
 admin.site.site_title   = "Quản lý bữa ăn"
 admin.site.index_title  = "Bảng điều khiển"
+class TermFilter(admin.SimpleListFilter):
+    title            = 'Học kỳ/Niên khoá'
+    parameter_name   = 'term'
+
+    def lookups(self, request, model_admin):
+        # Lấy tất cả các term, order_by('-term') để term mới nhất lên đầu
+        terms = (
+            model_admin.model.objects
+            .values_list('term', flat=True)
+            .distinct()
+            .order_by('-term')
+        )
+        return [(t, t) for t in terms]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(term=self.value())
+        return queryset
 class AuditLogMixin:
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
@@ -152,7 +172,7 @@ class StudentPaymentImportForm(forms.Form):
 class YearFilter(SimpleListFilter):
     title            = 'Năm'
     parameter_name   = 'year'
-
+    template         = 'django_admin_listfilter_dropdown/dropdown_filter.html'
     def lookups(self, request, model_admin):
         # Lấy tập hợp các năm từ giá trị month “YYYY-MM”
         months = model_admin.model.objects.values_list('month', flat=True).distinct()
@@ -166,7 +186,7 @@ class YearFilter(SimpleListFilter):
 class MonthFilter(SimpleListFilter):
     title            = 'Tháng'
     parameter_name   = 'month'
-
+    template         = 'django_admin_listfilter_dropdown/dropdown_filter.html'
     def lookups(self, request, model_admin):
         year = request.GET.get('year')
         # chỉ lấy những month thuộc năm đã chọn (nếu có)
@@ -195,7 +215,11 @@ class StudentPaymentAdmin(admin.ModelAdmin):
     )
     search_fields = ('student__name','month')   # ← tìm theo tên học sinh hoặc tháng
     change_list_template = "admin/meals/studentpayment_changelist.html"
-    list_filter   = (YearFilter,'student__classroom',MonthFilter)  
+    list_filter = (
+        YearFilter,
+        ('student__classroom', RelatedDropdownFilter),
+        MonthFilter,
+    ) 
     verbose_name  = "Công nợ học sinh"
     verbose_name_plural = "Công nợ học sinh"
     @admin.display(ordering='tuition_fee', description='Học phí')
@@ -348,8 +372,9 @@ class StudentPaymentAdmin(admin.ModelAdmin):
         super().delete_model(request, obj)
 class ClassRoomAdmin( admin.ModelAdmin):
     list_display  = ('name', 'term')
-    list_filter   = ('term',)
+    list_filter   = (TermFilter,)
     search_fields = ('name', 'term',)
+    ordering     = ('-id',)
     inlines = [StudentInline]  
     verbose_name = "Lớp học"
     verbose_name_plural = "Các lớp học"
@@ -480,12 +505,32 @@ class ClassRoomAdmin( admin.ModelAdmin):
             return redirect(reverse('admin:meals_classroom_change', args=(classroom_id,)))
 
         # Nếu GET: hiển thị form chọn lớp đích
-        all_other_rooms = ClassRoom.objects.exclude(pk=classroom_id).order_by('name', 'term')
+        # 1️⃣ Lấy term từ GET hoặc mặc định = term của lớp nguồn
+        selected_term = request.GET.get('term', source_room.term)
+
+        # 2️⃣ Tất cả các term hiện có để đổ vào dropdown
+        all_terms = (
+            ClassRoom.objects
+                    .values_list('term', flat=True)
+                    .distinct()
+                    .order_by('term')
+        )
+
+        # 3️⃣ Lọc ra chỉ các lớp cùng term, bỏ lớp nguồn
+        target_rooms = (
+            ClassRoom.objects
+                    .filter(term=selected_term)
+                    .exclude(pk=classroom_id)
+                    .order_by('name')
+        )
+
         context = {
             **self.admin_site.each_context(request),
-            'opts': self.model._meta,
-            'original': source_room,
-            'target_rooms': all_other_rooms,
+            'opts':          self.model._meta,
+            'original':      source_room,
+            'all_terms':     all_terms,
+            'selected_term': selected_term,
+            'target_rooms':  target_rooms,
             'student_count': len(student_ids),
         }
         return render(request, "admin/meals/promote_students_choose_class.html", context)
@@ -646,7 +691,10 @@ class ClassRoomAdmin( admin.ModelAdmin):
 class StudentAdmin( admin.ModelAdmin):
     list_display = ('name','classroom')
     search_fields = ('name',)
-    list_filter = ('classroom',)
+    list_filter   = (
+        ('classroom', RelatedDropdownFilter),
+    )
+    ordering        = ('-id',)
     # Đổi tên hiển thị của model Student trong Admin
     verbose_name = "Học sinh"
     verbose_name_plural = "Các học sinh"
@@ -673,7 +721,11 @@ class MealRecordAdmin( admin.ModelAdmin):
     change_list_template = "admin/meals/mealrecord/change_list.html"
     list_display = ('student', 'date', 'meal_type', 'status')
     fields = ('student','date','meal_type','status','non_eat','absence_reason')
-    list_filter = ('date', 'meal_type','student__classroom')
+    list_filter  = (
+        ('date', DropdownFilter),
+        ('student__classroom', RelatedDropdownFilter),
+    )
+    ordering = ('-date',)
     date_hierarchy = 'date'
     search_fields = ('student__name',)
     # Đổi tên hiển thị của model MealRecord trong Admin

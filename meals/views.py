@@ -353,10 +353,10 @@ def bulk_meal_record_save(request):
     return JsonResponse({"error": "Invalid method"}, status=400)
 
 def bulk_meal_record_create(request):
-    # 1) Lấy distinct list các term (Học kỳ/Niên khóa)
-    terms_list    = ClassRoom.objects.values_list('term', flat=True).distinct().order_by('-term')
-    selected_term = request.GET.get('term', '')
-
+    # 1) Lấy distinct list các term (Học kỳ/Niên khóa), mới nhất ở đầu
+    terms_list = ClassRoom.objects.values_list('term', flat=True).distinct().order_by('-term')
+    # 2) Nếu có ?term=… từ URL thì dùng, không thì default là phần tử đầu (latest)
+    selected_term = request.GET.get('term') or (terms_list[0] if terms_list else '')
     # 2) Nếu user đã chọn term thì load lớp; còn không thì để rỗng
     if selected_term:
         # Lấy cả id và name để JS/HTML dễ render <option value="{{ id }}">{{ name }}</option>
@@ -617,14 +617,13 @@ def statistics_view(request):
                     remaining   = collected - total_due
                     if sp:
                         row_data = {
-                            'student':    stu,
-                            'days':       days,
-                            'total_meals': total_meals,
-                            'food_cost':  f"{food_cost:,}",
-                            'tuition_fee':f"{int(tuition_fee):,}",
-                            'total_due':  f"{int(total_due):,}",
-                            'collected':  f"{int(collected):,}",
-                            'remaining':  f"{int(remaining):,}",
+                            'student':      stu,
+                            'days':         days,
+                            'total_meals':  total_meals,
+                            # format chuỗi có dấu phẩy
+                            'food_cost':    f"{int(food_cost):,}",
+                            'tuition_fee':  f"{int(tuition_fee):,}",
+                            'total_due':    f"{int(total_due):,}",
                         }
                     else:
                         # chưa có payment → tất cả tiền = 0
@@ -632,11 +631,11 @@ def statistics_view(request):
                             'student':     stu,
                             'days':        days,
                             'total_meals': total_meals,
-                            'food_cost':   '0',
-                            'tuition_fee': '0',
-                            'total_due':   '0',
-                            'collected':   '0',
-                            'remaining':   '0',
+                            'food_cost':   0,
+                            'tuition_fee': 0,
+                            'total_due':   0,
+                            'collected':   0,
+                            'remaining':   0,
                         }
                 else:
                     if sp:
@@ -644,6 +643,7 @@ def statistics_view(request):
                             'student':     stu,
                             'days':        days,
                             'total_meals': total_meals,
+                            # format tổng tiền bữa sáng
                             'total_cost':  f"{int(total_cost):,}",
                         }
                     else:
@@ -652,7 +652,7 @@ def statistics_view(request):
                             'student':     stu,
                             'days':        days,
                             'total_meals': total_meals,
-                            'total_cost':  '0',
+                            'total_cost':  f"{0:,}",
                         }
 
                 rows_mt.append(row_data)
@@ -663,13 +663,35 @@ def statistics_view(request):
                 rows_mt,
                 key=lambda r: r['student'].name.strip().split()[-1].upper()
             )
-            stats[mt] = {'rows': rows_mt, 'totals': totals_mt}
-
+            #stats[mt] = {'rows': rows_mt, 'totals': totals_mt}
+            total_meals_sum = sum(r['total_meals'] for r in rows_mt)
+            if mt == 'Bữa trưa':
+                # tính tổng với giá trị int (trước format)
+                tot_food    = sum(int(str(r['food_cost']).replace(',', '')) for r in rows_mt)
+                tot_tuition = sum(int(str(r['tuition_fee']).replace(',', '')) for r in rows_mt)
+                tot_due     = sum(int(str(r['total_due']).replace(',', '')) for r in rows_mt)
+                stats[mt] = {
+                    'rows':                   rows_mt,
+                    'totals':                 totals_mt,
+                    # giữ nguyên số bữa (không cần dấu phẩy)
+                    'totals_meals_sum':       total_meals_sum,
+                    # format chuỗi cho tổng tiền
+                    'totals_food_cost_sum':   f"{tot_food:,}",
+                    'totals_tuition_fee_sum': f"{tot_tuition:,}",
+                    'totals_due_sum':         f"{tot_due:,}",
+                }
+            else:
+                tot_cost = sum(int(str(r['total_cost']).replace(',', '')) for r in rows_mt)
+                stats[mt] = {
+                    'rows':               rows_mt,
+                    'totals':             totals_mt,
+                    'totals_meals_sum':   total_meals_sum,
+                    'totals_cost_sum':    f"{tot_cost:,}",
+                }
         context.update({
             'stats':        stats,
             'max_day_list': list(range(1, max_day + 1)),
         })
-
     # --- Thống kê theo năm (mới) ---
     if mode == 'year':
         # Các param truyền lên chỉ có start_month/end_month dưới dạng "M/YYYY"
@@ -934,45 +956,48 @@ def export_monthly_statistics(request):
     return resp
 
 def export_yearly_statistics(request):
-    # 1. Nhận tham số
-    s_year   = request.GET.get('start_year')
-    s_month  = request.GET.get('start_month')
-    e_year   = request.GET.get('end_year')
-    e_month  = request.GET.get('end_month')
-    class_id = request.GET.get('class_id')
-    if not (s_year and s_month and e_year and e_month and class_id):
+    # 1) Nhận param duy nhất start_month & end_month ở dạng "M/YYYY"
+    start_str = request.GET.get('start_month')
+    end_str   = request.GET.get('end_month')
+    class_id  = request.GET.get('class_id')
+    if not (start_str and end_str and class_id):
         return HttpResponse("Thiếu tham số", status=400)
 
-    # 2. Chuyển kiểu
-    start_year, start_month = int(s_year), int(s_month)
-    end_year,   end_month   = int(e_year),   int(e_month)
+    # 2) Parse "M/YYYY" → số nguyên month, year
+    try:
+        m0, y0 = start_str.split('/', 1)
+        m1, y1 = end_str.split('/',   1)
+        start_month = int(m0)
+        start_year  = int(y0)
+        end_month   = int(m1)
+        end_year    = int(y1)
+    except Exception:
+        return HttpResponse("Thiếu tham số", status=400)
 
-    # 3. Build danh sách tháng
+    # 3) Tạo list các (year, month) giữa khoảng từ start→end
     months = []
     y, m = start_year, start_month
     while (y < end_year) or (y == end_year and m <= end_month):
         months.append((y, m))
         m += 1
         if m > 12:
-            m = 1
-            y += 1
+            m = 1; y += 1
 
-    # 4. Lấy lớp & danh sách học sinh
+    # 4) Lấy class & students
     classroom = get_object_or_404(ClassRoom, id=int(class_id))
-    # lấy danh sách rồi sort theo từ cuối của name (Tên) A→Z
     students_qs = Student.objects.filter(classroom=classroom)
-    students    = sorted(
+    students = sorted(
         students_qs,
         key=lambda s: s.name.strip().split()[-1].upper()
     )
 
-    # 5. Tạo workbook
+    # 5) Bắt đầu xuất Excel
     wb = openpyxl.Workbook()
     ws = wb.active
-    # Đặt tiêu đề sheet không chứa ký tự đặc biệt
-    ws.title = f"{start_month:02d}{start_year}-{end_month:02d}{end_year}"
+    safe_title = f"{start_month:02d}-{start_year}_{end_month:02d}-{end_year}"
+    ws.title = safe_title
 
-    # 6. Merge header & tiêu đề
+    # Merge & Title
     last_col = 2 + len(months)*3
     ws.merge_cells(start_row=1, start_column=1, end_row=2, end_column=last_col)
     title = (
@@ -980,92 +1005,70 @@ def export_yearly_statistics(request):
         f"ĐẾN THÁNG {end_month:02d}/{end_year}   |   LỚP: {classroom.name}"
     )
     c = ws.cell(row=1, column=1, value=title)
-    c.alignment = Alignment(horizontal='center', vertical='center')
+    c.alignment = Alignment('center', 'center')
     c.font      = Font(size=14, bold=True)
 
-    # 7. Header các cột
+    # Header
     ws.cell(row=3, column=1, value="STT").font      = Font(bold=True)
     ws.cell(row=3, column=2, value="HỌ VÀ TÊN").font = Font(bold=True)
     for idx, (yy, mm) in enumerate(months):
         col = 3 + idx*3
         ws.merge_cells(start_row=3, start_column=col, end_row=3, end_column=col+2)
-        h = ws.cell(row=3, column=col, value=f"THÁNG {mm:02d}/{yy}")
-        h.alignment = Alignment(horizontal='center', vertical='center')
-        h.font      = Font(bold=True)
+        h = ws.cell(row=3, column=col,   value=f"THÁNG {mm:02d}/{yy}")
+        h.font = Font(bold=True); h.alignment = Alignment('center','center')
         ws.cell(row=4, column=col,   value="Đã đóng").font = Font(bold=True)
         ws.cell(row=4, column=col+1, value="Ăn học").font = Font(bold=True)
         ws.cell(row=4, column=col+2, value="Còn lại").font = Font(bold=True)
 
-    # 8. Khởi tạo mảng tổng
+    # Tạo totals array
     totals = [[Decimal('0'), Decimal('0'), Decimal('0')] for _ in months]
 
-    # 9. Điền dữ liệu học sinh
+    # Fill rows
     row_num = 5
     for i, stu in enumerate(students, start=1):
         ws.cell(row=row_num, column=1, value=i)
         ws.cell(row=row_num, column=2, value=stu.name)
         for idx, (yy, mm) in enumerate(months):
-            # Tìm StudentPayment theo tháng
-            month_str = f"{yy:04d}-{mm:02d}"
-            sp = StudentPayment.objects.filter(student=stu, month=month_str).first()
+            ym = f"{yy:04d}-{mm:02d}"
+            sp = StudentPayment.objects.filter(student=stu, month=ym).first()
             if sp:
-                paid = sp.amount_paid
-                tuition = sp.tuition_fee
-                rem    = sp.remaining_balance
-                # Số ngày ăn sáng
+                paid      = sp.amount_paid
+                tuition   = sp.tuition_fee
+                rem       = sp.remaining_balance or Decimal('0')
                 br_count = MealRecord.objects.filter(
-                    student=stu,
-                    date__year=yy,
-                    date__month=mm,
-                    meal_type="Bữa sáng"
-                ).filter(
-                    Q(status='Đủ') | Q(status='Thiếu', non_eat=2)
-                ).count()
-                # Số ngày ăn trưa
+                    student=stu, date__year=yy, date__month=mm, meal_type="Bữa sáng"
+                ).filter(Q(status='Đủ')|Q(status='Thiếu', non_eat=2)).count()
                 lu_count = MealRecord.objects.filter(
-                    student=stu,
-                    date__year=yy,
-                    date__month=mm,
-                    meal_type="Bữa trưa"
-                ).filter(
-                    Q(status='Đủ') | Q(status='Thiếu', non_eat=2)
-                ).count()
-                fee_break = sp.meal_price.breakfast_price
-                fee_lunch = sp.meal_price.lunch_price
-                spent = tuition + Decimal(br_count) * Decimal(fee_break) + Decimal(lu_count) * Decimal(fee_lunch)
+                    student=stu, date__year=yy, date__month=mm, meal_type="Bữa trưa"
+                ).filter(Q(status='Đủ')|Q(status='Thiếu', non_eat=2)).count()
+                fee_b    = sp.meal_price.breakfast_price
+                fee_l    = sp.meal_price.lunch_price
+                spent    = tuition + Decimal(br_count)*Decimal(fee_b) + Decimal(lu_count)*Decimal(fee_l)
             else:
-                paid = Decimal('0'); spent = Decimal('0'); rem = Decimal('0')
+                paid = spent = rem = Decimal('0')
 
-            # Cộng vào totals
             totals[idx][0] += paid
             totals[idx][1] += spent
             totals[idx][2] += rem
 
-            # Ghi vào Excel với format số
             base = 3 + idx*3
-            cells = [
-                ws.cell(row=row_num, column=base,   value=float(paid)),
-                ws.cell(row=row_num, column=base+1, value=float(spent)),
-                ws.cell(row=row_num, column=base+2, value=float(rem)),
-            ]
-            for cell in cells:
-                cell.font = Font(bold=False)
-                cell.number_format = '#,##0'
+            ws.cell(row=row_num, column=base,   value=float(paid)).number_format   = '#,##0'
+            ws.cell(row=row_num, column=base+1, value=float(spent)).number_format  = '#,##0'
+            ws.cell(row=row_num, column=base+2, value=float(rem)).number_format    = '#,##0'
+
         row_num += 1
 
-    # 10. Hàng tổng
+    # Footer totals
     ws.cell(row=row_num, column=1, value="Tổng").font = Font(bold=True)
     for idx, (p, s, r) in enumerate(totals):
         base = 3 + idx*3
-        c1 = ws.cell(row=row_num, column=base,   value=float(p)); c1.font = Font(bold=True)
-        c2 = ws.cell(row=row_num, column=base+1, value=float(s)); c2.font = Font(bold=True)
-        c3 = ws.cell(row=row_num, column=base+2, value=float(r)); c3.font = Font(bold=True)
-        for cell in (c1, c2, c3):
-            cell.number_format = '#,##0'
+        ws.cell(row=row_num, column=base,   value=float(p)).font = Font(bold=True)
+        ws.cell(row=row_num, column=base+1, value=float(s)).font = Font(bold=True)
+        ws.cell(row=row_num, column=base+2, value=float(r)).font = Font(bold=True)
 
-    # 11. Trả file
+    # Gửi file về client
     resp = HttpResponse(
-        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
     resp["Content-Disposition"] = (
         f'attachment; filename="TheoDoiTienAn_{classroom.name}_'
@@ -1157,133 +1160,162 @@ def ajax_get_classes_by_term(request):
         })
     return JsonResponse(data, safe=False)
 def export_monthly_statistics_all(request):
-    year = request.GET.get('year')
-    month = request.GET.get('month')
-    class_id = request.GET.get('class_id')
+    # 1) Lấy các GET-param, với fallback term→year và class→class_id
+    year     = request.GET.get('year')
+    term     = request.GET.get('term')
+    month    = request.GET.get('month')
+    class_id = request.GET.get('class_id') or request.GET.get('class')
+
+    # 2) Nếu không có year nhưng có term, lấy phần số cuối của term
+    if not year and isinstance(term, str):
+        parts = term.strip().split()
+        if parts:
+            year = parts[-1]
+
+    # 3) Nếu month có dấu '/', parse thành month và override year nếu cần
+    month_str = str(month or '')      # luôn thành chuỗi
+    if '/' in month_str:
+        m, y    = month_str.split('/', 1)
+        month   = m.zfill(2)          # '6' → '06'
+        year    = y                   # override year nếu cần
+    else:
+        month = month_str  
+
+    # 4) Kiểm tra đủ param
     if not (year and month and class_id):
         return HttpResponse("Thiếu tham số", status=400)
 
-    year_i = int(year)
-    month_i = int(month)
+    # 5) Chuyển về số nguyên an toàn
+    try:
+        year_i      = int(year)
+        month_i     = int(month)
+        class_id_int = int(class_id)
+    except ValueError:
+        return HttpResponse("Thiếu tham số", status=400)
+
+    # 6) Tính số ngày trong tháng
     max_day = calendar.monthrange(year_i, month_i)[1]
 
-    classroom = get_object_or_404(ClassRoom, id=int(class_id))
-    # Lấy học sinh rồi sort theo từ cuối (Tên) A→Z
+    # 7) Lấy đối tượng ClassRoom, danh sách học sinh
+    classroom = get_object_or_404(ClassRoom, id=class_id_int)
     students_qs = Student.objects.filter(classroom=classroom)
     students = sorted(
         students_qs,
         key=lambda s: s.name.strip().split()[-1].upper()
     )
 
+    # 8) Tạo Workbook và loop 2 sheet: "Bữa sáng" & "Bữa trưa"
     wb = openpyxl.Workbook()
-    # loop qua hai loại bữa ăn
     for idx_mt, mt in enumerate(["Bữa sáng", "Bữa trưa"]):
         if idx_mt == 0:
             ws = wb.active
-            ws.title = mt
+            ws.title = mt          # ← ĐẶT TÊN cho sheet mặc định
         else:
             ws = wb.create_sheet(title=mt)
 
-        # Tiêu đề
-        last_col = 3 + max_day + (3 if mt == "Bữa trưa" else 0)
-        ws.merge_cells(start_row=1, start_column=1, end_row=2, end_column=last_col)
-        title = f"TK {mt.upper()} THÁNG {month}/{year} - LỚP {classroom.name}"
-        c = ws.cell(row=1, column=1, value=title)
-        c.alignment = Alignment(horizontal='center', vertical='center')
-        c.font = Font(size=14, bold=True)
+        # Title merged
+        last_col = 3 + max_day + (3 if mt == "Bữa trưa" else 1)
+        ws.merge_cells(
+            start_row=1, start_column=1,
+            end_row=2,   end_column=last_col
+        )
+        title = f"{mt.upper()} THÁNG {month}/{year} - LỚP {classroom.name}"
+        c = ws.cell(1, 1, title)
+        c.alignment = Alignment('center', 'center')
+        c.font      = Font(size=14, bold=True)
 
-        # Header
+        # Header row
         headers = ["Học sinh"] + [str(d) for d in range(1, max_day+1)] + ["Tổng"]
         if mt == "Bữa trưa":
-            headers += ["Tiền Ăn", "Học Phí", "Thành Tiền", "Đã Thu", "Còn Lại"]
+            headers += ["Tiền Ăn", "Học Phí", "Thành Tiền"]
         else:
             headers += ["Thành tiền"]
-        for col_idx, h in enumerate(headers, start=1):
-            cell = ws.cell(row=3, column=col_idx, value=h)
-            cell.font = Font(bold=True)
-            cell.alignment = Alignment(horizontal='center', vertical='center')
-            ws.column_dimensions[get_column_letter(col_idx)].width = (12 if col_idx <= 2 else 5)
 
-        # Dữ liệu từng học sinh
-        row_num = 4
-        totals_per_day = [0] * max_day
+        for ci, h in enumerate(headers, start=1):
+            cell = ws.cell(3, ci, h)
+            cell.font      = Font(bold=True)
+            cell.alignment = Alignment('center', 'center')
+            ws.column_dimensions[get_column_letter(ci)].width = (12 if ci==1 else 5)
+
+        # Data rows
+        row = 4
+        totals_per_day = [0]*max_day
         for stu in students:
-            # lấy giá
-            sp = StudentPayment.objects.filter(student=stu, month=f"{year}-{int(month):02d}").first()
-            fee_break = (sp.meal_price.breakfast_price if sp else get_current_price().breakfast_price)
-            fee_lunch = (sp.meal_price.lunch_price     if sp else get_current_price().lunch_price)
+            # Lấy giá meal & tuition
+            sp = StudentPayment.objects.filter(
+                student=stu, month=f"{year}-{month}"
+            ).first()
+            fee_br = sp.meal_price.breakfast_price if sp else get_current_price().breakfast_price
+            fee_lu = sp.meal_price.lunch_price     if sp else get_current_price().lunch_price
 
-            # build ngày
+            # Lấy record trong tháng này
             recs = MealRecord.objects.filter(
                 student=stu, meal_type=mt,
                 date__year=year_i, date__month=month_i
             )
-            rec_map = {r.date.day: (r.status, r.non_eat) for r in recs}
+            rec_map = {r.date.day:(r.status, r.non_eat) for r in recs}
 
-            days = []
+            day_marks = []
             total_meals = 0
-            total_cost = 0
+            total_cost  = 0
             for d in range(1, max_day+1):
-                val = rec_map.get(d)
-                if val:
-                    status, ne = val
-                    if status == "Đủ":
-                        mark = "X"
+                st = rec_map.get(d)
+                if st:
+                    status, ne = st
+                    if status=="Đủ" or (status=="Thiếu" and ne==2):
+                        mark = "X" if status=="Đủ" else "KP"
+                        cnt_unit = fee_br if mt=="Bữa sáng" else fee_lu
                         total_meals += 1
-                        cost_unit = fee_break if mt == "Bữa sáng" else fee_lunch
-                        total_cost += cost_unit
+                        total_cost   += cnt_unit
                         totals_per_day[d-1] += 1
-                    elif status == "Thiếu" and ne == 2:
-                        mark = "KP"            # <-- đổi thành KP
-                        total_meals += 1       # vẫn tính là đã ăn
-                        cost_unit = fee_break if mt == "Bữa sáng" else fee_lunch
-                        total_cost += cost_unit
-                    elif status == "Thiếu" and ne == 1:
+                    elif status=="Thiếu" and ne==1:
                         mark = "P"
                     else:
                         mark = "0"
                 else:
                     mark = "0"
-                days.append(mark)
+                day_marks.append(mark)
 
-            # thêm cột chung
-            base = [stu.name] + days + [total_meals]
+            base = [stu.name] + day_marks + [total_meals]
 
             if mt == "Bữa trưa":
-                # tính br_count, lu_count như trên
-                tuition_fee = sp.tuition_fee if sp else 0
-                collected   = sp.amount_paid if sp else 0
-                br_count = MealRecord.objects.filter(
-                    student=stu, date__year=year_i, date__month=month_i, meal_type="Bữa sáng"
+                # Tính các cột bổ sung
+                tuition = sp.tuition_fee if sp else 0
+                paid    = sp.amount_paid  if sp else 0
+                br_ct = MealRecord.objects.filter(
+                    student=stu, meal_type="Bữa sáng",
+                    date__year=year_i, date__month=month_i
                 ).filter(Q(status="Đủ")|Q(status="Thiếu", non_eat=2)).count()
-                lu_count = MealRecord.objects.filter(
-                    student=stu, date__year=year_i, date__month=month_i, meal_type="Bữa trưa"
+                lu_ct = MealRecord.objects.filter(
+                    student=stu, meal_type="Bữa trưa",
+                    date__year=year_i, date__month=month_i
                 ).filter(Q(status="Đủ")|Q(status="Thiếu", non_eat=2)).count()
 
-                food_cost = br_count * fee_break + lu_count * fee_lunch
-                total_due = tuition_fee + food_cost
-                remaining = collected - total_due
+                food = br_ct*fee_br + lu_ct*fee_lu
+                total_due = tuition + food
+                remaining = paid - total_due
 
-                row = base + [food_cost, tuition_fee, total_due, collected, remaining]
+                row_vals = base + [food, tuition, total_due]
             else:
-                # bữa sáng
-                row = base + [total_cost]
+                # chỉ bữa sáng
+                row_vals = base + [total_cost]
 
-            # ghi vào sheet và format số
-            for col_idx, val in enumerate(row, start=1):
-                c = ws.cell(row=row_num, column=col_idx, value=val)
-                if isinstance(val, (int, float, Decimal)):
+            # Ghi row và format số
+            for ci, v in enumerate(row_vals, start=1):
+                c = ws.cell(row, ci, v)
+                if isinstance(v, (int, float, Decimal)):
                     c.number_format = '#,##0'
-            row_num += 1
-            # Sau hết học sinh, thêm dòng Tổng
-        ws.cell(row=row_num, column=1, value="Tổng")
-        for idx, cnt in enumerate(totals_per_day, start=1):
-            ws.cell(row=row_num, column=1+idx, value=cnt)
+            row += 1
 
-    # xuất file
-    response = HttpResponse(
+        # Cuối cùng: row Tổng
+        ws.cell(row, 1, "Tổng")
+        for idx, cnt in enumerate(totals_per_day, start=1):
+            ws.cell(row, 1+idx, cnt)
+
+    # Trả file về client
+    resp = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
-    response['Content-Disposition'] = f'attachment; filename="ThongKe_{year}_{month}_ALL.xlsx"'
-    wb.save(response)
-    return response
+    resp['Content-Disposition'] = f'attachment; filename="TK_{classroom}_{month}.xlsx"'
+    wb.save(resp)
+    return resp

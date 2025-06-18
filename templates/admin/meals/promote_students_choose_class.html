@@ -2,25 +2,33 @@
 {% load i18n %}
 
 {% block content %}
-  <h1>{% trans "Chọn lớp đích để lên lớp" %} – {{ original.name }}</h1>
+  <h1>Chọn lớp đích để lên lớp – {{ original.name }}</h1>
 
-  <p>Đã chọn <strong>{{ student_count }}</strong> học sinh từ lớp “{{ original.name }}”.</p>
+  {# ------ Form lọc term (GET) ------ #}
+  <form method="get" style="margin-bottom:1em;">
+    <label for="id_term">Niên khóa / Học kỳ:</label>
+    <select name="term" id="id_term" onchange="this.form.submit()">
+      {% for term in all_terms %}
+        <option value="{{ term }}"
+          {% if term == selected_term %}selected{% endif %}>
+          {{ term }}
+        </option>
+      {% endfor %}
+    </select>
+  </form>
 
-  <form method="post" style="margin-top: 1em;">
-    {% csrf_token %}
+  {# ------ Form POST chọn lớp đích ------ #}
+  <form method="post">{% csrf_token %}
+    <p>Đã chọn {{ student_count }} học sinh từ lớp “{{ original.name }}”.</p>
     <div>
-      <label for="id_target_class_id">{% trans "Lớp mới:" %}</label>
-      <select name="target_class_id" id="id_target_class_id">
-        <option value="" disabled selected>-- Chọn Lớp --</option>
+      <label for="id_target">Lớp mới:</label>
+      <select name="target_class_id" id="id_target">
+        <option value="">-- Chọn lớp --</option>
         {% for room in target_rooms %}
-          <option value="{{ room.id }}">{{ room.name }} ({{ room.term }})</option>
+          <option value="{{ room.pk }}">{{ room.name }}</option>
         {% endfor %}
       </select>
     </div>
-
-    <div style="margin-top: 1em;">
-      <button type="submit" class="default">{% trans "Xác nhận Lên Lớp" %}</button>
-      <a href="../../{{ original.id }}/change/" class="button">{% trans "Hủy" %}</a>
-    </div>
+    <button type="submit" class="default">Xác nhận</button>
   </form>
 {% endblock %}

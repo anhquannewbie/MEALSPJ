@@ -75,6 +75,8 @@ class StudentPaymentForm(forms.ModelForm):
         terms = ClassRoom.objects.values_list('term', flat=True).distinct().order_by('-term')
         term_choices = [('', '--- Chọn Học kỳ ---')] + [(t, t) for t in terms]
         self.fields['term'].choices = term_choices
+        if terms:
+            self.fields['term'].initial = terms[0]
         # Xóa mọi tham chiếu cũ đến 'year'
         self.fields.pop('year', None)
 
