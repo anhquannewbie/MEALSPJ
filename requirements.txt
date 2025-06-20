@@ -5,3 +5,5 @@ django-admin-list-filter-dropdown==1.0.3
 django-crispy-forms==2.0
 openpyxl==3.1.5
 pandas
+dj-database-url
+psycopg2-binary
