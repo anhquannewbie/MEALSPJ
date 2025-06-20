@@ -1,2 +1,5 @@
-venv/pyvenv.cfg
-venv/pyvenv.cfg
+venv/
+__pycache__/
+*.py[cod]
+*.sqlite3
+site.db
