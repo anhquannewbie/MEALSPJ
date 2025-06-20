@@ -11,7 +11,7 @@ LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/login/'
 INSTALLED_APPS = [
-    'django_admin_listfilter_dropdown',
+    'django-admin-listfilter-dropdown',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
