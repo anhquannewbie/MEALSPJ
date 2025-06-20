@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 import dj_database_url
-
+import django_admin_listfilter_dropdown
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'your-secret-key-very-secret'
@@ -11,7 +11,7 @@ LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/login/'
 INSTALLED_APPS = [
-    'django-admin-listfilter-dropdown',
+    'django_admin_listfilter_dropdown',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -55,13 +55,22 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'meals_system.wsgi.application'
 
-DATABASES = {
-    "default": dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'site.db'}",
-        conn_max_age=600,
-        ssl_require=True
-    )
-}
+if os.getenv("DATABASE_URL"):
+    # Trên Railway: dùng Postgres với SSL
+    DATABASES = {
+        "default": dj_database_url.config(
+            conn_max_age=600,
+            ssl_require=True
+        )
+    }
+else:
+    # Chạy local: fallback về SQLite
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "site.db",
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     # Cấu hình validator (tuỳ chọn)
