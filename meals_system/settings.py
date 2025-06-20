@@ -52,7 +52,10 @@ TEMPLATES = [
         },
     },
 ]
-
+CSRF_TRUSTED_ORIGINS = [
+  'https://mealspj-production.up.railway.app',
+  'https://meal.hoahuongduong.org/'
+]
 WSGI_APPLICATION = 'meals_system.wsgi.application'
 
 if os.getenv("DATABASE_URL"):
