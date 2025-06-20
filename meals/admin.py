@@ -731,6 +731,22 @@ class MealRecordAdmin( admin.ModelAdmin):
     # Đổi tên hiển thị của model MealRecord trong Admin
     verbose_name = "Bữa ăn"
     verbose_name_plural = "Các bữa ăn"
+    def delete_queryset(self, request, queryset):
+        for obj in queryset:
+            # build lại object_display giống delete_model
+            date_str = obj.date.strftime('%d/%m/%Y')
+            mt = obj.get_meal_type_display().replace('Bữa ', '').capitalize()
+            disp = (
+                f"Bản ghi bữa ăn - {date_str} - "
+                f"{obj.student.name} - {obj.student.classroom.name} - {mt}"
+            )
+            log_admin_action(request, obj, 'delete', extra={
+                'model':          'mealrecord',
+                'object_id':      obj.pk,
+                'object_display': disp,
+            })
+        # rồi mới xoá thật
+        super().delete_queryset(request, queryset)
     def delete_model(self, request, obj):
         # Lấy loại bữa ăn (Sáng/Trưa)
         date_str = obj.date.strftime('%d/%m/%Y')
