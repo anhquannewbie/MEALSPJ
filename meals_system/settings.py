@@ -37,7 +37,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'meals_system.urls'
-
+STATIC_ROOT = BASE_DIR / "staticfiles"
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
