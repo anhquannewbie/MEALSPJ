@@ -4,8 +4,6 @@
 {% block title %}Trang Chủ | Trường Mầm Non Hoa Hướng Dương{% endblock %}
 
 {% block content %}
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
   <style>
     /* 1. KHAI BÁO FONT-FACE */
     @font-face {
@@ -44,20 +42,19 @@
 
     /* OUTER BOX */
     .outer-box {
-      width: 100%;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 32px;
       background: #FFFFFF;
       border: 2px solid #E0E0E0;
       border-radius: 1.5rem;
+      padding: 32px;
+      margin: 32px auto;
+      max-width: 1200px;
       box-shadow: 0 4px 16px rgba(0,0,0,0.08);
     }
 
     /* HERO SECTION */
     .hero {
       display: flex;
-      justify-content: flex-start;  /* Điều chỉnh vị trí */
+      justify-content: space-between;
       align-items: center;
       padding: 60px 32px;
       background: #FFF5E6;
@@ -65,45 +62,29 @@
       overflow: hidden;
       box-shadow: 0 6px 18px rgba(0,0,0,0.1);
     }
-
     .hero-text { flex: 1; padding-right: 24px; }
     .hero-text h1 {
       margin: 0;
       font-size: 2.8em;
+      /* dùng DFVN Lucky Skirt */
       font-family: 'LuckySkirt', cursive;
       color: #333;
       font-weight: normal;
     }
-    .hero-image {
-      flex: 1;
-      text-align: right;
+    .hero-text p {
+      margin-top: 16px;
+      font-family: 'Roboto', sans-serif;
+      font-size: 1.2em;
+      color: #A0A0A0;
+      max-width: 500px;
+      line-height: 1.5;
     }
-
+    .hero-image { flex: 1; text-align: right; }
     .hero-image img {
       max-width: 300px;
       width: 100%;
       height: auto;
     }
-
-    .cta-btn {
-      margin-top: 24px;
-      display: inline-block;
-      background: #F48FB1;
-      color: #000;
-      font-size: 1.25rem;
-      font-family: 'CerealExtraBold', sans-serif;
-      font-weight: normal;
-      padding: 16px 32px;
-      border-radius: 1rem;
-      text-decoration: none;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-      transition: background 0.3s;
-    }
-
-    .cta-btn:hover {
-      background: #D8438B;
-    }
-
 
     /* FEATURE CARDS */
     .cards {
@@ -129,12 +110,14 @@
     .card h3 {
       margin-bottom: 8px;
       font-size: 1.5em;
+      /* dùng Airbnb Cereal Medium & in đậm */
       font-family: 'CerealMedium', sans-serif;
       font-weight: 700;
       color: #333;
     }
     .card p {
       margin: 0;
+      /* chuyển mô tả thành màu đen */
       color: #000;
       font-family: 'Roboto', sans-serif;
       line-height: 1.5;
@@ -159,6 +142,7 @@
     .banner h2 {
       margin: 0;
       font-size: 2em;
+      /* dùng Airbnb Cereal ExtraBold & màu đen */
       font-family: 'CerealExtraBold', sans-serif;
       color: #000;
     }
@@ -166,8 +150,10 @@
       margin-top: 24px;
       display: inline-block;
       background: #F48FB1;
+      /* chữ button màu đen */
       color: #000;
       font-size: 1.25rem;
+      /* dùng Airbnb Cereal ExtraBold */
       font-family: 'CerealExtraBold', sans-serif;
       font-weight: normal;
       padding: 16px 32px;
@@ -228,7 +214,7 @@
     <div class="hero">
       <div class="hero-text">
         <h1>Trường Mầm non Hoa Hướng Dương</h1>
-        <a href="{% url 'meals:meal_bulk_create' %}" class="cta-btn">Nhập Dữ liệu Bữa Ăn Ngay</a>
+        <p>Phần mềm quản lý và thống kê bữa ăn cho học sinh một cách thông minh và chuyên nghiệp.</p>
       </div>
       <div class="hero-image">
         <img src="{% static 'images/vegetablebowping.png' %}" alt="Bữa ăn minh họa">
