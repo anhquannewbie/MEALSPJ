@@ -57,7 +57,7 @@
     /* HERO SECTION */
     .hero {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-start;  /* Điều chỉnh vị trí */
       align-items: center;
       padding: 60px 32px;
       background: #FFF5E6;
@@ -65,6 +65,7 @@
       overflow: hidden;
       box-shadow: 0 6px 18px rgba(0,0,0,0.1);
     }
+
     .hero-text { flex: 1; padding-right: 24px; }
     .hero-text h1 {
       margin: 0;
@@ -73,20 +74,36 @@
       color: #333;
       font-weight: normal;
     }
-    .hero-text p {
-      margin-top: 16px;
-      font-family: 'Roboto', sans-serif;
-      font-size: 1.2em;
-      color: #A0A0A0;
-      max-width: 500px;
-      line-height: 1.5;
+    .hero-image {
+      flex: 1;
+      text-align: right;
     }
-    .hero-image { flex: 1; text-align: right; }
+
     .hero-image img {
       max-width: 300px;
       width: 100%;
       height: auto;
     }
+
+    .cta-btn {
+      margin-top: 24px;
+      display: inline-block;
+      background: #F48FB1;
+      color: #000;
+      font-size: 1.25rem;
+      font-family: 'CerealExtraBold', sans-serif;
+      font-weight: normal;
+      padding: 16px 32px;
+      border-radius: 1rem;
+      text-decoration: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      transition: background 0.3s;
+    }
+
+    .cta-btn:hover {
+      background: #D8438B;
+    }
+
 
     /* FEATURE CARDS */
     .cards {
@@ -211,7 +228,7 @@
     <div class="hero">
       <div class="hero-text">
         <h1>Trường Mầm non Hoa Hướng Dương</h1>
-        <p>Phần mềm quản lý và thống kê bữa ăn cho học sinh một cách thông minh và chuyên nghiệp.</p>
+        <a href="{% url 'meals:meal_bulk_create' %}" class="cta-btn">Nhập Dữ liệu Bữa Ăn Ngay</a>
       </div>
       <div class="hero-image">
         <img src="{% static 'images/vegetablebowping.png' %}" alt="Bữa ăn minh họa">
@@ -237,7 +254,6 @@
     <!-- BANNER WITH TEXT/BUTTON ROW THEN IMAGE ROW -->
     <div class="banner">
       <h2>Sẵn sàng quản lý bữa ăn cho học sinh?</h2>
-      <a href="{% url 'meals:meal_bulk_create' %}" class="cta-btn">Nhập Dữ liệu Bữa Ăn Ngay</a>
       <img src="{% static 'images/3vegetablebow.png' %}" alt="Minh họa bữa ăn" class="banner-image">
     </div>
   </div>
