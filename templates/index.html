@@ -1,122 +1,252 @@
 {% extends "layout.html" %}
 {% load static %}
 
-{% block title %}Trang Chủ | Hệ Thống Quản Lý Bữa Ăn{% endblock %}
+{% block title %}Trang Chủ | Trường Mầm Non Hoa Hướng Dương{% endblock %}
 
 {% block content %}
   <style>
-    /* 1. Import Google Font Noto Sans (subset vietnamese) để fix lỗi diacritics */
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;700&display=swap&subset=vietnamese');
-
-    :root {
-      /* gradient pastel hồng → pastel xanh */
-      --primary-start: #FFCDD2;
-      --primary-end:   #BBDEFB;
-      --section-bg:    #FAFBFC;
-      --heading-color:#222;
-      --text-color:   #555;
+    /* 1. KHAI BÁO FONT-FACE */
+    @font-face {
+      font-family: 'LuckySkirt';
+      src: url("{% static 'fonts/DFVN Lucky Skirt.otf' %}") format('opentype');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'CerealMedium';
+      src: url("{% static 'fonts/FS PFBeauSansPro-Regular.ttf' %}") format('truetype');
+      font-weight: 500;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'CerealExtraBold';
+      src: url("{% static 'fonts/Coiny-Regular.ttf' %}") format('truetype');
+      font-weight: 800;
+      font-style: normal;
+      font-display: swap;
     }
 
-    /* 2. Áp dụng font Noto Sans cho toàn trang */
-    body, h1, h2, h4, p, .btn-gradient {
-      font-family: 'Noto Sans', sans-serif;
+    /* RESET & BASE */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #dbd1ff 0%, #C8F8E4 100%);
     }
 
-    /* Hero */
+    /* OUTER BOX */
+    .outer-box {
+      background: #FFFFFF;
+      border: 2px solid #E0E0E0;
+      border-radius: 1.5rem;
+      padding: 32px;
+      margin: 32px auto;
+      max-width: 1200px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+
+    /* HERO SECTION */
     .hero {
-      background: linear-gradient(135deg, var(--primary-start), var(--primary-end));
-      padding: 100px 0;
-      text-align: center;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 60px 32px;
+      background: #FFF5E6;
+      border-radius: 2rem;
+      overflow: hidden;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.1);
     }
-    .hero h1 {
-      font-size: 3.5rem;
+    .hero-text { flex: 1; padding-right: 24px; }
+    .hero-text h1 {
+      margin: 0;
+      font-size: 2.8em;
+      /* dùng DFVN Lucky Skirt */
+      font-family: 'LuckySkirt', cursive;
+      color: #333;
+      font-weight: normal;
+    }
+    .hero-text p {
+      margin-top: 16px;
+      font-family: 'Roboto', sans-serif;
+      font-size: 1.2em;
+      color: #A0A0A0;
+      max-width: 500px;
+      line-height: 1.5;
+    }
+    .hero-image { flex: 1; text-align: right; }
+    .hero-image img {
+      max-width: 300px;
+      width: 100%;
+      height: auto;
+    }
+
+    /* FEATURE CARDS */
+    .cards {
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      gap: 20px;
+      padding: 60px 32px;
+    }
+    .card {
+      flex: 1;
+      min-width: 240px;
+      background: #F8C8DC;
+      border-radius: 2rem;
+      padding: 24px;
+      text-align: center;
+      transition: transform 0.3s, background 0.3s;
+    }
+    .card:hover {
+      transform: scale(1.05);
+      background: #F8DDE8;
+    }
+    .card h3 {
+      margin-bottom: 8px;
+      font-size: 1.5em;
+      /* dùng Airbnb Cereal Medium & in đậm */
+      font-family: 'CerealMedium', sans-serif;
       font-weight: 700;
-      color: var(--heading-color);
-      margin-bottom: 0.5rem;
+      color: #333;
     }
-    .hero p {
-      font-size: 1.25rem;
-      font-weight: 400;
-      color: var(--text-color);
-    }
-
-    /* Features */
-    .features {
-      background: var(--section-bg);
-      padding: 60px 0;
-    }
-    .features .fa-3x {
-      color: var(--primary-start);
-      transition: transform .3s, color .3s;
-    }
-    .features .col-md-4:hover .fa-3x {
-      transform: translateY(-8px);
-      color: var(--primary-end);
-    }
-    .features h4 {
-      font-weight: 500;
-      color: var(--heading-color);
-      margin-top: 15px;
-    }
-    .features p {
-      color: var(--text-color);
+    .card p {
+      margin: 0;
+      /* chuyển mô tả thành màu đen */
+      color: #000;
+      font-family: 'Roboto', sans-serif;
+      line-height: 1.5;
     }
 
-    /* Call-to-Action */
-    .cta {
-      padding: 80px 0;
+    /* BANNER */
+    .banner {
+      background: #C8F8E4;
+      border-radius: 2rem;
+      padding: 60px 32px;
+      margin: 0 32px 32px;
       text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      transition: box-shadow 0.3s;
     }
-    .btn-gradient {
-      background: linear-gradient(135deg, var(--primary-start), var(--primary-end));
-      color: #fff !important;
-      border: none;
-      padding: 0.75rem 2rem;
-      border-radius: 50px;
-      font-weight: 500;
-      font-size: 1.1rem;
-      transition: transform .2s, opacity .2s;
+    .banner:hover {
+      box-shadow: 0 12px 30px rgba(0,0,0,0.2);
     }
-    .btn-gradient:hover {
-      transform: translateY(-3px);
-      opacity: 0.9;
+    .banner h2 {
+      margin: 0;
+      font-size: 2em;
+      /* dùng Airbnb Cereal ExtraBold & màu đen */
+      font-family: 'CerealExtraBold', sans-serif;
+      color: #000;
+    }
+    .banner .cta-btn {
+      margin-top: 24px;
+      display: inline-block;
+      background: #F48FB1;
+      /* chữ button màu đen */
+      color: #000;
+      font-size: 1.25rem;
+      /* dùng Airbnb Cereal ExtraBold */
+      font-family: 'CerealExtraBold', sans-serif;
+      font-weight: normal;
+      padding: 16px 32px;
+      border-radius: 1rem;
+      text-decoration: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      transition: background 0.3s;
+      opacity: 1;
+    }
+    .banner .cta-btn:hover {
+      background: #D8438B;
+    }
+    .banner .banner-image {
+      margin-top: -30px;
+      width: 600px;
+      max-width: 100%;
+      height: auto;
+      object-fit: contain;
+      background: transparent;
+      box-shadow: none;
+      border-radius: 0;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .outer-box { margin: 16px; padding: 16px; }
+      .hero { flex-direction: column; text-align: center; }
+      .hero-text, .hero-image { width: 100%; }
+      .hero-image img { margin-top: 20px; }
+      .cards { flex-direction: column; align-items: center; }
+      .card { width: 100%; }
+      .banner {
+        padding: 40px 16px;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+      }
+      .banner .cta-btn { margin-top: 16px; }
+      .banner .banner-image {
+        margin-top: 32px;
+        width: 100%;
+        height: auto;
+      }
+    }
+
+    /* FOOTER */
+    .footer {
+      background: #FFF5E6;
+      padding: 16px;
+      text-align: center;
+      color: #A0A0A0;
+      font-family: 'Roboto', sans-serif;
+      font-size: 0.9em;
     }
   </style>
 
-  <!-- Hero Section -->
-  <div class="hero">
-    <div class="container">
-      <h1>Hệ Thống Quản Lý Bữa Ăn</h1>
-      <p>Quản lý và thống kê bữa ăn cho học sinh một cách thông minh và chuyên nghiệp.</p>
-    </div>
-  </div>
 
-  <!-- Features Section -->
-  <div class="features container">
-    <div class="row text-center">
-      <div class="col-md-4 mb-4">
-        <i class="fas fa-cutlery fa-3x"></i>
-        <h4>Đơn giản</h4>
+  <div class="outer-box">
+    <!-- HERO SECTION -->
+    <div class="hero">
+      <div class="hero-text">
+        <h1>Trường Mầm non Hoa Hướng Dương</h1>
+        <p>Phần mềm quản lý và thống kê bữa ăn cho học sinh một cách thông minh và chuyên nghiệp.</p>
+      </div>
+      <div class="hero-image">
+        <img src="{% static 'images/vegetablebowping.png' %}" alt="Bữa ăn minh họa">
+      </div>
+    </div>
+
+    <!-- FEATURE CARDS -->
+    <div class="cards">
+      <div class="card">
+        <h3>Đơn giản</h3>
         <p>Nhập liệu nhanh chóng, dễ dàng và chính xác.</p>
       </div>
-      <div class="col-md-4 mb-4">
-        <i class="fas fa-chart-bar fa-3x"></i>
-        <h4>Thống kê</h4>
+      <div class="card">
+        <h3>Thống kê</h3>
         <p>Biểu đồ trực quan và báo cáo chi tiết mỗi ngày, tuần, tháng.</p>
       </div>
-      <div class="col-md-4 mb-4">
-        <i class="fas fa-shield-alt fa-3x"></i>
-        <h4>Bảo mật</h4>
+      <div class="card">
+        <h3>Bảo mật</h3>
         <p>Hệ thống quản trị nội bộ an toàn, dữ liệu luôn được bảo vệ.</p>
       </div>
     </div>
+
+    <!-- BANNER WITH TEXT/BUTTON ROW THEN IMAGE ROW -->
+    <div class="banner">
+      <h2>Sẵn sàng quản lý bữa ăn cho học sinh?</h2>
+      <a href="{% url 'meals:meal_bulk_create' %}" class="cta-btn">Nhập Dữ liệu Bữa Ăn Ngay</a>
+      <img src="{% static 'images/3vegetablebow.png' %}" alt="Minh họa bữa ăn" class="banner-image">
+    </div>
   </div>
 
-  <!-- Call-to-Action -->
-  <div class="cta">
-    <h2 class="mb-4">Sẵn sàng quản lý bữa ăn cho học sinh?</h2>
-    <a href="{% url 'meals:meal_bulk_create' %}" class="btn btn-gradient btn-lg">
-      Nhập Dữ liệu Bữa Ăn Ngay
-    </a>
+  <!-- FOOTER -->
+  <div class="footer">
+    © 2025 Trường Mầm non Hoa Hướng Dương | Liên hệ: info@hoahuongduong.edu.vn
   </div>
 {% endblock %}
