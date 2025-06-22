@@ -1240,6 +1240,12 @@ def export_monthly_statistics_all(request):
         # Data rows
         row = 4
         totals_per_day = [0]*max_day
+        if mt == "Bữa sáng":
+            total_cost_all = 0
+        else:
+            total_food_all    = 0
+            total_tuition_all = 0
+            total_due_all     = 0
         for stu in students:
             # Lấy giá meal & tuition
             sp = StudentPayment.objects.filter(
@@ -1294,10 +1300,13 @@ def export_monthly_statistics_all(request):
                 food = br_ct*fee_br + lu_ct*fee_lu
                 total_due = tuition + food
                 remaining = paid - total_due
-
+                total_food_all    += food
+                total_tuition_all += tuition
+                total_due_all     += total_due
                 row_vals = base + [food, tuition, total_due]
             else:
                 # chỉ bữa sáng
+                total_cost_all += total_cost
                 row_vals = base + [total_cost]
 
             # Ghi row và format số
@@ -1309,9 +1318,18 @@ def export_monthly_statistics_all(request):
 
         # Cuối cùng: row Tổng
         ws.cell(row, 1, "Tổng")
+        # - Tổng cho từng ngày
         for idx, cnt in enumerate(totals_per_day, start=1):
             ws.cell(row, 1+idx, cnt)
-
+        # - Tổng số ngày ăn (cột "Tổng"): tùy nếu bạn muốn in lại
+        ws.cell(row, 1+max_day+1, sum(totals_per_day))
+        if mt == "Bữa trưa":
+            # ghi tổng Tiền Ăn, Học Phí, Thành Tiền
+            c1 = ws.cell(row, 1+max_day+2, total_food_all)
+            c2 = ws.cell(row, 1+max_day+3, total_tuition_all)
+            c3 = ws.cell(row, 1+max_day+4, total_due_all)
+    for c in (c1, c2, c3):
+        c.number_format = '#,##0'
     # Trả file về client
     resp = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
