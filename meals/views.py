@@ -1318,17 +1318,18 @@ def export_monthly_statistics_all(request):
 
         # Cuối cùng: row Tổng
         ws.cell(row, 1, "Tổng")
+        # - Tổng cho từng ngày
         for idx, cnt in enumerate(totals_per_day, start=1):
             ws.cell(row, 1+idx, cnt)
-        if mt == "Bữa sáng":
-            # cột Thành tiền ở sheet Sáng là sau cột Tổng buổi (1 HS + max_day ngày + 1 Tổng)
-            ws.cell(row, max_day + 2 + 1, total_cost_all)
-        else:
-            # sheet Trưa: cột Tiền Ăn, Học Phí, Thành Tiền
-            base_col = max_day + 1  # 1 HS + max_day ngày
-            ws.cell(row, base_col + 1, total_food_all)
-            ws.cell(row, base_col + 2, total_tuition_all)
-            ws.cell(row, base_col + 3, total_due_all)
+        # - Tổng số ngày ăn (cột "Tổng"): tùy nếu bạn muốn in lại
+        ws.cell(row, 1+max_day+1, sum(totals_per_day))
+        if mt == "Bữa trưa":
+            # ghi tổng Tiền Ăn, Học Phí, Thành Tiền
+            c1 = ws.cell(row, 1+max_day+2, total_food_all)
+            c2 = ws.cell(row, 1+max_day+3, total_tuition_all)
+            c3 = ws.cell(row, 1+max_day+4, total_due_all)
+    for c in (c1, c2, c3):
+        c.number_format = '#,##0'
     # Trả file về client
     resp = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
