@@ -51,10 +51,10 @@
       box-shadow: 0 4px 16px rgba(0,0,0,0.08);
     }
 
-    /* HERO SECTION */
+      /* HERO SECTION */
     .hero {
       display: flex;
-      justify-content: flex-start;  /* Điều chỉnh vị trí */
+      justify-content: space-between; /* Phân bố đều không gian giữa các cột */
       align-items: center;
       padding: 60px 32px;
       background: #FFF5E6;
@@ -66,12 +66,12 @@
     .hero-text {
       flex: 1;
       padding-right: 24px;
-      margin-right: 32px;  /* Thêm khoảng cách giữa text và image */
+      text-align: center; /* Căn giữa nội dung trong cột 1 */
     }
+
     .hero-text h1 {
       margin: 0;
       font-size: 2.8em;
-      /* Đảm bảo sử dụng đúng font LuckySkirt */
       font-family: 'LuckySkirt', cursive;
       color: #333;
       font-weight: normal;
@@ -79,7 +79,7 @@
 
     .hero-image {
       flex: 1;
-      text-align: right;
+      text-align: center; /* Căn giữa hình ảnh trong cột 2 */
     }
 
     .hero-image img {
@@ -103,10 +103,9 @@
       transition: background 0.3s;
     }
 
-    .cta-btn:hover {
-      background: #D8438B;
-    }
-
+.cta-btn:hover {
+  background: #D8438B;
+}
     /* FEATURE CARDS */
     .cards {
       display: flex;
@@ -200,19 +199,45 @@
 
     /* RESPONSIVE */
     @media (max-width: 768px) {
-      .outer-box { margin: 16px; padding: 16px; }
-      .hero { flex-direction: column; text-align: center; }
-      .hero-text, .hero-image { width: 100%; }
-      .hero-image img { margin-top: 20px; }
-      .cards { flex-direction: column; align-items: center; }
-      .card { width: 100%; }
-      .banner {
-        padding: 40px 16px;
-        box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+      .outer-box {
+        margin: 12px;
+        padding: 12px;
+        max-width: 100%;
       }
-      .banner .cta-btn { margin-top: 16px; }
+      .hero {
+        flex-direction: column;
+        text-align: center;
+        padding: 16px;
+      }
+      .hero-text, .hero-image {
+        width: 100%;
+      }
+      .hero-image img {
+        margin-top: 16px;
+        max-width: 80%;
+        height: auto;
+      }
+      .cards {
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+        padding: 16px;
+        margin-top: 16px;
+      }
+      .card {
+        width: 100%;
+        margin-bottom: 12px;
+      }
+      .banner {
+        padding: 16px;
+        margin-top: 16px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      }
+      .banner .cta-btn {
+        margin-top: 12px;
+      }
       .banner .banner-image {
-        margin-top: 32px;
+        margin-top: 16px;
         width: 100%;
         height: auto;
       }

@@ -2,42 +2,157 @@
 {% extends "admin/index.html" %}
 {% load i18n %}
 
-{# 1. Chèn CSS để ẩn sidebar và mở rộng content #}
 {% block extrastyle %}
 <style>
-  /* Ẩn cột sidebar */
-  #nav-sidebar {
-    display: none !important;
-  }
-  /* Mở rộng khối content sang trái */
-  #content {
+    /* 2) Thống nhất màu của các module (Meals, Xác thực…) */
+    .dashboard-module .module h2 {
+      background-color: #184e74 !important;
+      color:            #fff     !important;
+      padding:          .5em     !important;
+      margin:           0        !important;
+    }
+
+    /* 3) Đồng bộ border cho các module */
+    .dashboard-module .module {
+      border: 1px solid #133642 !important;
+      border-radius: 4px !important;
+    }
+  /* Ẩn sidebar trái */
+  #nav-sidebar { display: none !important; }
+
+  /* Mở rộng vùng content chính */
+  #content, #content-main {
     margin-left: 0 !important;
     width: auto !important;
   }
-  /* Nếu template có wrapper content-main */
-  #content-main {
-    width: 100% !important;
-    margin: 0 !important;
+
+  /* Recent Actions bên phải */
+  #content-related {
+    float: right;
+    width: 24%;
+  }
+
+  /* —— Header Admin —— */
+  #header {
+    background-color: #14394b !important;
+    padding: 0.5rem 1rem;
+  }
+
+  /* Tăng độ nổi bật cho “Trang quản trị bữa ăn học sinh” */
+  /* Đúng selector: target <div id="site-name"> và <a> bên trong nó */
+  #header #site-name,
+  #header #site-name a {
+    font-size: 1.0rem !important;       /* hoặc 2rem, tăng giảm tuỳ ý */
+    font-weight: bold !important;
+    color:       #fff   !important;
+    line-height: 1    !important;
+    margin:      0    !important;
+    padding:     0    !important;
+  }
+
+  /* Giảm kích thước những link còn lại trong header xuống nếu cần */
+  #header #user-tools a {
+    font-size: 0.675rem !important;
+  }
+  /* ——— Đồng bộ màu tiêu đề module ——— */
+  /* Đây sẽ override background mặc định của dashboard.css */
+  #content-main .module > h2,
+  #content-related .module > h2 {
+    background-color: #14394b !important;
+    color:            #FFF     !important;
+    padding:          .5em     !important;
+    margin:           0        !important;
+  }
+
+  /* Font & spacing cho bảng và list */
+  .module table th,
+  .module table td,
+  .module ul.actionlist li {
+    font-size: 13px;
+    padding: 6px 10px;
+    line-height: 1.6;
+  }
+  #content-main .module table caption {
+    background-color: #14394b !important;
+    color:            #FFF               !important;
+    padding:          .9em .6em         !important;
+    text-transform:   uppercase         !important;
+    border-bottom:    none               !important; /* bỏ gạch chân nếu có */
+  }
+  #content-main .app-meals.module table tbody tr:hover,
+  #content-main .app-auth.module table tbody tr:hover {
+    background-color: rgba(65,118,144,0.15) !important;
+  }
+  /* Nếu chỉ muốn target riêng 2 module Meals & Auth, dùng: */
+  /*
+  #content-main .app-meals.module table caption,
+  #content-main .app-auth.module table caption {
+    background-color: rgba(65,118,144,1) !important;
+    color: #FFF !important;
+  }*/
+  #content-related {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+  /* nếu module bên trong còn cách quá xa */
+  #recent-actions-module {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
   }
 </style>
 {% endblock %}
 
-{# 2. Override block content để thêm “Liên kết nhanh” lên trên #}
 {% block content %}
-  <div class="module" style="margin-bottom:1.5em; padding:1em; background:#f9f9f9;">
-    <h2 style="margin:0 0 .5em;">{% trans "Liên kết nhanh" %}</h2>
-    <p style="margin:0;">
-      <a href="{% url 'meals:statistics' %}" class="button addlink" style="background:#28a745; color:#fff; padding:.4em .8em; text-decoration:none; border-radius:3px; margin-right:.5em;">
-        📊 Thống kê
-      </a>
-      <a href="{% url 'meals:student_payment_edit' %}" class="button addlink" style="background:#17a2b8; color:#fff; padding:.4em .8em; text-decoration:none; border-radius:3px;">
-        💳 Chỉnh sửa công nợ
-      </a>
-    </p>
-  </div>
 
-  {{ block.super }}  {# Giữ nguyên các module MEALS, XÁC THỰC VÀ ỦY QUYỀN và Recent Actions #}
+  {{ block.super }}
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      // 0) Xóa luôn cái dòng "Công nợ học sinh" gốc
+      var oldDebtRow = document.querySelector(
+        '#content-main .app-meals.module table tr.model-studentpayment'
+      );
+      if (oldDebtRow) oldDebtRow.remove();
+
+      // 1) Đổi caption Meals → CHỨC NĂNG
+      var mealLink = document.querySelector(
+        '#content-main .app-meals.module table caption a.section'
+      );
+      if (mealLink) {
+        mealLink.textContent = 'CHỨC NĂNG';
+        mealLink.setAttribute('title', 'Các chức năng');
+      }
+
+      // 2) Chèn 2 <tr> mới vào đầu tbody
+      var tbody = document.querySelector(
+        '#content-main .app-meals.module table tbody'
+      );
+      if (tbody) {
+        tbody.insertAdjacentHTML('afterbegin', `
+          <tr id="meals-debt-row">
+            <th scope="row">
+              <a href="{% url 'meals:student_payment_edit' %}">Chỉnh sửa công nợ</a>
+            </th>
+            <td></td>
+            <td>
+              <a href="{% url 'meals:student_payment_edit' %}" class="changelink">Đi đến</a>
+            </td>
+          </tr>
+          <tr id="meals-statistics-row">
+            <th scope="row">
+              <a href="{% url 'meals:statistics' %}">Thống kê</a>
+            </th>
+            <td></td>
+            <td>
+              <a href="{% url 'meals:statistics' %}" class="changelink">Đi đến</a>
+            </td>
+          </tr>
+        `);
+      }
+    });
+  </script>
 {% endblock %}
+
 {% block sidebar %}
   <div id="content-related">
     <div class="module" id="recent-actions-module">
@@ -50,8 +165,11 @@
       {% else %}
         <ul class="actionlist">
         {% for entry in admin_log %}
-          <li class="{% if entry.is_addition %}addlink{% endif %}{% if entry.is_change %}changelink{% endif %}{% if entry.is_deletion %}deletelink{% endif %}">
-            <!-- Hiển thị username trước khi mô tả hành động -->
+          <li class="
+             {% if entry.is_addition %}addlink{% endif %}
+             {% if entry.is_change   %} changelink{% endif %}
+             {% if entry.is_deletion %} deletelink{% endif %}
+          ">
             <strong>{{ entry.user.username }}</strong> –
             {% if entry.is_deletion or not entry.get_admin_url %}
               {{ entry.object_repr }}
@@ -60,7 +178,9 @@
             {% endif %}
             <br>
             {% if entry.content_type %}
-              <span class="mini quiet">{% filter capfirst %}{{ entry.content_type.name }}{% endfilter %}</span>
+              <span class="mini quiet">
+                {% filter capfirst %}{{ entry.content_type.name }}{% endfilter %}
+              </span>
             {% endif %}
           </li>
         {% endfor %}

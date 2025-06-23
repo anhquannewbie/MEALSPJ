@@ -109,7 +109,7 @@ class StudentInline(admin.TabularInline):
     fields = ('name',)        # chỉ hiện tên (có thể thêm các field khác)
     show_change_link = True   # có link vào form edit của từng student
 class MyAdminSite(AdminSite):
-    site_header = "Trang quản trị bữa ăn học sinh"
+    site_header = "TRANG QUẢN TRỊ BỮA ĂN HỌC SINH"
     index_title = "Bảng điều khiển"
 
     def index(self, request, extra_context=None):
