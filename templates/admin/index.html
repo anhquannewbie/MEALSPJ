@@ -3,189 +3,234 @@
 {% load i18n %}
 
 {% block extrastyle %}
-<style>
-    /* 2) Thống nhất màu của các module (Meals, Xác thực…) */
-    .dashboard-module .module h2 {
-      background-color: #184e74 !important;
-      color:            #fff     !important;
-      padding:          .5em     !important;
-      margin:           0        !important;
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Ẩn sidebar gốc chỉ trên Dashboard */
+    body.dashboard nav#nav-sidebar {
+      display: none !important;
     }
 
-    /* 3) Đồng bộ border cho các module */
+    /* Layout flex cho Dashboard: nội dung chính + Recent actions */
+    body.dashboard #content {
+      display: flex !important;
+      margin: 2rem 0 !important;  /* chỉ giữ margin trên/dưới */
+      gap: 2rem;                   /* khoảng cách giữa các cột */
+    }
+    /* Khung “Hoạt động gần đây” */
+    body.dashboard #content-related {
+      flex: 0 0 300px;
+      display: block;
+      margin: 0;                   /* gỡ margin-left:auto */
+    }
+
+    /* Ẩn tiêu đề <h1>Bảng điều khiển> */
+    body.dashboard #content h1 {
+      display: none !important;
+    }
+
+    /* Chart container flex:1 để chiếm phần còn lại */
+    .charts-container {
+      flex: 1;
+    }
+    .charts-container > div {
+      margin-bottom: 2rem;
+    }
+    .charts-container {
+      margin: 2rem 0 !important;  /* chỉ giữ margin trên/dưới */
+      width: auto !important;      /* để nó tự bơm full flex */
+      flex: 1 !important;          /* ensure flex chiếm hết phần còn lại */
+    }
+
+    /* Header Admin */
+    #header {
+      background-color: #14394b !important;
+      padding: 0.5rem 1rem;
+    }
+    #header #site-name,
+    #header #site-name a {
+      font-size: 1rem !important;
+      font-weight: bold !important;
+      color: #fff !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    #header #user-tools a {
+      font-size: 0.675rem !important;
+    }
+    body.dashboard #content-related #recent-actions-module h2 {
+      background-color: #14394b !important;
+      color:            #fff   !important;
+      font-weight:      bold   !important;
+      padding:          0.5em  1em   !important;
+      margin:           0     !important;
+    }
+    /* Module header đồng bộ */
+    #content-main .module > h2 {
+      background-color: #14394b !important;
+      color: #fff !important;
+      padding: .5em !important;
+      margin: 0 !important;
+    }
     .dashboard-module .module {
       border: 1px solid #133642 !important;
       border-radius: 4px !important;
     }
-  /* Ẩn sidebar trái */
-  #nav-sidebar { display: none !important; }
+    .dashboard-module .module h2 {
+      background-color: #184e74 !important;
+      color: #fff !important;
+      padding: .5em !important;
+      margin: 0 !important;
+    }
 
-  /* Mở rộng vùng content chính */
-  #content, #content-main {
-    margin-left: 0 !important;
-    width: auto !important;
-  }
+    /* Caption “Chức năng” & “Xác thực và ủy quyền” */
+    #content-main .app-meals.module table caption,
+    #content-main .app-auth.module table caption {
+      background-color: #14394b !important;
+      color:            #fff     !important;
+      text-transform:   uppercase;
+    }
+    /* Tắt link và hover effect */
+    #content-main .app-meals.module table caption a.section,
+    #content-main .app-auth.module table caption a.section {
+      pointer-events: none !important;
+      cursor: default !important;
+      text-decoration: none !important;
+      color: inherit !important;
+    }
+    #content-main .app-meals.module table tbody tr:hover,
+    #content-main .app-auth.module table tbody tr:hover {
+      background-color: rgba(20,57,75,0.1) !important;
+    }
+    #content-main .app-meals.module table tbody tr th a:hover,
+    #content-main .app-auth.module table tbody tr th a:hover {
+      color: #14394b !important;
+      text-decoration: none !important;
+    }
+    @media (max-width: 768px) {
+    /* Xếp modules, charts & recent actions thành cột */
+    body.dashboard #content {
+      flex-direction: column !important;
+      gap: 1rem !important;
+    }
 
-  /* Recent Actions bên phải */
-  #content-related {
-    float: right;
-    width: 24%;
-  }
+    /* Cho khung CHỨC NĂNG và Hoạt động cùng charts đều full width */
+    body.dashboard #content #content-main,
+    body.dashboard #content-related {
+      flex: auto !important;
+      max-width: none !important;
+      width: 100% !important;
+    }
 
-  /* —— Header Admin —— */
-  #header {
-    background-color: #14394b !important;
-    padding: 0.5rem 1rem;
+    /* Charts cũng bỏ margin-left nếu có */
+    .charts-container {
+      margin: 2rem 0 !important;
+      width: auto !important;
+    }
   }
-
-  /* Tăng độ nổi bật cho “Trang quản trị bữa ăn học sinh” */
-  /* Đúng selector: target <div id="site-name"> và <a> bên trong nó */
-  #header #site-name,
-  #header #site-name a {
-    font-size: 1.0rem !important;       /* hoặc 2rem, tăng giảm tuỳ ý */
-    font-weight: bold !important;
-    color:       #fff   !important;
-    line-height: 1    !important;
-    margin:      0    !important;
-    padding:     0    !important;
-  }
-
-  /* Giảm kích thước những link còn lại trong header xuống nếu cần */
-  #header #user-tools a {
-    font-size: 0.675rem !important;
-  }
-  /* ——— Đồng bộ màu tiêu đề module ——— */
-  /* Đây sẽ override background mặc định của dashboard.css */
-  #content-main .module > h2,
-  #content-related .module > h2 {
-    background-color: #14394b !important;
-    color:            #FFF     !important;
-    padding:          .5em     !important;
-    margin:           0        !important;
-  }
-
-  /* Font & spacing cho bảng và list */
-  .module table th,
-  .module table td,
-  .module ul.actionlist li {
-    font-size: 13px;
-    padding: 6px 10px;
-    line-height: 1.6;
-  }
-  #content-main .module table caption {
-    background-color: #14394b !important;
-    color:            #FFF               !important;
-    padding:          .9em .6em         !important;
-    text-transform:   uppercase         !important;
-    border-bottom:    none               !important; /* bỏ gạch chân nếu có */
-  }
-  #content-main .app-meals.module table tbody tr:hover,
-  #content-main .app-auth.module table tbody tr:hover {
-    background-color: rgba(65,118,144,0.15) !important;
-  }
-  /* Nếu chỉ muốn target riêng 2 module Meals & Auth, dùng: */
-  /*
-  #content-main .app-meals.module table caption,
-  #content-main .app-auth.module table caption {
-    background-color: rgba(65,118,144,1) !important;
-    color: #FFF !important;
-  }*/
-  #content-related {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-  }
-  /* nếu module bên trong còn cách quá xa */
-  #recent-actions-module {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-  }
-</style>
+  </style>
 {% endblock %}
 
 {% block content %}
-
   {{ block.super }}
+
+  {# ==== Các biểu đồ ==== #}
+  <div class="charts-container">
+    <div>
+      <h3 style="margin-bottom:.5rem; color:#14394b;">Số bữa ăn theo tháng</h3>
+      <canvas id="chartMealsByMonth"></canvas>
+    </div>
+    <div>
+      <h3 style="margin-bottom:.5rem; color:#14394b;">Học phí theo tháng</h3>
+      <canvas id="chartPaidByMonth"></canvas>
+    </div>
+  </div>
 
   <script>
     document.addEventListener('DOMContentLoaded', function(){
-      // 0) Xóa luôn cái dòng "Công nợ học sinh" gốc
-      var oldDebtRow = document.querySelector(
-        '#content-main .app-meals.module table tr.model-studentpayment'
-      );
-      if (oldDebtRow) oldDebtRow.remove();
-
-      // 1) Đổi caption Meals → CHỨC NĂNG
-      var mealLink = document.querySelector(
+      // Đổi “Meals” → “CHỨC NĂNG”
+      const cap = document.querySelector(
         '#content-main .app-meals.module table caption a.section'
       );
-      if (mealLink) {
-        mealLink.textContent = 'CHỨC NĂNG';
-        mealLink.setAttribute('title', 'Các chức năng');
-      }
+      if (cap) { cap.textContent = 'CHỨC NĂNG'; cap.title = 'Các chức năng'; }
 
-      // 2) Chèn 2 <tr> mới vào đầu tbody
-      var tbody = document.querySelector(
+      // Chèn 2 link mới vào menu “Chức năng”
+      const tbody = document.querySelector(
         '#content-main .app-meals.module table tbody'
       );
       if (tbody) {
         tbody.insertAdjacentHTML('afterbegin', `
-          <tr id="meals-debt-row">
-            <th scope="row">
-              <a href="{% url 'meals:student_payment_edit' %}">Chỉnh sửa công nợ</a>
-            </th>
+          <tr>
+            <th scope="row"><a href="{% url 'meals:student_payment_edit' %}">Chỉnh sửa công nợ</a></th>
             <td></td>
-            <td>
-              <a href="{% url 'meals:student_payment_edit' %}" class="changelink">Đi đến</a>
-            </td>
+            <td><a href="{% url 'meals:student_payment_edit' %}" class="changelink">Đi đến</a></td>
           </tr>
-          <tr id="meals-statistics-row">
-            <th scope="row">
-              <a href="{% url 'meals:statistics' %}">Thống kê</a>
-            </th>
+          <tr>
+            <th scope="row"><a href="{% url 'meals:statistics' %}">Thống kê</a></th>
             <td></td>
-            <td>
-              <a href="{% url 'meals:statistics' %}" class="changelink">Đi đến</a>
-            </td>
+            <td><a href="{% url 'meals:statistics' %}" class="changelink">Đi đến</a></td>
           </tr>
         `);
       }
+
+      // Vẽ chart
+      const months      = {{ chart_meal_labels|safe }};
+      const mealCounts  = {{ chart_meal_data|safe }};
+      const paidAmounts = {{ chart_paid_month_data|safe }};
+
+      new Chart(
+        document.getElementById('chartMealsByMonth').getContext('2d'),
+        {
+          type: 'line',
+          data: {
+            labels: months,
+            datasets: [{
+              label: 'Số bữa ăn (' + new Date().getFullYear() + ')',
+              data: mealCounts,
+              fill: false,
+              borderColor: 'rgba(54,162,235,1)',
+              backgroundColor: 'rgba(54,162,235,0.2)',
+              pointBackgroundColor: 'rgba(54,162,235,1)',
+              pointBorderColor: '#fff',
+              tension: 0.1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false
+          }
+        }
+      );
+
+      new Chart(
+        document.getElementById('chartPaidByMonth').getContext('2d'),
+        {
+          type: 'bar',
+          data: {
+            labels: months,
+            datasets: [{
+              label: 'Học phí (' + new Date().getFullYear() + ')',
+              data: paidAmounts,
+              backgroundColor: 'rgba(255,159,64,0.2)',
+              borderColor: 'rgba(255,159,64,1)',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: { callback: v => v.toLocaleString() + '₫' }
+              }
+            }
+          }
+        }
+      );
     });
   </script>
 {% endblock %}
 
 {% block sidebar %}
-  <div id="content-related">
-    <div class="module" id="recent-actions-module">
-      <h2>{% translate "Recent actions" %}</h2>
-      <h3>{% translate "My actions" %}</h3>
-      {% load log %}
-      {% get_admin_log 10 as admin_log for_user user %}
-      {% if not admin_log %}
-        <p>{% translate "None available" %}</p>
-      {% else %}
-        <ul class="actionlist">
-        {% for entry in admin_log %}
-          <li class="
-             {% if entry.is_addition %}addlink{% endif %}
-             {% if entry.is_change   %} changelink{% endif %}
-             {% if entry.is_deletion %} deletelink{% endif %}
-          ">
-            <strong>{{ entry.user.username }}</strong> –
-            {% if entry.is_deletion or not entry.get_admin_url %}
-              {{ entry.object_repr }}
-            {% else %}
-              <a href="{{ entry.get_admin_url }}">{{ entry.object_repr }}</a>
-            {% endif %}
-            <br>
-            {% if entry.content_type %}
-              <span class="mini quiet">
-                {% filter capfirst %}{{ entry.content_type.name }}{% endfilter %}
-              </span>
-            {% endif %}
-          </li>
-        {% endfor %}
-        </ul>
-      {% endif %}
-    </div>
-  </div>
+  {{ block.super }}
 {% endblock %}

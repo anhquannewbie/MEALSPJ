@@ -1,0 +1,100 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block extrahead %}
+  {{ block.super }}
+  <style>
+    /* CHỈ ẨN sidebar trên Dashboard */
+    body.dashboard #nav-sidebar { display: none !important; }
+    body.dashboard #content,
+    body.dashboard #content-main {
+      margin-left: 0 !important;
+      width: auto !important;
+    }
+
+    /* Trên mọi page khác, bắt buộc hiển thị sidebar */
+    body:not(.dashboard) #nav-sidebar { display: block !important; }
+    body:not(.dashboard) #content,
+    body:not(.dashboard) #content-main {
+      margin-left: 0px !important;  /* tùy chỉnh cho bằng đúng width sidebar */
+      width: auto !important;
+    }
+
+    /* Header Admin */
+    #header {
+      background-color: #14394b !important;
+      padding: 0.5rem 1rem; 
+    }
+    #header #site-name,
+    #header #site-name a {
+      font-size: 1rem !important;
+      font-weight: bold !important;
+      color: #fff !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    #header #user-tools a { font-size: 0.675rem !important; }
+
+    /* Đổi màu caption của 2 module trong sidebar */
+    #nav-sidebar .app-meals.module table caption,
+    #nav-sidebar .app-auth.module table caption {
+      background-color: #14394b !important;
+      color:            #fff     !important;
+      text-transform:   uppercase;
+    }
+
+    /* Ẩn tiêu đề <h1> (Dashboard) */
+    #content h1 { display: none !important; }
+
+    /* Biểu đồ (nếu có) */
+    .charts-container {
+      margin: 2rem 0 2rem 350px;
+      width: calc(100% - 350px);
+    }
+    .charts-container > div { width:100%; margin-bottom:2rem; }
+    .charts-container canvas {
+      width:100% !important;
+      height:400px !important;
+    }
+    /* Tắt link trên caption “Chức năng” và “Xác thực và ủy quyền” */
+    nav#nav-sidebar .app-meals.module table caption a.section,
+    nav#nav-sidebar .app-auth.module table caption a.section {
+      pointer-events: none !important;  /* không cho click */
+      cursor: default !important;       /* con trỏ mặc định */
+      text-decoration: none !important; /* bỏ gạch chân */
+      color: inherit !important;        /* giữ màu chữ chung */
+    }
+    /* Hover đổi nền cho từng mục chức năng */
+    nav#nav-sidebar .app-meals.module table tbody tr:hover,
+    nav#nav-sidebar .app-auth.module table tbody tr:hover {
+      background-color: rgba(20,57,75,0.1) !important; /* nền nhạt khi hover */
+    }
+    /* Hoặc chỉ hover lên link */
+    nav#nav-sidebar .app-meals.module table tbody tr th a:hover,
+    nav#nav-sidebar .app-auth.module table tbody tr th a:hover {
+      color: #14394b !important;      /* đổi màu chữ khi hover */
+      text-decoration: none !important;
+    }
+  </style>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      // Thay text “Meals” → “CHỨC NĂNG”
+      const mealsCap = document.querySelector(
+        'nav#nav-sidebar .app-meals.module table caption a.section'
+      );
+      if (mealsCap) {
+        mealsCap.textContent = 'CHỨC NĂNG';
+        mealsCap.setAttribute('title', 'Các chức năng');
+      }
+      // Thay text “Authentication and Authorization” → “Xác thực và ủy quyền”
+      const authCap = document.querySelector(
+        'nav#nav-sidebar .app-auth.module table caption a.section'
+      );
+      if (authCap) {
+        authCap.textContent = 'XÁC THỰC VÀ ỦY QUYỀN';
+        authCap.setAttribute('title', 'Xác thực và ủy quyền');
+      }
+    });
+  </script>
+{% endblock %}

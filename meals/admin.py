@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.contrib import admin
+from django.db.models.functions import ExtractMonth, ExtractYear
 from django import forms
 from django.contrib.admin import AdminSite
 from .models import MealRecord, Student, ClassRoom, StudentPayment,MealPrice,AuditLog
@@ -14,10 +14,13 @@ import csv
 from django.urls import reverse
 import json
 import openpyxl
+from datetime import date
+from django.db.models import Count, Sum
 from django.shortcuts import redirect,render
 from django.shortcuts import render
 from datetime import date, timedelta,datetime
 from decimal import Decimal
+from django.db.models.functions import ExtractMonth
 from django.db.models import Q
 from django_admin_listfilter_dropdown.filters import (
     DropdownFilter, RelatedDropdownFilter)
@@ -110,25 +113,56 @@ class StudentInline(admin.TabularInline):
     show_change_link = True   # có link vào form edit của từng student
 class MyAdminSite(AdminSite):
     site_header = "TRANG QUẢN TRỊ BỮA ĂN HỌC SINH"
-    index_title = "Bảng điều khiển"
+    index_title = ""
 
     def index(self, request, extra_context=None):
         extra_context = extra_context or {}
-        # Đổ nhanh 2 link vào dashboard
-        extra_context['quick_links'] = [
-            {
-                'url': reverse('meals:statistics'),
-                'label': '📊 Thống kê'
-            },
-            {
-                'url': reverse('meals:student_payment_edit'),
-                'label': '💳 Chỉnh sửa công nợ'
-            }
-        ]
-        return super().index(request, extra_context)
 
-    # Tuỳ ý bạn có thể override get_urls để thêm view custom,
-    # nhưng ở đây chỉ cần index.
+        # ==== QUICK LINKS như trước ====
+        extra_context['quick_links'] = [
+            {'url': reverse('meals:statistics'),           'label': '📊 Thống kê'},
+            {'url': reverse('meals:student_payment_edit'), 'label': '💳 Chỉnh sửa công nợ'},
+        ]
+
+        # ==== 1) Dữ liệu SỐ BỮA ĂN theo tháng (năm hiện tại) ====
+        current_year = date.today().year
+        qs_month = (
+            MealRecord.objects
+            .filter(date__year=current_year)
+            .annotate(m=ExtractMonth('date'))
+            .values('m')
+            .annotate(c=Count('id'))
+            .order_by('m')
+        )
+        months = [f"T{m}" for m in range(1, 13)]
+        meal_counts = [0] * 12
+        for d in qs_month:
+            meal_counts[d['m'] - 1] = d['c']
+        extra_context['chart_meal_labels'] = json.dumps(months)
+        extra_context['chart_meal_data']   = json.dumps(meal_counts)
+
+        # ==== 2) DỮ LIỆU THU HỌC PHÍ THEO THÁNG (nhóm theo chuỗi "YYYY-MM") ====
+        # Lọc ra chỉ những bản ghi của năm hiện tại
+        year_prefix = f"{current_year}-"
+        qs_paid = (
+            StudentPayment.objects
+            .filter(month__startswith=year_prefix)
+            .values('month')
+            .annotate(total_paid=Sum('amount_paid'))
+            .order_by('month')
+        )
+        paid_month_data = [0] * 12
+        for row in qs_paid:
+            # row['month'] có dạng "2025-06" → tách lấy số 6
+            try:
+                mon = int(row['month'].split('-')[1])
+                paid_month_data[mon - 1] = float(row['total_paid'] or 0)
+            except (IndexError, ValueError):
+                continue
+
+        extra_context['chart_paid_month_data'] = json.dumps(paid_month_data)
+
+        return super().index(request, extra_context)
 
 class ClassNameFilter(admin.SimpleListFilter):
     title = 'Lớp học'
