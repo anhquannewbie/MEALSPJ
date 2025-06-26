@@ -5,6 +5,21 @@
 {% block extrastyle %}
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
+    /* === thêm biến CSS cho chart colors === */
+    :root {
+    --chart-line-color: rgb(67, 5, 236);
+    --chart-fill-color: rgb(67, 5, 236);
+    --chart-grid-color: rgba(0,0,0,0.1);
+  }
+  /* Khi bật dark mode (Django admin gán data-theme="dark" lên <html>) */
+  html[data-theme="dark"] {
+      /* khi dark mode bật */
+      --chart-line-color: #e43011;
+      --chart-fill-color: #e43011;
+      --chart-grid-color: rgba(248, 248, 248, 0.13);
+    }
+    /* === end thêm === */
+
     /* Ẩn sidebar gốc chỉ trên Dashboard */
     body.dashboard nav#nav-sidebar {
       display: none !important;
@@ -31,14 +46,15 @@
     /* Chart container flex:1 để chiếm phần còn lại */
     .charts-container {
       flex: 1;
+      margin: 2rem 0 !important;  /* chỉ giữ margin trên/dưới */
+      width: auto !important;      /* để nó tự bơm full flex */
     }
     .charts-container > div {
       margin-bottom: 2rem;
     }
-    .charts-container {
-      margin: 2rem 0 !important;  /* chỉ giữ margin trên/dưới */
-      width: auto !important;      /* để nó tự bơm full flex */
-      flex: 1 !important;          /* ensure flex chiếm hết phần còn lại */
+    .charts-container canvas {
+      width: 100% !important;
+      height: 400px !important;
     }
 
     /* Header Admin */
@@ -57,13 +73,16 @@
     #header #user-tools a {
       font-size: 0.675rem !important;
     }
+
+    /* Style header “Hoạt động gần đây” */
     body.dashboard #content-related #recent-actions-module h2 {
       background-color: #14394b !important;
       color:            #fff   !important;
       font-weight:      bold   !important;
-      padding:          0.5em  1em   !important;
+      padding:          0.5em  1em !important;
       margin:           0     !important;
     }
+
     /* Module header đồng bộ */
     #content-main .module > h2 {
       background-color: #14394b !important;
@@ -106,27 +125,28 @@
       color: #14394b !important;
       text-decoration: none !important;
     }
+
     @media (max-width: 768px) {
-    /* Xếp modules, charts & recent actions thành cột */
-    body.dashboard #content {
-      flex-direction: column !important;
-      gap: 1rem !important;
-    }
+      /* Xếp modules, charts & recent actions thành cột */
+      body.dashboard #content {
+        flex-direction: column !important;
+        gap: 1rem !important;
+      }
 
-    /* Cho khung CHỨC NĂNG và Hoạt động cùng charts đều full width */
-    body.dashboard #content #content-main,
-    body.dashboard #content-related {
-      flex: auto !important;
-      max-width: none !important;
-      width: 100% !important;
-    }
+      /* Cho khung CHỨC NĂNG và Hoạt động cùng charts đều full width */
+      body.dashboard #content #content-main,
+      body.dashboard #content-related {
+        flex: auto !important;
+        max-width: none !important;
+        width: 100% !important;
+      }
 
-    /* Charts cũng bỏ margin-left nếu có */
-    .charts-container {
-      margin: 2rem 0 !important;
-      width: auto !important;
+      /* Charts cũng bỏ margin-left nếu có */
+      .charts-container {
+        margin: 2rem 0 !important;
+        width: auto !important;
+      }
     }
-  }
   </style>
 {% endblock %}
 
@@ -172,62 +192,118 @@
         `);
       }
 
-      // Vẽ chart
-      const months      = {{ chart_meal_labels|safe }};
-      const mealCounts  = {{ chart_meal_data|safe }};
-      const paidAmounts = {{ chart_paid_month_data|safe }};
+      // hàm lấy màu từ CSS variables
+      // Hàm lấy CSS var
+    function getV(name){
+      return getComputedStyle(document.documentElement)
+             .getPropertyValue(name).trim();
+    }
 
-      new Chart(
-        document.getElementById('chartMealsByMonth').getContext('2d'),
-        {
-          type: 'line',
-          data: {
-            labels: months,
-            datasets: [{
-              label: 'Số bữa ăn (' + new Date().getFullYear() + ')',
-              data: mealCounts,
-              fill: false,
-              borderColor: 'rgba(54,162,235,1)',
-              backgroundColor: 'rgba(54,162,235,0.2)',
-              pointBackgroundColor: 'rgba(54,162,235,1)',
-              pointBorderColor: '#fff',
-              tension: 0.1
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false
-          }
-        }
-      );
+    const months      = {{ chart_meal_labels|safe }};
+    const mealCounts  = {{ chart_meal_data|safe }};
+    const paidAmounts = {{ chart_paid_month_data|safe }};
 
-      new Chart(
-        document.getElementById('chartPaidByMonth').getContext('2d'),
-        {
-          type: 'bar',
-          data: {
-            labels: months,
-            datasets: [{
-              label: 'Học phí (' + new Date().getFullYear() + ')',
-              data: paidAmounts,
-              backgroundColor: 'rgba(255,159,64,0.2)',
-              borderColor: 'rgba(255,159,64,1)',
-              borderWidth: 1
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-              y: {
-                beginAtZero: true,
-                ticks: { callback: v => v.toLocaleString() + '₫' }
-              }
+    // Lấy màu từ biến
+    const lineColor = getV('--chart-line-color'),
+          fillColor = getV('--chart-fill-color'),
+          gridColor = getV('--chart-grid-color');
+
+    // Vẽ chart Số bữa ăn
+    const chartMeals = new Chart(
+      document.getElementById('chartMealsByMonth').getContext('2d'),
+      {
+        type: 'line',
+        data: {
+          labels: months,
+          datasets: [{
+            label: 'Số bữa ăn (' + new Date().getFullYear() + ')',
+            data: mealCounts,
+            fill: false,
+            borderColor: lineColor,
+            backgroundColor: fillColor,
+            pointBackgroundColor: lineColor,
+            pointBorderColor: '#fff',
+            tension: 0.1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              grid: { color: gridColor }
+            },
+            y: {
+              beginAtZero: true,
+              grid: { color: gridColor },
+              ticks: { callback: v => v.toLocaleString() + '₫' }
             }
           }
         }
-      );
-    });
+      }
+    );
+
+    // Vẽ chart Học phí
+    const chartPaid = new Chart(
+      document.getElementById('chartPaidByMonth').getContext('2d'),
+      {
+        type: 'bar',
+        data: {
+          labels: months,
+          datasets: [{
+            label: 'Học phí (' + new Date().getFullYear() + ')',
+            data: paidAmounts,
+            backgroundColor: fillColor,
+            borderColor: lineColor,
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              grid: { color: gridColor }
+            },
+            y: {
+              beginAtZero: true,
+              grid: { color: gridColor },
+              ticks: { callback: v => v.toLocaleString() + '₫' }
+            }
+          }
+        }
+      }
+    );
+
+    // Observer để update màu khi theme change
+    new MutationObserver(muts => {
+      muts.forEach(m => {
+        if (m.attributeName === 'data-theme') {
+          const nl = getV('--chart-line-color'),
+                nf = getV('--chart-fill-color'),
+                ng = getV('--chart-grid-color');
+          // update line chart
+          chartMeals.data.datasets.forEach(ds => {
+            ds.borderColor = nl;
+            ds.pointBackgroundColor = nl;
+            ds.backgroundColor = nf;
+          });
+          chartMeals.options.scales.x.grid.color = ng;
+          chartMeals.options.scales.y.grid.color = ng;
+          chartMeals.update();
+          // update bar chart
+          chartPaid.data.datasets.forEach(ds => {
+            ds.borderColor = nl;
+            ds.backgroundColor = nf;
+          });
+          chartPaid.options.scales.x.grid.color = ng;
+          chartPaid.options.scales.y.grid.color = ng;
+          chartPaid.update();
+        }
+      });
+    }).observe(document.documentElement, { attributes: true });
+
+  });
   </script>
 {% endblock %}
 
