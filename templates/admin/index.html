@@ -2,70 +2,311 @@
 {% extends "admin/index.html" %}
 {% load i18n %}
 
-{# 1. Chèn CSS để ẩn sidebar và mở rộng content #}
 {% block extrastyle %}
-<style>
-  /* Ẩn cột sidebar */
-  #nav-sidebar {
-    display: none !important;
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* === thêm biến CSS cho chart colors === */
+    :root {
+    --chart-line-color: rgb(67, 5, 236);
+    --chart-fill-color: rgb(67, 5, 236);
+    --chart-grid-color: rgba(0,0,0,0.1);
   }
-  /* Mở rộng khối content sang trái */
-  #content {
-    margin-left: 0 !important;
-    width: auto !important;
-  }
-  /* Nếu template có wrapper content-main */
-  #content-main {
-    width: 100% !important;
-    margin: 0 !important;
-  }
-</style>
+  /* Khi bật dark mode (Django admin gán data-theme="dark" lên <html>) */
+  html[data-theme="dark"] {
+      /* khi dark mode bật */
+      --chart-line-color: #e43011;
+      --chart-fill-color: #e43011;
+      --chart-grid-color: rgba(248, 248, 248, 0.13);
+    }
+    /* === end thêm === */
+
+    /* Ẩn sidebar gốc chỉ trên Dashboard */
+    body.dashboard nav#nav-sidebar {
+      display: none !important;
+    }
+
+    /* Layout flex cho Dashboard: nội dung chính + Recent actions */
+    body.dashboard #content {
+      display: flex !important;
+      margin: 2rem 0 !important;  /* chỉ giữ margin trên/dưới */
+      gap: 2rem;                   /* khoảng cách giữa các cột */
+    }
+    /* Khung “Hoạt động gần đây” */
+    body.dashboard #content-related {
+      flex: 0 0 300px;
+      display: block;
+      margin: 0;                   /* gỡ margin-left:auto */
+    }
+
+    /* Ẩn tiêu đề <h1>Bảng điều khiển> */
+    body.dashboard #content h1 {
+      display: none !important;
+    }
+
+    /* Chart container flex:1 để chiếm phần còn lại */
+    .charts-container {
+      flex: 1;
+      margin: 2rem 0 !important;  /* chỉ giữ margin trên/dưới */
+      width: auto !important;      /* để nó tự bơm full flex */
+    }
+    .charts-container > div {
+      margin-bottom: 2rem;
+    }
+    .charts-container canvas {
+      width: 100% !important;
+      height: 400px !important;
+    }
+
+    /* Header Admin */
+    #header {
+      background-color: #14394b !important;
+      padding: 0.5rem 1rem;
+    }
+    #header #site-name,
+    #header #site-name a {
+      font-size: 1rem !important;
+      font-weight: bold !important;
+      color: #fff !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    #header #user-tools a {
+      font-size: 0.675rem !important;
+    }
+
+    /* Style header “Hoạt động gần đây” */
+    body.dashboard #content-related #recent-actions-module h2 {
+      background-color: #14394b !important;
+      color:            #fff   !important;
+      font-weight:      bold   !important;
+      padding:          0.5em  1em !important;
+      margin:           0     !important;
+    }
+
+    /* Module header đồng bộ */
+    #content-main .module > h2 {
+      background-color: #14394b !important;
+      color: #fff !important;
+      padding: .5em !important;
+      margin: 0 !important;
+    }
+    .dashboard-module .module {
+      border: 1px solid #133642 !important;
+      border-radius: 4px !important;
+    }
+    .dashboard-module .module h2 {
+      background-color: #184e74 !important;
+      color: #fff !important;
+      padding: .5em !important;
+      margin: 0 !important;
+    }
+
+    /* Caption “Chức năng” & “Xác thực và ủy quyền” */
+    #content-main .app-meals.module table caption,
+    #content-main .app-auth.module table caption {
+      background-color: #14394b !important;
+      color:            #fff     !important;
+      text-transform:   uppercase;
+    }
+    /* Tắt link và hover effect */
+    #content-main .app-meals.module table caption a.section,
+    #content-main .app-auth.module table caption a.section {
+      pointer-events: none !important;
+      cursor: default !important;
+      text-decoration: none !important;
+      color: inherit !important;
+    }
+    #content-main .app-meals.module table tbody tr:hover,
+    #content-main .app-auth.module table tbody tr:hover {
+      background-color: rgba(20,57,75,0.1) !important;
+    }
+    #content-main .app-meals.module table tbody tr th a:hover,
+    #content-main .app-auth.module table tbody tr th a:hover {
+      color: #14394b !important;
+      text-decoration: none !important;
+    }
+
+    @media (max-width: 768px) {
+      /* Xếp modules, charts & recent actions thành cột */
+      body.dashboard #content {
+        flex-direction: column !important;
+        gap: 1rem !important;
+      }
+
+      /* Cho khung CHỨC NĂNG và Hoạt động cùng charts đều full width */
+      body.dashboard #content #content-main,
+      body.dashboard #content-related {
+        flex: auto !important;
+        max-width: none !important;
+        width: 100% !important;
+      }
+
+      /* Charts cũng bỏ margin-left nếu có */
+      .charts-container {
+        margin: 2rem 0 !important;
+        width: auto !important;
+      }
+    }
+  </style>
 {% endblock %}
 
-{# 2. Override block content để thêm “Liên kết nhanh” lên trên #}
 {% block content %}
-  <div class="module" style="margin-bottom:1.5em; padding:1em; background:#f9f9f9;">
-    <h2 style="margin:0 0 .5em;">{% trans "Liên kết nhanh" %}</h2>
-    <p style="margin:0;">
-      <a href="{% url 'meals:statistics' %}" class="button addlink" style="background:#28a745; color:#fff; padding:.4em .8em; text-decoration:none; border-radius:3px; margin-right:.5em;">
-        📊 Thống kê
-      </a>
-      <a href="{% url 'meals:student_payment_edit' %}" class="button addlink" style="background:#17a2b8; color:#fff; padding:.4em .8em; text-decoration:none; border-radius:3px;">
-        💳 Chỉnh sửa công nợ
-      </a>
-    </p>
-  </div>
+  {{ block.super }}
 
-  {{ block.super }}  {# Giữ nguyên các module MEALS, XÁC THỰC VÀ ỦY QUYỀN và Recent Actions #}
-{% endblock %}
-{% block sidebar %}
-  <div id="content-related">
-    <div class="module" id="recent-actions-module">
-      <h2>{% translate "Recent actions" %}</h2>
-      <h3>{% translate "My actions" %}</h3>
-      {% load log %}
-      {% get_admin_log 10 as admin_log for_user user %}
-      {% if not admin_log %}
-        <p>{% translate "None available" %}</p>
-      {% else %}
-        <ul class="actionlist">
-        {% for entry in admin_log %}
-          <li class="{% if entry.is_addition %}addlink{% endif %}{% if entry.is_change %}changelink{% endif %}{% if entry.is_deletion %}deletelink{% endif %}">
-            <!-- Hiển thị username trước khi mô tả hành động -->
-            <strong>{{ entry.user.username }}</strong> –
-            {% if entry.is_deletion or not entry.get_admin_url %}
-              {{ entry.object_repr }}
-            {% else %}
-              <a href="{{ entry.get_admin_url }}">{{ entry.object_repr }}</a>
-            {% endif %}
-            <br>
-            {% if entry.content_type %}
-              <span class="mini quiet">{% filter capfirst %}{{ entry.content_type.name }}{% endfilter %}</span>
-            {% endif %}
-          </li>
-        {% endfor %}
-        </ul>
-      {% endif %}
+  {# ==== Các biểu đồ ==== #}
+  <div class="charts-container">
+    <div>
+      <h3 style="margin-bottom:.5rem; color:#14394b;">Số bữa ăn theo tháng</h3>
+      <canvas id="chartMealsByMonth"></canvas>
+    </div>
+    <div>
+      <h3 style="margin-bottom:.5rem; color:#14394b;">Học phí theo tháng</h3>
+      <canvas id="chartPaidByMonth"></canvas>
     </div>
   </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      // Đổi “Meals” → “CHỨC NĂNG”
+      const cap = document.querySelector(
+        '#content-main .app-meals.module table caption a.section'
+      );
+      if (cap) { cap.textContent = 'CHỨC NĂNG'; cap.title = 'Các chức năng'; }
+
+      // Chèn 2 link mới vào menu “Chức năng”
+      const tbody = document.querySelector(
+        '#content-main .app-meals.module table tbody'
+      );
+      if (tbody) {
+        tbody.insertAdjacentHTML('afterbegin', `
+          <tr>
+            <th scope="row"><a href="{% url 'meals:student_payment_edit' %}">Chỉnh sửa công nợ</a></th>
+            <td></td>
+            <td><a href="{% url 'meals:student_payment_edit' %}" class="changelink">Đi đến</a></td>
+          </tr>
+          <tr>
+            <th scope="row"><a href="{% url 'meals:statistics' %}">Thống kê</a></th>
+            <td></td>
+            <td><a href="{% url 'meals:statistics' %}" class="changelink">Đi đến</a></td>
+          </tr>
+        `);
+      }
+
+      // hàm lấy màu từ CSS variables
+      // Hàm lấy CSS var
+    function getV(name){
+      return getComputedStyle(document.documentElement)
+             .getPropertyValue(name).trim();
+    }
+
+    const months      = {{ chart_meal_labels|safe }};
+    const mealCounts  = {{ chart_meal_data|safe }};
+    const paidAmounts = {{ chart_paid_month_data|safe }};
+
+    // Lấy màu từ biến
+    const lineColor = getV('--chart-line-color'),
+          fillColor = getV('--chart-fill-color'),
+          gridColor = getV('--chart-grid-color');
+
+    // Vẽ chart Số bữa ăn
+    const chartMeals = new Chart(
+      document.getElementById('chartMealsByMonth').getContext('2d'),
+      {
+        type: 'line',
+        data: {
+          labels: months,
+          datasets: [{
+            label: 'Số bữa ăn (' + new Date().getFullYear() + ')',
+            data: mealCounts,
+            fill: false,
+            borderColor: lineColor,
+            backgroundColor: fillColor,
+            pointBackgroundColor: lineColor,
+            pointBorderColor: '#fff',
+            tension: 0.1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              grid: { color: gridColor }
+            },
+            y: {
+              beginAtZero: true,
+              grid: { color: gridColor },
+              ticks: { callback: v => v.toLocaleString() + '₫' }
+            }
+          }
+        }
+      }
+    );
+
+    // Vẽ chart Học phí
+    const chartPaid = new Chart(
+      document.getElementById('chartPaidByMonth').getContext('2d'),
+      {
+        type: 'bar',
+        data: {
+          labels: months,
+          datasets: [{
+            label: 'Học phí (' + new Date().getFullYear() + ')',
+            data: paidAmounts,
+            backgroundColor: fillColor,
+            borderColor: lineColor,
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              grid: { color: gridColor }
+            },
+            y: {
+              beginAtZero: true,
+              grid: { color: gridColor },
+              ticks: { callback: v => v.toLocaleString() + '₫' }
+            }
+          }
+        }
+      }
+    );
+
+    // Observer để update màu khi theme change
+    new MutationObserver(muts => {
+      muts.forEach(m => {
+        if (m.attributeName === 'data-theme') {
+          const nl = getV('--chart-line-color'),
+                nf = getV('--chart-fill-color'),
+                ng = getV('--chart-grid-color');
+          // update line chart
+          chartMeals.data.datasets.forEach(ds => {
+            ds.borderColor = nl;
+            ds.pointBackgroundColor = nl;
+            ds.backgroundColor = nf;
+          });
+          chartMeals.options.scales.x.grid.color = ng;
+          chartMeals.options.scales.y.grid.color = ng;
+          chartMeals.update();
+          // update bar chart
+          chartPaid.data.datasets.forEach(ds => {
+            ds.borderColor = nl;
+            ds.backgroundColor = nf;
+          });
+          chartPaid.options.scales.x.grid.color = ng;
+          chartPaid.options.scales.y.grid.color = ng;
+          chartPaid.update();
+        }
+      });
+    }).observe(document.documentElement, { attributes: true });
+
+  });
+  </script>
+{% endblock %}
+
+{% block sidebar %}
+  {{ block.super }}
 {% endblock %}
