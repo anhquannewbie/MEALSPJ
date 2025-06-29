@@ -26,7 +26,7 @@ from django_admin_listfilter_dropdown.filters import (
     DropdownFilter, RelatedDropdownFilter)
 admin.site.site_header  = "Trang quản trị bữa ăn học sinh"
 admin.site.site_title   = "Quản lý bữa ăn"
-admin.site.index_title  = "Bảng điều khiển"
+admin.site.index_title  = "Trang Chủ"
 class TermFilter(admin.SimpleListFilter):
     title            = 'Học kỳ/Niên khoá'
     parameter_name   = 'term'
@@ -113,8 +113,21 @@ class StudentInline(admin.TabularInline):
     show_change_link = True   # có link vào form edit của từng student
 class MyAdminSite(AdminSite):
     site_header = "TRANG QUẢN TRỊ BỮA ĂN HỌC SINH"
-    index_title = ""
-
+    index_title = "Trang Chủ"
+    def each_context(self, request):
+        context = super().each_context(request)
+        # đây là 2 link bạn muốn show ở mọi trang admin
+        context['quick_links'] = [
+            {
+                'name': 'Chỉnh sửa công nợ',
+                'url': reverse('admin:meals_studentpayment_changelist'),
+            },
+            {
+                'name': 'Thống kê',
+                'url': reverse('meals:statistics'),
+            },
+        ]
+        return context
     def index(self, request, extra_context=None):
         extra_context = extra_context or {}
 

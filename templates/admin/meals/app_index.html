@@ -1,0 +1,32 @@
+{% extends "admin/app_index.html" %}
+{% load i18n admin_urls %}
+
+{% block content %}
+  {# Bảng “Chức năng” thêm ở đầu #}
+  <div class="module">
+    <table>
+      <caption>{% trans "Chức năng" %}</caption>
+      <tbody>
+        <tr class="{% cycle row1 row2 %}">
+          <th scope="row">
+            <a href="{% url 'meals:statistics' %}">{% trans "Thống kê" %}</a>
+          </th>
+          <td>
+            <a href="{% url 'meals:statistics' %}" class="viewslink">{% trans "Xem" %}</a>
+          </td>
+        </tr>
+        <tr class="{% cycle row1 row2 %}">
+          <th scope="row">
+            <a href="{% url 'admin:meals_studentpayment_changelist' %}">{% trans "Chỉnh sửa công nợ" %}</a>
+          </th>
+          <td>
+            <a href="{% url 'admin:meals_studentpayment_changelist' %}" class="changelink">{% trans "Thay đổi" %}</a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  {# Giữ lại toàn bộ nội dung gốc (các model hiện tại) #}
+  {{ block.super }}
+{% endblock %}
