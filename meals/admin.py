@@ -26,7 +26,7 @@ from django_admin_listfilter_dropdown.filters import (
     DropdownFilter, RelatedDropdownFilter)
 admin.site.site_header  = "Trang quản trị bữa ăn học sinh"
 admin.site.site_title   = "Quản lý bữa ăn"
-admin.site.index_title  = "Bảng điều khiển"
+admin.site.index_title  = "Trang Chủ"
 class TermFilter(admin.SimpleListFilter):
     title            = 'Học kỳ/Niên khoá'
     parameter_name   = 'term'
@@ -113,8 +113,21 @@ class StudentInline(admin.TabularInline):
     show_change_link = True   # có link vào form edit của từng student
 class MyAdminSite(AdminSite):
     site_header = "TRANG QUẢN TRỊ BỮA ĂN HỌC SINH"
-    index_title = ""
-
+    index_title = "Trang Chủ"
+    def each_context(self, request):
+        context = super().each_context(request)
+        # đây là 2 link bạn muốn show ở mọi trang admin
+        context['quick_links'] = [
+            {
+                'name': 'Chỉnh sửa công nợ',
+                'url': reverse('admin:meals_studentpayment_changelist'),
+            },
+            {
+                'name': 'Thống kê',
+                'url': reverse('meals:statistics'),
+            },
+        ]
+        return context
     def index(self, request, extra_context=None):
         extra_context = extra_context or {}
 
@@ -461,73 +474,103 @@ class ClassRoomAdmin( admin.ModelAdmin):
                 )
 
                 if latest_payment:
-                    # 3) Clone tạm StudentPayment ban đầu (giữ nguyên tất cả fields)
-                    new_payment = StudentPayment.objects.create(
-                        student=new_student,
-                        month=latest_payment.month,
-                        tuition_fee=latest_payment.tuition_fee,
-                        amount_paid=latest_payment.amount_paid,
-                        remaining_balance=latest_payment.remaining_balance,
-                        meal_price=latest_payment.meal_price
-                    )
+                    # Xác định tháng/năm gần nhất có dữ liệu
+                    old_year, old_month = map(int, latest_payment.month.split('-'))
+                    today = date.today()
+                    curr_year, curr_month = today.year, today.month
 
-                    # 4) Clone tất cả MealRecord của tháng gần nhất từ old_student sang new_student
-                    year_str, month_str = latest_payment.month.split('-')
-                    year_int = int(year_str)
-                    month_int = int(month_str)
+                    # Loop tạo StudentPayment cho từng tháng từ old_month → curr_month
+                    for m in range(old_month, curr_month + 1):
+                        month_str = f"{curr_year}-{m:02d}"
 
-                    meal_records = MealRecord.objects.filter(
-                        student=old_student,
-                        date__year=year_int,
-                        date__month=month_int
-                    )
-                    for mr in meal_records:
-                        MealRecord.objects.create(
-                            student=new_student,
-                            date=mr.date,
-                            meal_type=mr.meal_type,
-                            status=mr.status,
-                            non_eat=mr.non_eat,
-                            absence_reason=mr.absence_reason
-                        )
+                        if m == old_month:
+                            # Tháng có dữ liệu gốc: copy paid/balance và clone MealRecord
+                            paid    = latest_payment.amount_paid
+                            balance = latest_payment.remaining_balance
+                            ate     = paid - balance
+                            tuition = latest_payment.tuition_fee
+                            sp = StudentPayment.objects.create(
+                                student           = new_student,
+                                month             = month_str,
+                                tuition_fee       = tuition,
+                                amount_paid       = paid,
+                                remaining_balance = balance,
+                                meal_price        = latest_payment.meal_price
+                            )
 
-                    # ----- (5) VẶN RECALC CHO ĐÚNG: Ăn học = tuition_fee + spent_meals -----
+                            # Clone MealRecord của tháng old_month
+                            year_int, month_int = old_year, old_month
+                            meal_records = MealRecord.objects.filter(
+                                student=old_student,
+                                date__year=year_int,
+                                date__month=month_int
+                            )
+                            for mr in meal_records:
+                                MealRecord.objects.create(
+                                    student= new_student,
+                                    date=    mr.date,
+                                    meal_type=      mr.meal_type,
+                                    status=         mr.status,
+                                    non_eat=        mr.non_eat,
+                                    absence_reason= mr.absence_reason
+                                )
 
-                    # (i) Tính spent_meals_new (tổng tiền ăn của new_student trong tháng đó)
-                    recs_new = MealRecord.objects.filter(
-                        student=new_student,
-                        date__year=year_int,
-                        date__month=month_int,
-                        meal_type__in=["Bữa sáng", "Bữa trưa"]
-                    ).filter(
-                        Q(status='Đủ') | Q(status='Thiếu', non_eat=2)
-                    )
-                    fee_b = Decimal(new_payment.meal_price.breakfast_price)
-                    fee_l = Decimal(new_payment.meal_price.lunch_price)
-                    spent_meals_new = sum(
-                        fee_b if r.meal_type == "Bữa sáng" else fee_l
-                        for r in recs_new
-                    )
+                            # Recalc lại tuition_fee & remaining_balance như trước (nếu có)
+                            recs_new = MealRecord.objects.filter(
+                                student=new_student,
+                                date__year=year_int,
+                                date__month=month_int,
+                                meal_type__in=["Bữa sáng", "Bữa trưa"]
+                            ).filter(
+                                Q(status='Đủ') | Q(status='Thiếu', non_eat=2)
+                            )
+                            fee_b = Decimal(sp.meal_price.breakfast_price)
+                            fee_l = Decimal(sp.meal_price.lunch_price)
+                            spent_meals_new = sum(
+                                fee_b if r.meal_type=="Bữa sáng" else fee_l
+                                for r in recs_new
+                            )
+                            desired_remaining = latest_payment.remaining_balance
+                            prior = Decimal('0')
+                            new_tuition = (
+                                sp.amount_paid
+                                - spent_meals_new
+                                + prior
+                                - desired_remaining
+                            )
+                            sp.tuition_fee       = new_tuition
+                            sp.remaining_balance = desired_remaining
+                            sp.save()
 
-                    # (ii) Muốn giữ desired_remaining đúng bằng old_payment.remaining_balance
-                    desired_remaining = latest_payment.remaining_balance
+                        elif old_month < m < curr_month:
+                            # Các tháng ở giữa: không đóng, không ăn nhưng giữ dư nợ cũ
+                            StudentPayment.objects.create(
+                                student           = new_student,
+                                month             = month_str,
+                                tuition_fee       = 0,
+                                amount_paid       = 0,
+                                remaining_balance = latest_payment.remaining_balance,
+                                meal_price        = latest_payment.meal_price
+                            )
+                        else:  # m == curr_month
+                            # 2) Clone tất cả MealRecord của tháng hiện tại
+                            current_meals = MealRecord.objects.filter(
+                                student=old_student,
+                                date__year=curr_year,
+                                date__month=curr_month
+                            )
+                            for mr in current_meals:
+                                MealRecord.objects.create(
+                                    student         = new_student,
+                                    date            = mr.date,
+                                    meal_type       = mr.meal_type,
+                                    status          = mr.status,
+                                    non_eat         = mr.non_eat,
+                                    absence_reason  = mr.absence_reason
+                                )
 
-                    # (iii) Công thức recalc hệ thống: 
-                    #      remaining_balance_new = amount_paid − (tuition_fee_new + spent_meals_new) + prior
-                    #      với prior = 0 (thanh toán đầu tháng)
-                    prior = Decimal('0')
-                    new_tuition_fee = (
-                        new_payment.amount_paid
-                        - spent_meals_new
-                        + prior
-                        - desired_remaining
-                    )
-
-                    # (iv) Gán lại tuition_fee và remaining_balance cho new_payment
-                    new_payment.tuition_fee = new_tuition_fee
-                    new_payment.remaining_balance = desired_remaining
-                    new_payment.save()
-                    # ----- KẾT THÚC VẶN RECALC -----
+                            # 3) Nếu cần recalc remaining_balance dựa trên các bữa ăn mới
+                            sp.save()
 
             # Xóa session để tránh promote lại
             del request.session['promote_student_ids']
@@ -758,6 +801,7 @@ class MealRecordAdmin( admin.ModelAdmin):
     list_filter  = (
         ('date', DropdownFilter),
         ('student__classroom', RelatedDropdownFilter),
+        
     )
     ordering = ('-date',)
     date_hierarchy = 'date'
