@@ -1,4 +1,4 @@
-{# project_root/templates/admin/index.html #}
+={# project_root/templates/admin/index.html #}
 {% extends "admin/index.html" %}
 {% load i18n %}
 
@@ -10,7 +10,6 @@
     --chart-line-color: rgb(67, 5, 236);
     --chart-fill-color: rgb(67, 5, 236);
     --chart-grid-color: rgba(0,0,0,0.1);
-    --chart-name-color: rgb(247, 8, 8);
   }
   /* Khi bật dark mode (Django admin gán data-theme="dark" lên <html>) */
   html[data-theme="dark"] {
@@ -18,8 +17,6 @@
       --chart-line-color: #e43011;
       --chart-fill-color: #e43011;
       --chart-grid-color: rgba(248, 248, 248, 0.13);
-      --chart-name-color: rgb(85, 7, 230);
-      
     }
     /* === end thêm === */
 
@@ -110,22 +107,10 @@
       background-color: #14394b !important;
       color:            #fff     !important;
       text-transform:   uppercase;
-      width: 300px !important;
-      table-layout: fixed !important;
     }
-    #content-main ,
-    #content-main {
-    border-left: 1px solid #d2d2d49f !important;  /* Viền trái */
-    border-right: 1px solid #d2d2d49f !important; /* Viền phải */
-    border-top: none !important;             /* Không có viền trên */
-    border-bottom: none !important;          /* Không có viền dưới */
-    margin: 0 !important;
-    width: 100% !important;  /* Đảm bảo bảng chiếm hết chiều rộng */
-      /* Tắt link và hover effect */
-    
+    /* Tắt link và hover effect */
     #content-main .app-meals.module table caption a.section,
     #content-main .app-auth.module table caption a.section {
-
       pointer-events: none !important;
       cursor: default !important;
       text-decoration: none !important;
@@ -162,7 +147,6 @@
         width: auto !important;
       }
     }
-    }
   </style>
 {% endblock %}
 
@@ -172,11 +156,11 @@
   {# ==== Các biểu đồ ==== #}
   <div class="charts-container">
     <div>
-      <h3 style="margin-bottom:.5rem; color:--chart-name-color;">Số bữa ăn theo tháng</h3>
+      <h3 style="margin-bottom:.5rem; color:#14394b;">Số bữa ăn theo tháng</h3>
       <canvas id="chartMealsByMonth"></canvas>
     </div>
     <div>
-      <h3 style="margin-bottom:.5rem; color:--chart-name-color;">Học phí theo tháng</h3>
+      <h3 style="margin-bottom:.5rem; color:#14394b;">Học phí theo tháng</h3>
       <canvas id="chartPaidByMonth"></canvas>
     </div>
   </div>
@@ -323,3 +307,6 @@
   </script>
 {% endblock %}
 
+{% block sidebar %}
+  {{ block.super }}
+{% endblock %}
