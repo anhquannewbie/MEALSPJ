@@ -140,26 +140,13 @@
       color: #14394b !important;
       text-decoration: none !important;
     }
+
     @media (max-width: 768px) {
-      /* Layout Dashboard thành cột */
+      /* Xếp modules, charts & recent actions thành cột */
       body.dashboard #content {
         flex-direction: column !important;
         gap: 1rem !important;
       }
-      /* CHỨC NĂNG và Recent actions full width */
-      body.dashboard #content #content-main,
-      body.dashboard #content-related {
-        width: 100% !important;
-      }
-      /* Charts full width và margin hợp lý */
-      .charts-container {
-        margin: 1rem 0 !important;
-        width: 100% !important;
-      }
-      .charts-container canvas {
-        height: 300px !important;
-      }
-    }
 
       /* Cho khung CHỨC NĂNG và Hoạt động cùng charts đều full width */
       body.dashboard #content #content-main,
@@ -174,6 +161,7 @@
         margin: 2rem 0 !important;
         width: auto !important;
       }
+    }
     }
   </style>
 {% endblock %}
