@@ -418,6 +418,7 @@ class StudentPaymentAdmin(admin.ModelAdmin):
         })
         super().delete_model(request, obj)
 class ClassRoomAdmin( admin.ModelAdmin):
+    inlines = [StudentInline]
     list_display  = ('name', 'term')
     list_filter   = (TermFilter,)
     search_fields = ('name', 'term',)
@@ -426,6 +427,15 @@ class ClassRoomAdmin( admin.ModelAdmin):
     verbose_name = "Lớp học"
     verbose_name_plural = "Các lớp học"
     change_form_template = "admin/meals/classroom_change_form.html"
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        # Lấy instance lớp theo object_id
+        classroom = ClassRoom.objects.get(pk=object_id)
+        # Đếm số học sinh
+        student_count = Student.objects.filter(classroom=classroom).count()
+        extra_context['student_count'] = student_count
+        # Gọi lại method gốc với extra_context mới
+        return super().change_view(request, object_id, form_url, extra_context=extra_context)
     def promote_students_choose_class_view(self, request, classroom_id):
         """
         Bước 2: Sau khi đã có danh sách student_ids trong session,
