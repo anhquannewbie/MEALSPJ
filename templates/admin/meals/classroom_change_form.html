@@ -30,7 +30,16 @@
    </li>
   {% endif %}
 {% endblock %}
-
+{% block extrahead %}
+  {{ block.super }}
+  <style>
+    /* Chèn số lượng ngay sau tiêu đề inline “Học sinh” */
+    /* id inline-group của Student thường là student_set-group */
+    #student_set-group h2::after {
+      content: " ({{ student_count }})";
+    }
+  </style>
+{% endblock %}
 {# nút Xóa học sinh đã chọn lên trên #}
 {% block submit_buttons_top %}
   {{ block.super }}
