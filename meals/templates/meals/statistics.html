@@ -140,10 +140,13 @@
   <button type="submit" class="btn btn-primary">Xem Thống Kê</button>
 </form>
   {% if not hide_financial %}
-    <a href="{% url 'meals:export_monthly_all' %}?term={{ selected_term }}&month={{ selected_month }}&class_id={{ selected_class_id }}"
-      class="btn btn-success mb-3">
-      Xuất Excel Cả Sáng & Trưa
-    </a>
+    <div class="mb-3 d-inline-flex align-items-center" style="gap: 8px;">
+      <a href="{% url 'meals:export_monthly_all' %}?term={{ selected_term }}&month={{ selected_month }}&class_id={{ selected_class_id }}"
+        class="btn btn-success">
+        Xuất Excel Cả Sáng & Trưa
+      </a>
+      <button class="btn btn-secondary" id="print-btn" type="button">In thống kê</button>
+    </div>
   {% endif %}
     {% for mt, data in stats.items %}
       <h5 class="text-center">Thống kê {{ mt }}</h5>
@@ -284,12 +287,14 @@
       <button type="submit" class="btn btn-primary ml-2">Xem Thống Kê</button>
     </form>
 
-    <a
-      href="{% url 'meals:export_yearly_statistics' %}?start_month={{ selected_start_month }}&end_month={{ selected_end_month }}&class_id={{ selected_class_id }}"
-      class="btn btn-success mb-3">
-      Xuất Excel Thống Kê Năm
-    </a>
-
+    <div class="mb-3 d-inline-flex align-items-center" style="gap: 8px;">
+      <a
+        href="{% url 'meals:export_yearly_statistics' %}?start_month={{ selected_start_month }}&end_month={{ selected_end_month }}&class_id={{ selected_class_id }}"
+        class="btn btn-success">
+        Xuất Excel Thống Kê Năm
+      </a>
+      <button class="btn btn-secondary" id="print-btn" type="button">In thống kê</button>
+    </div>
     {% if rows_year %}
       <table class="table table-bordered">
         <thead>
@@ -478,6 +483,14 @@ $(function(){
   // LƯU Ý: Không còn đoạn trigger chọn lớp ở đây nữa! 
   // Việc trigger '$classYearTab.val(...).trigger("change")' đã được dời vào bên trong .done() của $yearYearTab.change()
 });
+document.getElementById('print-btn').addEventListener('click', function(){
+    const params = new URLSearchParams(window.location.search);
+    // chuyển /statistics/ → /statistics/print/
+    const printUrl = window.location.pathname.replace(/\/statistics\/?$/, '/statistics/print/') + '?' + params.toString();
+    const w = window.open(printUrl, '_blank');
+    // khi load xong in luôn
+    w.onload = function(){ w.print(); };
+  });
 </script>
 
 {% endblock %}

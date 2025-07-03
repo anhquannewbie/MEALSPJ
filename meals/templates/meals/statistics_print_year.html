@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8"/>                            <!-- thêm -->
+    <title>In thống kê</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 1cm;
+        }
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+        thead{ 
+            background-color: #A5CAEB;
+            color: rgb(0, 0, 0);
+        }
+        
+        th, td {
+            border: 1px solid #000;
+            padding: 4px;
+            text-align: center;
+            /* Không cần set white-space ở đây */
+        }
+        .student-col, th.student-col {
+            white-space: nowrap !important;
+            font-size: 11px;
+            /* Dưới đây là các thuộc tính chống xuống dòng triệt để */
+            overflow: visible !important;
+            text-overflow: unset !important;
+            max-width: none !important;
+            min-width: 80px;   /* Đặt tối thiểu để luôn in đủ tên */
+            word-break: normal !important;
+        }
+        .page-break { page-break-after: always; }
+        @media print {
+            
+            table { page-break-inside: avoid; }
+        }
+    </style>
+    <script>
+      window.onload = function() {
+        window.print();
+      };
+      window.onafterprint = function() {
+        window.close();
+      };
+    </script>
+</head>
+<body>
+    {% if mode == 'month' %}
+        <h1>Thống kê tháng {{ selected_month }}/{{ selected_term }}</h1>
+        <h2>Bữa sáng</h2>
+        <table>
+            <tr>
+                <th>Họ tên</th>
+                {% for day in header_days %}
+                    <th>{{ day }}</th>
+                {% endfor %}
+                <th>Tổng</th>
+            </tr>
+            {% for row in data_breakfast %}
+                <tr>
+                    <td>{{ row.student.name }}</td>
+                    {% for mark in row.marks %}
+                        <td class="student-col">{{ mark }}</td>
+                    {% endfor %}
+                    <td>{{ row.total }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+        <div class="page-break"></div>
+        <h2>Bữa trưa</h2>
+        <table>
+            <tr>
+                <th>Họ tên</th>
+                {% for day in header_days %}
+                    <th>{{ day }}</th>
+                {% endfor %}
+                <th>Tổng</th>
+                <th>Tiền ăn</th>
+                <th>Học phí</th>
+                <th>Thành tiền</th>
+            </tr>
+            {% for row in data_lunch %}
+                <tr>
+                    <td>{{ row.student.name }}</td>
+                    {% for mark in row.marks %}
+                        <td>{{ mark }}</td>
+                    {% endfor %}
+                    <td>{{ row.total }}</td>
+                    <td>{{ row.food_cost|default:0 }}</td>
+                    <td>{{ row.tuition_fee|default:0 }}</td>
+                    <td>{{ row.total_due|default:0 }}</td>
+                </tr>
+            {% endfor %}
+            <tr>
+                <th>Tổng</th>
+                {% for total in totals_lunch %}
+                    <td>{{ total }}</td>
+                {% endfor %}
+                <td>{{ totals_meals_sum }}</td>
+                <td>{{ totals_food_cost_sum }}</td>
+                <td>{{ totals_tuition_fee_sum }}</td>
+                <td>{{ totals_due_sum }}</td>
+            </tr>
+        </table>
+    {% else %}
+        {% for group in data_year %}
+            <table>
+                <thead>
+                    <tr>
+                        <th colspan="100" style="text-align:left;font-size:16px;">
+                            {{ group.title }}
+                        </th>
+                    </tr>
+                    <tr>
+                        <th rowspan="2">Họ tên</th>
+                        {% for month in group.months %}
+                            <th colspan="3">Tháng {{ month.1 }}/{{ month.0 }}</th>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        {% for month in group.months %}
+                            <th>Đã đóng</th>
+                            <th>Ăn học</th>
+                            <th>Còn lại</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in group.data %}
+                    <tr>
+                        <td>{{ row.student.name }}</td>
+                        {% for cell in row.cells %}
+                            <td>{{ cell.paid }}</td>
+                            <td>{{ cell.spent }}</td>
+                            <td>{{ cell.remaining }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td><strong>Tổng</strong></td>
+                        {% for t in group.totals %}
+                            <td><strong>{{ t.0 }}</strong></td>
+                            <td><strong>{{ t.1 }}</strong></td>
+                            <td><strong>{{ t.2 }}</strong></td>
+                        {% endfor %}
+                    </tr>
+                </tfoot>
+            </table>
+            {% if not forloop.last %}
+                <div class="page-break"></div>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+    <script>
+        window.print();
+    </script>
+</body>
+</html>

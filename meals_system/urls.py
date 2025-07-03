@@ -15,6 +15,7 @@ from meals.views import (
     statistics_view,
     ajax_load_months,
     export_monthly_statistics,
+    statistics_print_view,
     user_login,
 )
 
@@ -24,7 +25,16 @@ urlpatterns = [
 
     # Authentication
     path('login/', user_login, name='login'),
-
+    path(
+        'statistics/print/',
+        login_required(
+            permission_required('meals.view_statistics', raise_exception=True)(
+                statistics_print_view
+            ),
+            login_url='login'
+        ),
+        name='statistics_print'  # New route for print view
+    ),
     # Meals app
     path('meals/', include('meals.urls', namespace='meals')),
     # AJAX endpoints and utilities
