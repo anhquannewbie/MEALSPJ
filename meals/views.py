@@ -55,6 +55,172 @@ def user_login(request):
             error = "Sai tên đăng nhập hoặc mật khẩu"
     return render(request, 'login.html', {'error': error})
 @login_required(login_url='login')
+@permission_required('meals.view_statistics', raise_exception=True)
+def statistics_print_view(request):
+    mode = request.GET.get('mode', 'month')
+    selected_term = request.GET.get('term')
+    selected_class_id = request.GET.get('class_id')
+    selected_month = request.GET.get('month')
+    selected_start_month = request.GET.get('start_month')
+    selected_end_month = request.GET.get('end_month')
+
+    context = {
+        'mode': mode,
+        'selected_term': selected_term,
+        'selected_class_id': selected_class_id,
+        'selected_month': selected_month,
+        'selected_start_month': selected_start_month,
+        'selected_end_month': selected_end_month,
+    }
+
+    if mode == 'month' and selected_term and selected_month and selected_class_id:
+        m_str, y_str = selected_month.split('/')
+        month_i, year_i = int(m_str), int(y_str)
+        max_day = calendar.monthrange(year_i, month_i)[1]
+        students_qs = Student.objects.filter(classroom_id=int(selected_class_id))
+        students = sorted(
+            students_qs,
+            key=lambda s: s.name.strip().split()[-1].upper()
+        )
+
+        data_breakfast = []
+        data_lunch = []
+        totals_lunch = [0] * max_day
+        totals_meals_sum = 0
+        totals_food_cost_sum = 0
+        totals_tuition_fee_sum = 0
+        totals_due_sum = 0
+
+        for meal_type in ['Bữa sáng', 'Bữa trưa']:
+            rows = []
+            for stu in students:
+                marks = []
+                for d in range(1, max_day + 1):
+                    rec = MealRecord.objects.filter(
+                        student=stu,
+                        date__year=year_i,
+                        date__month=month_i,
+                        date__day=d,
+                        meal_type=meal_type
+                    ).first()
+                    if rec:
+                        if rec.status == "Đủ":
+                            mark = "X"
+                        elif rec.status == "Thiếu" and rec.non_eat == 2:
+                            mark = "KP"
+                        elif rec.status == "Thiếu" and rec.non_eat == 1:
+                            mark = "P"
+                        else:
+                            mark = "0"
+                    else:
+                        mark = "0"
+                    marks.append(mark)
+                    if meal_type == 'Bữa trưa' and mark in ["X", "KP"]:
+                        totals_lunch[d-1] += 1
+                total = sum(1 for m in marks if m in ["X", "KP"])
+                row = {'student': stu, 'marks': marks, 'total': total}
+                if meal_type == 'Bữa trưa':
+                    ym = f"{year_i}-{month_i:02d}"
+                    sp = StudentPayment.objects.filter(student=stu, month=ym).first()
+                    if sp:
+                        br_count = MealRecord.objects.filter(student=stu, date__year=year_i, date__month=month_i, meal_type='Bữa sáng').count()
+                        lu_count = total
+                        row['food_cost'] = br_count * sp.meal_price.breakfast_price + lu_count * sp.meal_price.lunch_price
+                        row['tuition_fee'] = sp.tuition_fee
+                        row['total_due'] = row['food_cost'] + row['tuition_fee']
+                        totals_meals_sum += total
+                        totals_food_cost_sum += row['food_cost']
+                        totals_tuition_fee_sum += row['tuition_fee']
+                        totals_due_sum += row['total_due']
+                rows.append(row)
+            if meal_type == 'Bữa sáng':
+                data_breakfast = rows
+            else:
+                data_lunch = rows
+
+        context.update({
+            'header_days': list(range(1, max_day + 1)),
+            'data_breakfast': data_breakfast,
+            'data_lunch': data_lunch,
+            'totals_lunch': totals_lunch,
+            'totals_meals_sum': totals_meals_sum,
+            'totals_food_cost_sum': totals_food_cost_sum,
+            'totals_tuition_fee_sum': totals_tuition_fee_sum,
+            'totals_due_sum': totals_due_sum,
+        })
+
+    elif mode == 'year' and selected_term and selected_start_month and selected_end_month and selected_class_id:
+        start_month, start_year = map(int, selected_start_month.split('/'))
+        end_month, end_year = map(int, selected_end_month.split('/'))
+        months = []
+        y, m = start_year, start_month
+        while (y < end_year) or (y == end_year and m <= end_month):
+            months.append((y, m))
+            m += 1
+            if m > 12:
+                m = 1
+                y += 1
+
+        groups = [months[i:i+5] for i in range(0, len(months), 5)]
+        data_year = []
+        students_qs = Student.objects.filter(classroom_id=int(selected_class_id))
+        students = sorted(
+            students_qs,
+            key=lambda s: s.name.strip().split()[-1].upper()
+        )
+
+        for group in groups:
+            group_data = []
+            group_totals = [[0, 0, 0] for _ in group]
+            for stu in students:
+                # ---- mỗi tháng trả về 3 giá trị: paid, spent, remaining ----
+                cell_list = []
+                for idx, (yy, mm) in enumerate(group):
+                    ym = f"{yy}-{mm:02d}"
+                    sp = StudentPayment.objects.filter(student=stu, month=ym).first()
+                    if sp:
+                        paid      = sp.amount_paid
+                        tuition   = sp.tuition_fee
+                        remaining = sp.remaining_balance or Decimal('0')
+                        price     = sp.meal_price
+                        fee_b     = Decimal(price.breakfast_price)
+                        fee_l     = Decimal(price.lunch_price)
+                    else:
+                        paid      = tuition = remaining = Decimal('0')
+                        fee_b     = fee_l   = Decimal('0')
+                    recs    = MealRecord.objects.filter(
+                        student=stu, date__year=yy, date__month=mm,
+                        meal_type__in=["Bữa sáng","Bữa trưa"]
+                    )
+                    spent_meals = sum(
+                        fee_b if r.meal_type=="Bữa sáng" else fee_l
+                        for r in recs
+                        if (r.status=='Đủ' or (r.status=='Thiếu' and r.non_eat==2))
+                    )
+                    spent = tuition + spent_meals
+                    group_totals[idx][0] += int(paid)
+                    group_totals[idx][1] += int(spent)
+                    group_totals[idx][2] += int(remaining)
+                    cell_list.append({
+                        'paid':      f"{int(paid):,}",
+                        'spent':     f"{int(spent):,}",
+                        'remaining': f"{int(remaining):,}",
+                    })
+                group_data.append({'student': stu, 'cells': cell_list})
+                group_totals_fmt = [[f"{x:,}" for x in triple] for triple in group_totals]
+            data_year.append({
+                'title': f"{group[0][1]}/{group[0][0]} - {group[-1][1]}/{group[-1][0]}",
+                'data': group_data,
+                'months': group,
+                'totals': group_totals_fmt, 
+            })
+
+        context['data_year'] = data_year
+
+    return render(request, 'meals/statistics_print.html', context)
+
+# Other existing views remain unchanged (omitted for brevity)
+@login_required(login_url='login')
 @permission_required('meals.change_studentpayment', raise_exception=True)
 def student_payment_edit(request, pk=None):
     classrooms = ClassRoom.objects.all()

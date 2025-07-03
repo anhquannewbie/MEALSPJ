@@ -12,7 +12,7 @@ urlpatterns = [
     # Bulk create/save meal records
     path('record/bulk_new/', login_required(views.bulk_meal_record_create), name='meal_bulk_create'),
     path('record/bulk_save/', login_required(views.bulk_meal_record_save), name='meal_bulk_save'),
-
+    path('statistics/print/', views.statistics_print_view, name='statistics_print'),
     # AJAX endpoints
     path('ajax/load-students/', login_required(views.load_students), name='ajax_load_students'),
     path('ajax/load-previous-balance/', login_required(views.ajax_load_previous_balance), name='ajax_load_previous_balance'),

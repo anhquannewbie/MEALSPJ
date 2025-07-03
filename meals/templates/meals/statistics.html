@@ -331,7 +331,7 @@
 
 </div>
 
-
+<button class="btn btn-secondary" id="print-btn">In thống kê</button>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 $(function(){
@@ -478,6 +478,14 @@ $(function(){
   // LƯU Ý: Không còn đoạn trigger chọn lớp ở đây nữa! 
   // Việc trigger '$classYearTab.val(...).trigger("change")' đã được dời vào bên trong .done() của $yearYearTab.change()
 });
+document.getElementById('print-btn').addEventListener('click', function(){
+    const params = new URLSearchParams(window.location.search);
+    // chuyển /statistics/ → /statistics/print/
+    const printUrl = window.location.pathname.replace(/\/statistics\/?$/, '/statistics/print/') + '?' + params.toString();
+    const w = window.open(printUrl, '_blank');
+    // khi load xong in luôn
+    w.onload = function(){ w.print(); };
+  });
 </script>
 
 {% endblock %}
