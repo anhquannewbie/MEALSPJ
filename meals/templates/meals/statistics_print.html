@@ -50,7 +50,7 @@
 </head>
 <body>
     {% if mode == 'month' %}
-        <h1>Thống kê tháng {{ selected_month }}/{{ selected_term }}</h1>
+        <h1>Thống kê bữa ăn</h1>
         <h2>Bữa sáng</h2>
         <table>
             <tr>
@@ -107,14 +107,10 @@
             </tr>
         </table>
     {% else %}
+        <h1>Thống kê Tiền Ăn</h1>
         {% for group in data_year %}
             <table>
                 <thead>
-                    <tr>
-                        <th colspan="100" style="text-align:left;font-size:16px;">
-                            {{ group.title }}
-                        </th>
-                    </tr>
                     <tr>
                         <th rowspan="2">Họ tên</th>
                         {% for month in group.months %}
