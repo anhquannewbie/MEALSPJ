@@ -4,143 +4,525 @@
 
 {% block content %}
 <style>
-    /* Style cho các nhóm biểu mẫu */
-    .form-group {
-        margin-bottom: 0rem;
-        padding: 0rem 0;
+    /* Import Google Fonts */
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+    
+    * {
+        font-family: 'Poppins', sans-serif;
     }
-
-    .form-group label {
-        font-weight: bold;
+    
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px 0;
     }
-
-    /* Giới hạn chiều rộng của các điều khiển biểu mẫu */
-    .form-control, .form-select {
-        max-width: 300px;
+    
+    .container {
+        max-width: 1200px;
     }
-
-    /* Style cho danh sách học sinh */
-    #student-list {
-        padding: 0.5rem 0;
+    
+    /* Hero Header */
+    .hero-header {
+        background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 100%);
+        color: white;
+        padding: 2rem 0;
+        border-radius: 20px;
+        margin-bottom: 2rem;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     }
-
-    #student-list .form-check {
-        display: flex;
+    
+    .hero-header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+    
+    .hero-header p {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        margin: 0;
+    }
+    
+    /* Main Form Container */
+    #meal-form {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        overflow: hidden;
+        max-width: 100%;
+        margin: 0 auto;
+    }
+    
+    /* Form Header */
+    #meal-form-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem 2rem;
+        text-align: center;
+        border-bottom: none;
+    }
+    
+    #meal-form-header h2 {
+        font-size: 1.8rem;
+        font-weight: 600;
+        margin: 0;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    
+    /* Statistics Button */
+    .stats-container {
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+    
+    .statistics-btn {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border: none;
+        color: white;
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-weight: 600;
+        font-size: 1rem;
+        text-decoration: none;
+        display: inline-flex;
         align-items: center;
-        margin-bottom: 0.3rem;
-        min-height: 30px;
-        flex-wrap: nowrap;
+        gap: 8px;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
     }
-
-    #student-list .form-check-input {
-        margin-right: 0.5rem;
-        flex: 0 0 20px;
+    
+    .statistics-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+        color: white;
+        text-decoration: none;
     }
-
-    #student-list .form-check-label {
-        margin-right: 1rem;
-        flex: 0 0 200px;
+    
+    /* Form Content */
+    #meal-form-content {
+        padding: 2rem;
+        background: #f8f9fa;
+        flex-grow: 1;
+    }
+    
+    /* Form Groups */
+    .form-group {
+        margin-bottom: 1.5rem;
+        padding: 0;
+    }
+    
+    .form-group label {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.5rem;
+        display: block;
+        font-size: 0.95rem;
+    }
+    
+    .form-group i {
+        color: #667eea;
+        margin-right: 8px;
+    }
+    
+    /* Form Controls */
+    .form-control, .form-select {
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        padding: 12px 16px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        background: white;
+        width: 100%;
+        min-width: 250px;
+        height: auto;
+        min-height: 48px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
-
-    #student-list .absence-dropdown {
-        flex: 0 0 120px;
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+        outline: none;
+    }
+    
+    /* Ensure dropdown options are fully visible */
+    .form-select option {
+        padding: 8px 16px;
+        white-space: normal;
+        word-wrap: break-word;
+    }
+    
+    /* Input Groups */
+    .input-group {
+        position: relative;
+        width: 100%;
+    }
+    
+    .input-group .form-control,
+    .input-group .form-select {
+        padding-left: 45px;
+        width: 100%;
+        min-width: 280px;
+    }
+    
+    .input-group .input-icon {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #667eea;
+        z-index: 3;
+        pointer-events: none;
+    }
+    
+    /* Student List */
+    #student-list {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        margin-bottom: 2rem;
+    }
+    
+    #student-list h5 {
+        color: #333;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    #student-list .form-check {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.8rem;
+        min-height: 45px;
+        padding: 10px 15px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        flex-wrap: nowrap;
+    }
+    
+    #student-list .form-check:hover {
+        background: #e9ecef;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    #student-list .form-check-input {
+        margin-right: 0.8rem;
+        flex: 0 0 20px;
+        width: 20px;
+        height: 20px;
+        border: 2px solid #667eea;
+        border-radius: 5px;
+        background: white;
+    }
+    
+    #student-list .form-check-input:checked {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-color: #667eea;
+    }
+    
+    #student-list .form-check-label {
         margin-right: 1rem;
+        flex: 1;
+        font-weight: 500;
+        color: #333;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 150px;
     }
-
+    
+    #student-list .absence-dropdown {
+        flex: 0 0 140px;
+        margin-right: 1rem;
+        font-size: 0.9rem;
+        padding: 8px 12px;
+        border-radius: 8px;
+    }
+    
     #student-list .reason-input {
-        flex: 0 0 180px;
+        flex: 1;
+        font-size: 0.9rem;
+        padding: 8px 12px;
+        border-radius: 8px;
         visibility: hidden;
+        background: #fff3cd;
+        border: 2px solid #ffeaa7;
     }
-
+    
     #student-list .reason-input.visible {
         visibility: visible;
     }
-
-    /* Style cho dòng tổng kết */
+    
+    /* Summary Row */
     #summary-row {
-        font-weight: bold;
-        margin-top: 1rem;
-        padding: 0.5rem 0;
-        text-align: left;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        font-weight: 600;
+        margin-top: 1.5rem;
+        text-align: center;
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
     }
-
-    /* Căn lề trái biểu mẫu và thêm viền bo tròn */
-    #meal-form {
-        max-width: 600px;
+    
+    #summary-row #total-selected {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #ffeaa7;
+    }
+    
+    /* Save Button */
+    #btn-save {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        border: none;
+        color: white;
+        padding: 15px 40px;
+        border-radius: 25px;
+        font-weight: 600;
+        font-size: 1.1rem;
+        width: 100%;
+        transition: all 0.3s ease;
+        box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    #btn-save:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 35px rgba(255, 107, 107, 0.4);
+    }
+    
+    #btn-save:active {
+        transform: translateY(0);
+    }
+    
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: #dee2e6;
+    }
+    
+    .empty-state h5 {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .empty-state p {
         margin: 0;
-        text-align: left;
-        border: 2px solid #ddd;
-        border-radius: 10px;
-        display: flex;
-        flex-direction: column;
-        background-color: #fff;
+        font-size: 0.9rem;
     }
-
-    /* Style cho phần header */
-    #meal-form-header {
-        padding: 0.5rem;
-        border-bottom: none;
-    }
-
-    /* Style cho phần nội dung */
-    #meal-form-content {
-        padding: 1rem;
-        flex-grow: 1;
-        background-color: #f5f5f5;
-    }
-
-    /* Đổi màu nút Thống kê thành xanh lá */
-    .statistics-btn {
-        background-color: #28a745;
-        border-color: #28a745;
-        color: #fff;
-    }
-
-    .statistics-btn:hover {
-        background-color: #218838;
-        border-color: #1e7e34;
-    }
-
-    /* Điều chỉnh cho màn hình nhỏ */
+    
+    /* Responsive Design */
     @media (max-width: 768px) {
-        #meal-form {
-            max-width: 100%;
-            padding: 0;
+        .hero-header {
+            padding: 1.5rem 1rem;
+            margin-bottom: 1rem;
         }
-        #meal-form-header,
+        
+        .hero-header h1 {
+            font-size: 2rem;
+        }
+        
+        #meal-form-header {
+            padding: 1rem;
+        }
+        
         #meal-form-content {
-            padding: 0.5rem 1rem;
+            padding: 1.5rem 1rem;
         }
+        
+        .form-control, .form-select {
+            min-width: 200px;
+            font-size: 1rem;
+        }
+        
+        .input-group .form-control,
+        .input-group .form-select {
+            padding-left: 15px;
+            min-width: 200px;
+        }
+        
+        .input-group .input-icon {
+            display: none;
+        }
+        
+        #student-list .form-check {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 15px;
+            min-height: auto;
+        }
+        
+        #student-list .form-check-input {
+            margin-right: 0;
+            margin-bottom: 5px;
+            align-self: flex-start;
+        }
+        
         #student-list .form-check-label {
-            flex: 0 0 150px;
+            margin-right: 0;
+            margin-bottom: 8px;
+            min-width: auto;
+            flex: none;
+            width: 100%;
+            font-size: 1rem;
         }
+        
         #student-list .absence-dropdown {
-            flex: 0 0 100px;
+            flex: none;
+            width: 100%;
+            margin-right: 0;
+            margin-bottom: 10px;
+            min-width: 180px;
         }
+        
         #student-list .reason-input {
-            flex: 0 0 150px;
+            flex: none;
+            width: 100%;
+            min-width: 200px;
         }
+        
+        #btn-save {
+            padding: 12px 30px;
+            font-size: 1rem;
+        }
+        
+        #summary-row {
+            padding: 1rem;
+            font-size: 1rem;
+        }
+    }
+    
+    /* Extra Small Screens */
+    @media (max-width: 480px) {
+        .container {
+            padding: 0 10px;
+        }
+        
+        .hero-header h1 {
+            font-size: 1.8rem;
+        }
+        
+        #meal-form-content {
+            padding: 1rem 0.8rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+        
+        .form-control, .form-select {
+            min-width: 100%;
+            font-size: 1rem;
+        }
+        
+        .input-group .form-control,
+        .input-group .form-select {
+            min-width: 100%;
+        }
+        
+        #student-list .form-check {
+            padding: 12px;
+        }
+        
+        #student-list .form-check-label {
+            font-size: 0.95rem;
+        }
+        
+        #student-list .absence-dropdown {
+            min-width: 100%;
+            font-size: 0.9rem;
+        }
+        
+        #student-list .reason-input {
+            font-size: 0.9rem;
+            min-width: 100%;
+        }
+        
+        #btn-save {
+            padding: 10px 25px;
+            font-size: 0.95rem;
+        }
+    }
+    
+    /* Loading Animation */
+    .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    /* Success Animation */
+    .success-check {
+        color: #28a745;
+        font-size: 1.2rem;
+        animation: checkmark 0.5s ease-in-out;
+    }
+    
+    @keyframes checkmark {
+        0% { transform: scale(0); }
+        50% { transform: scale(1.2); }
+        100% { transform: scale(1); }
     }
 </style>
 
-<form id="meal-form" method="POST">
-    <div id="meal-form-header">
-        <h2 class="mb-2">{{ title }}</h2>
+<div class="container">
+    <!-- Hero Header -->
+    <div class="hero-header">
+        <h1>🍽️ Quản lý Bữa Ăn</h1>
+        <p>Nhập dữ liệu bữa ăn một cách dễ dàng và chính xác</p>
     </div>
-    <div id="meal-form-content">
-        <div class="mb-1 text-end">
-            <a href="{% url 'meals:statistics' %}?from=bulk" class="btn btn-secondary statistics-btn">
-                📊 Thống kê
-            </a>
+    
+    <form id="meal-form" method="POST">
+        <div id="meal-form-header">
+            <h2>📝 {{ title }}</h2>
         </div>
-        {% csrf_token %}
-        {% if is_superadmin %}
-            <div class="form-group mb-3">
-                <label for="id_record_date">Chọn ngày:</label>
+        
+        <div id="meal-form-content">
+            <!-- Statistics Button -->
+            <div class="stats-container">
+                <a href="{% url 'meals:statistics' %}?from=bulk" class="statistics-btn">
+                    📊 Xem Thống Kê
+                </a>
+            </div>
+            
+            {% csrf_token %}
+            
+            <!-- Date Selection (Admin Only) -->
+            {% if is_superadmin %}
+            <div class="form-group">
+                <label for="id_record_date">
+                    <i class="fas fa-calendar-alt"></i>Chọn ngày:
+                </label>
                 <div class="input-group">
+                    <i class="fas fa-calendar-alt input-icon"></i>
                     <input
                         type="date"
                         id="id_record_date"
@@ -151,37 +533,71 @@
                     />
                 </div>
             </div>
-        {% endif %}
-        <div class="form-group mb-3">
-            <label for="id_term">Học kỳ/Niên khoá:</label>
-            <select id="id_term" name="term" class="form-control">
-                <option value="" {% if not selected_term %}selected{% endif %}>-- Chọn Học kỳ --</option>
-                {% for t in terms_list %}
-                <option value="{{ t }}" {% if t == selected_term %}selected{% endif %}>{{ t }}</option>
-                {% endfor %}
-            </select>
+            {% endif %}
+            
+            <!-- Term Selection -->
+            <div class="form-group">
+                <label for="id_term">
+                    <i class="fas fa-graduation-cap"></i>Học kỳ/Niên khoá:
+                </label>
+                <div class="input-group">
+                    <i class="fas fa-graduation-cap input-icon"></i>
+                    <select id="id_term" name="term" class="form-control">
+                        <option value="" {% if not selected_term %}selected{% endif %}>-- Chọn Học kỳ --</option>
+                        {% for t in terms_list %}
+                        <option value="{{ t }}" {% if t == selected_term %}selected{% endif %}>{{ t }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Class Selection -->
+            <div class="form-group">
+                <label for="id_class_choice">
+                    <i class="fas fa-users"></i>Chọn Lớp:
+                </label>
+                <div class="input-group">
+                    <i class="fas fa-users input-icon"></i>
+                    <select id="id_class_choice" name="class_name" class="form-control">
+                        <option value="">-- Chọn Lớp --</option>
+                        {% for cls in class_list %}
+                            <option value="{{ cls.name }}">{{ cls.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Meal Type Selection -->
+            <div class="form-group">
+                <label for="id_meal_type">
+                    <i class="fas fa-utensils"></i>Loại Bữa Ăn:
+                </label>
+                <div class="input-group">
+                    <i class="fas fa-utensils input-icon"></i>
+                    <select id="id_meal_type" class="form-control">
+                        <option value="">-- Chọn Bữa Ăn --</option>
+                        <option value="Bữa sáng">🌅 Bữa sáng</option>
+                        <option value="Bữa trưa">🌞 Bữa trưa</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Student List -->
+            <div id="student-list">
+                <div class="empty-state">
+                    <i class="fas fa-child"></i>
+                    <h5>Chưa có dữ liệu học sinh</h5>
+                    <p>Vui lòng chọn học kỳ, lớp và loại bữa ăn để hiển thị danh sách học sinh</p>
+                </div>
+            </div>
+            
+            <!-- Save Button -->
+            <button id="btn-save" class="btn btn-primary">
+                💾 Lưu Dữ Liệu
+            </button>
         </div>
-        <div class="form-group mb-3">
-            <label for="id_class_choice">Chọn Lớp:</label>
-            <select id="id_class_choice" name="class_name" class="form-control">
-                <option value="">-- Chọn Lớp --</option>
-                {% for cls in class_list %}
-                    <option value="{{ cls.name }}">{{ cls.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="form-group mb-3">
-            <label for="id_meal_type">Loại Bữa Ăn:</label>
-            <select id="id_meal_type" class="form-control">
-                <option value="">-- Chọn Bữa Ăn --</option>
-                <option value="Bữa sáng">Bữa sáng</option>
-                <option value="Bữa trưa">Bữa trưa</option>
-            </select>
-        </div>
-        <div id="student-list" class="mb-3"></div>
-        <button id="btn-save" class="btn btn-primary">Lưu Dữ Liệu</button>
-    </div>
-</form>
+    </form>
+</div>
 
 <script>
     const defaultDate = '{{ default_date }}';
@@ -221,9 +637,25 @@
             var className = document.getElementById('id_class_choice').value;
             var mealType  = document.getElementById('id_meal_type').value;
             if (!className || !mealType) {
-                document.getElementById('student-list').innerHTML = '';
+                document.getElementById('student-list').innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-child"></i>
+                        <h5>Chưa có dữ liệu học sinh</h5>
+                        <p>Vui lòng chọn học kỳ, lớp và loại bữa ăn để hiển thị danh sách học sinh</p>
+                    </div>
+                `;
                 return;
             }
+            
+            // Show loading
+            document.getElementById('student-list').innerHTML = `
+                <div class="empty-state">
+                    <div class="loading-spinner"></div>
+                    <h5>Đang tải dữ liệu...</h5>
+                    <p>Vui lòng đợi trong giây lát</p>
+                </div>
+            `;
+            
             $.ajax({
                 url: "{% url 'meals:ajax_load_mealdata' %}",
                 data: {
@@ -232,7 +664,7 @@
                     meal_type:  mealType
                 },
                 success: function(data) {
-                    var html = '<h5>Danh sách Học Sinh</h5>';
+                    var html = '<h5><i class="fas fa-list"></i> Danh sách Học Sinh</h5>';
                     data.forEach(function(item) {
                         html += `
                             <div class="form-check">
@@ -240,23 +672,23 @@
                                        id="student_${item.id}" name="student_ids[]" value="${item.id}"
                                        ${item.checked ? 'checked' : ''} />
                                 <label class="form-check-label" for="student_${item.id}">
-                                  ${item.name}
+                                  👶 ${item.name}
                                 </label>
                                 <select class="form-select absence-dropdown"
                                         name="absence_${item.id}"
                                         ${item.checked ? 'disabled' : ''}>
                                     <option value="1" ${item.non_eat == 1 ? 'selected' : ''}>
-                                      Có phép
+                                      ✅ Có phép
                                     </option>
                                     <option value="2" ${item.non_eat == 2 ? 'selected' : ''}>
-                                      Không phép
+                                      ❌ Không phép
                                     </option>
                                 </select>
                                 <div class="reason-group">
                                     <input type="text"
                                            class="form-control reason-input ${item.checked ? '' : 'visible'}"
                                            name="reason_${item.id}"
-                                           placeholder="Lý do nghỉ"
+                                           placeholder="✏️ Lý do nghỉ..."
                                            value="${item.reason}" />
                                 </div>
                             </div>
@@ -264,12 +696,22 @@
                     });
                     html += `
                         <div id="summary-row">
+                            <i class="fas fa-calculator"></i>
                             Tổng số học sinh được chọn:
                             <span id="total-selected">0</span>
                         </div>
                     `;
                     document.getElementById('student-list').innerHTML = html;
                     updateTotal();
+                },
+                error: function() {
+                    document.getElementById('student-list').innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-exclamation-triangle" style="color: #dc3545;"></i>
+                            <h5>Lỗi tải dữ liệu</h5>
+                            <p>Không thể tải danh sách học sinh. Vui lòng thử lại.</p>
+                        </div>
+                    `;
                 }
             });
         }
@@ -320,6 +762,10 @@
             e.preventDefault();
             if (!confirm('Bạn có chắc muốn lưu dữ liệu cho các học sinh?')) return;
 
+            // Show loading state
+            this.innerHTML = '<div class="loading-spinner"></div> Đang lưu...';
+            this.disabled = true;
+
             var studentIds  = [],
                 absenceData = {},
                 reasonData  = {};
@@ -349,8 +795,21 @@
                     reason_data:   JSON.stringify(reasonData),
                     csrfmiddlewaretoken: '{{ csrf_token }}'
                 },
-                success: function() { alert('Đã lưu thành công!'); },
-                error:   function() { alert('Lưu không thành công, vui lòng thử lại!'); }
+                success: function() { 
+                    document.getElementById('btn-save').innerHTML = '<i class="fas fa-check success-check"></i> Đã lưu thành công!';
+                    setTimeout(() => {
+                        document.getElementById('btn-save').innerHTML = '💾 Lưu Dữ Liệu';
+                        document.getElementById('btn-save').disabled = false;
+                    }, 2000);
+                },
+                error: function() { 
+                    document.getElementById('btn-save').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Lưu thất bại!';
+                    document.getElementById('btn-save').disabled = false;
+                    setTimeout(() => {
+                        document.getElementById('btn-save').innerHTML = '💾 Lưu Dữ Liệu';
+                    }, 2000);
+                    alert('Lưu không thành công, vui lòng thử lại!');
+                }
             });
         });
     });
