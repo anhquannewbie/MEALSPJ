@@ -3,39 +3,134 @@
 {% load i18n %}
 
 {% block extrastyle %}
+  {{ block.super }}
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <style>
-    /* === thêm biến CSS cho chart colors === */
+    /* === CSS Variables === */
     :root {
-    --chart-line-color: rgb(67, 5, 236);
-    --chart-fill-color: rgb(67, 5, 236);
-    --chart-grid-color: rgba(0,0,0,0.1);
-  }
-  /* Khi bật dark mode (Django admin gán data-theme="dark" lên <html>) */
-  html[data-theme="dark"] {
-      /* khi dark mode bật */
-      --chart-line-color: #e43011;
-      --chart-fill-color: #e43011;
-      --chart-grid-color: rgba(248, 248, 248, 0.13);
+      --primary-color: #2563eb;
+      --primary-gradient: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      --secondary-color: #64748b;
+      --accent-color: #0ea5e9;
+      --success-color: #10b981;
+      --warning-color: #f59e0b;
+      --danger-color: #ef4444;
+      --bg-primary: #f8fafc;
+      --bg-secondary: #ffffff;
+      --text-primary: #1e293b;
+      --text-secondary: #64748b;
+      --border-color: #e2e8f0;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      --chart-line-color: #3b82f6;
+      --chart-fill-color: rgba(59, 130, 246, 0.1);
+      --chart-grid-color: rgba(148, 163, 184, 0.3);
     }
-    /* === end thêm === */
 
-    /* Ẩn sidebar gốc chỉ trên Dashboard */
+    /* Dark mode */
+    html[data-theme="dark"] {
+      --primary-color: #3b82f6;
+      --primary-gradient: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      --secondary-color: #94a3b8;
+      --accent-color: #06b6d4;
+      --success-color: #22c55e;
+      --warning-color: #fbbf24;
+      --danger-color: #f87171;
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --border-color: #334155;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+      --chart-line-color: #60a5fa;
+      --chart-fill-color: rgba(96, 165, 250, 0.1);
+      --chart-grid-color: rgba(148, 163, 184, 0.2);
+    }
+
+    /* === Global Styles === */
+    body.dashboard {
+      background: var(--bg-primary) !important;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    }
+
+    /* Ẩn sidebar CHỈ trên Dashboard */
     body.dashboard nav#nav-sidebar {
       display: none !important;
     }
 
-    /* Layout flex cho Dashboard: nội dung chính + Recent actions */
-    body.dashboard #content {
-      display: flex !important;
-      margin: 2rem 0 !important;  /* chỉ giữ margin trên/dưới */
-      gap: 2rem;                   /* khoảng cách giữa các cột */
+    body.dashboard #content,
+    body.dashboard #content-main {
+      margin-left: 0 !important;
+      width: auto !important;
     }
-    /* Khung “Hoạt động gần đây” */
+
+    /* === Header Modernization === */
+    #header {
+      background: var(--primary-gradient) !important;
+      padding: 0.75rem 2rem !important;
+      box-shadow: var(--shadow-lg) !important;
+      border: none !important;
+    }
+
+    #header #site-name,
+    #header #site-name a {
+      font-size: 1.25rem !important;
+      font-weight: 700 !important;
+      color: #ffffff !important;
+      text-decoration: none !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 0.5rem !important;
+    }
+
+    #header #site-name::before {
+      content: "🚀";
+      font-size: 1rem;
+    }
+
+    #header #user-tools {
+      display: flex !important;
+      align-items: center !important;
+      gap: 1rem !important;
+    }
+
+    #header #user-tools a {
+      color: rgba(255, 255, 255, 0.9) !important;
+      font-size: 0.8rem !important;
+      font-weight: 500 !important;
+      padding: 0.375rem 0.75rem !important;
+      border-radius: 0.375rem !important;
+      transition: all 0.2s ease !important;
+      text-decoration: none !important;
+    }
+
+    #header #user-tools a:hover {
+      background: rgba(255, 255, 255, 0.1) !important;
+      color: #ffffff !important;
+    }
+
+    /* === Optimized Layout === */
+    body.dashboard #content {
+      display: grid !important;
+      grid-template-columns: 1fr 300px !important;
+      gap: 1.5rem !important;
+      margin: 1.5rem !important;
+      align-items: start !important;
+    }
+
+    /* Main content area */
+    .dashboard-main {
+      min-width: 0 !important;
+    }
+
+    /* Recent actions sidebar */
     body.dashboard #content-related {
-      flex: 0 0 300px;
-      display: block;
-      margin: 0;                   /* gỡ margin-left:auto */
+      grid-column: 2 !important;
+      margin: 0 !important;
     }
 
     /* Ẩn tiêu đề <h1>Bảng điều khiển> */
@@ -43,281 +138,695 @@
       display: none !important;
     }
 
-    /* Chart container flex:1 để chiếm phần còn lại */
-    .charts-container {
-      flex: 1;
-      margin: 2rem 0 !important;  /* chỉ giữ margin trên/dưới */
-      width: auto !important;      /* để nó tự bơm full flex */
-    }
-    .charts-container > div {
-      margin-bottom: 2rem;
-    }
-    .charts-container canvas {
-      width: 100% !important;
-      height: 400px !important;
+    /* === Compact Welcome Section === */
+    .welcome-header {
+      background: var(--primary-gradient) !important;
+      color: #ffffff !important;
+      padding: 1rem 1.5rem !important;
+      border-radius: 0.75rem !important;
+      margin-bottom: 1.5rem !important;
+      text-align: center !important;
+      box-shadow: var(--shadow-md) !important;
     }
 
-    /* Header Admin */
-    #header {
-      background-color: #14394b !important;
-      padding: 0.5rem 1rem;
+    .welcome-title {
+      font-size: 1.5rem !important;
+      font-weight: 700 !important;
+      margin: 0 0 0.25rem 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 0.5rem !important;
     }
-    #header #site-name,
-    #header #site-name a {
+
+    .welcome-subtitle {
+      font-size: 0.9rem !important;
+      margin: 0 !important;
+      opacity: 0.9 !important;
+    }
+
+    /* === Compact Stats Grid === */
+    .stats-grid {
+      display: grid !important;
+      grid-template-columns: repeat(4, 1fr) !important;
+      gap: 1rem !important;
+      margin-bottom: 1.5rem !important;
+    }
+
+    .stat-card {
+      background: var(--bg-secondary) !important;
+      border-radius: 0.75rem !important;
+      padding: 1rem !important;
+      box-shadow: var(--shadow-md) !important;
+      border: 1px solid var(--border-color) !important;
+      transition: all 0.2s ease !important;
+      text-align: center !important;
+      position: relative !important;
+      overflow: hidden !important;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px) !important;
+      box-shadow: var(--shadow-lg) !important;
+    }
+
+    .stat-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--primary-gradient);
+    }
+
+    .stat-icon {
+      width: 2.5rem !important;
+      height: 2.5rem !important;
+      border-radius: 0.5rem !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      margin: 0 auto 0.75rem auto !important;
       font-size: 1rem !important;
-      font-weight: bold !important;
-      color: #fff !important;
-      margin: 0 !important;
-      padding: 0 !important;
-    }
-    #header #user-tools a {
-      font-size: 0.675rem !important;
+      color: #ffffff !important;
     }
 
-    /* Style header “Hoạt động gần đây” */
-    body.dashboard #content-related #recent-actions-module h2 {
-      background-color: #14394b !important;
-      color:            #fff   !important;
-      font-weight:      bold   !important;
-      padding:          0.5em  1em !important;
-      margin:           0     !important;
+    .stat-value {
+      font-size: 1.5rem !important;
+      font-weight: 700 !important;
+      color: var(--text-primary) !important;
+      margin: 0 0 0.25rem 0 !important;
     }
 
-    /* Module header đồng bộ */
-    #content-main .module > h2 {
-      background-color: #14394b !important;
-      color: #fff !important;
-      padding: .5em !important;
-      margin: 0 !important;
-    }
-    .dashboard-module .module {
-      border: 1px solid #133642 !important;
-      border-radius: 4px !important;
-    }
-    .dashboard-module .module h2 {
-      background-color: #184e74 !important;
-      color: #fff !important;
-      padding: .5em !important;
+    .stat-label {
+      color: var(--text-secondary) !important;
+      font-size: 0.75rem !important;
+      font-weight: 500 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.05em !important;
       margin: 0 !important;
     }
 
-    /* Caption “Chức năng” & “Xác thực và ủy quyền” */
-    #content-main .app-meals.module table caption,
-    #content-main .app-auth.module table caption {
-      background-color: #14394b !important;
-      color:            #fff     !important;
-      text-transform:   uppercase;
-      width: 284px !important;
-      table-layout: fixed !important;
+    /* === Module Styling === */
+    body.dashboard #content-main .module {
+      background: var(--bg-secondary) !important;
+      border-radius: 0.75rem !important;
+      box-shadow: var(--shadow-md) !important;
+      border: 1px solid var(--border-color) !important;
+      overflow: hidden !important;
+      margin-bottom: 1.5rem !important;
     }
-    #content-main ,
-    #content-main {
-    border-left: 1px solid #d2d2d49f !important;  /* Viền trái */
-    border-right: 1px solid #d2d2d49f !important; /* Viền phải */
-    border-top: none !important;             /* Không có viền trên */
-    border-bottom: none !important;          /* Không có viền dưới */
-    margin: 0 !important;
-    width: 100% !important;  /* Đảm bảo bảng chiếm hết chiều rộng */
-    /* Tắt link và hover effect */
-      /* Tắt link và hover effect */
-    
+
+    body.dashboard #content-main .module table caption {
+      background: var(--primary-gradient) !important;
+      color: #ffffff !important;
+      font-weight: 600 !important;
+      font-size: 1rem !important;
+      padding: 0.75rem 1rem !important;
+      text-align: left !important;
+      margin: 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 0.5rem !important;
+      text-transform: uppercase !important;
     }
-    /* Tắt link và hover effect */
-    #content-main .app-meals.module table caption a.section,
-    #content-main .app-auth.module table caption a.section {
+
+    body.dashboard #content-main .app-meals.module table caption::before {
+      content: "⚙️";
+      font-size: 1rem;
+    }
+
+    body.dashboard #content-main .app-auth.module table caption::before {
+      content: "🔐";
+      font-size: 1rem;
+    }
+
+    body.dashboard #content-main .module table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+      margin: 0 !important;
+    }
+
+    body.dashboard #content-main .module table tbody tr {
+      transition: all 0.2s ease !important;
+      border-bottom: 1px solid var(--border-color) !important;
+    }
+
+    body.dashboard #content-main .module table tbody tr:hover {
+      background: var(--bg-primary) !important;
+    }
+
+    body.dashboard #content-main .module table tbody tr th {
+      padding: 0.75rem 1rem !important;
+      text-align: left !important;
+      font-weight: 500 !important;
+    }
+
+    body.dashboard #content-main .module table tbody tr th a {
+      color: var(--text-primary) !important;
+      text-decoration: none !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 0.5rem !important;
+      font-size: 0.875rem !important;
+    }
+
+    body.dashboard #content-main .module table tbody tr th a:hover {
+      color: var(--primary-color) !important;
+    }
+
+    body.dashboard #content-main .module table tbody tr td {
+      padding: 0.75rem 1rem !important;
+      text-align: right !important;
+    }
+
+    body.dashboard #content-main .module table tbody tr td a.changelink {
+      background: var(--primary-gradient) !important;
+      color: #ffffff !important;
+      padding: 0.375rem 0.75rem !important;
+      border-radius: 0.375rem !important;
+      text-decoration: none !important;
+      font-size: 0.75rem !important;
+      font-weight: 500 !important;
+      transition: all 0.2s ease !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 0.375rem !important;
+    }
+
+    body.dashboard #content-main .module table tbody tr td a.changelink:hover {
+      transform: translateY(-1px) !important;
+      box-shadow: var(--shadow-md) !important;
+    }
+
+    body.dashboard #content-main .module table tbody tr td a.changelink::after {
+      content: "→";
+      font-weight: bold;
+    }
+
+    /* Tắt link trên caption */
+    body.dashboard #content-main .app-meals.module table caption a.section,
+    body.dashboard #content-main .app-auth.module table caption a.section {
       pointer-events: none !important;
       cursor: default !important;
       text-decoration: none !important;
       color: inherit !important;
     }
-    #content-main .app-meals.module table tbody tr:hover,
-    #content-main .app-auth.module table tbody tr:hover {
-      background-color: rgba(20,57,75,0.1) !important;
+
+    /* === Recent Actions Styling === */
+    body.dashboard #content-related #recent-actions-module {
+      background: var(--bg-secondary) !important;
+      border-radius: 0.75rem !important;
+      box-shadow: var(--shadow-md) !important;
+      border: 1px solid var(--border-color) !important;
+      overflow: hidden !important;
     }
-    #content-main .app-meals.module table tbody tr th a:hover,
-    #content-main .app-auth.module table tbody tr th a:hover {
-      color: #14394b !important;
-      text-decoration: none !important;
+
+    body.dashboard #content-related #recent-actions-module h2 {
+      background: var(--primary-gradient) !important;
+      color: #ffffff !important;
+      font-weight: 600 !important;
+      padding: 0.75rem 1rem !important;
+      margin: 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 0.5rem !important;
+      font-size: 1rem !important;
+    }
+
+    body.dashboard #content-related #recent-actions-module h2::before {
+      content: "📋";
+      font-size: 1rem;
+    }
+
+    body.dashboard #content-related #recent-actions-module ul {
+      padding: 0 !important;
+      margin: 0 !important;
+      max-height: 400px !important;
+      overflow-y: auto !important;
+    }
+
+    body.dashboard #content-related #recent-actions-module li {
+      padding: 0.75rem 1rem !important;
+      border-bottom: 1px solid var(--border-color) !important;
+      transition: all 0.2s ease !important;
+      font-size: 0.85rem !important;
+    }
+
+    body.dashboard #content-related #recent-actions-module li:hover {
+      background: var(--bg-primary) !important;
+    }
+
+    body.dashboard #content-related #recent-actions-module li:last-child {
+      border-bottom: none !important;
+    }
+
+    /* === Charts Container === */
+    .charts-container {
+      margin: 0 !important;
+      width: 100% !important;
+    }
+
+    .chart-card {
+      background: var(--bg-secondary) !important;
+      border-radius: 0.75rem !important;
+      padding: 1rem !important;
+      box-shadow: var(--shadow-md) !important;
+      border: 1px solid var(--border-color) !important;
+      margin-bottom: 1.5rem !important;
+      position: relative !important;
+      overflow: hidden !important;
+    }
+
+    .chart-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--primary-gradient);
+    }
+
+    .chart-title {
+      font-size: 1rem !important;
+      font-weight: 600 !important;
+      color: var(--text-primary) !important;
+      margin: 0 0 1rem 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 0.5rem !important;
+    }
+
+    .charts-container canvas {
+      width: 100% !important;
+      height: 350px !important;
+      border-radius: 0.375rem !important;
+    }
+
+    /* === Responsive Design === */
+    @media (max-width: 1200px) {
+      body.dashboard #content {
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+        margin: 1rem !important;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.75rem !important;
+      }
     }
 
     @media (max-width: 768px) {
-      /* Xếp modules, charts & recent actions thành cột */
       body.dashboard #content {
-        flex-direction: column !important;
-        gap: 1rem !important;
+        margin: 0.75rem !important;
       }
 
-      /* Cho khung CHỨC NĂNG và Hoạt động cùng charts đều full width */
-      body.dashboard #content #content-main,
-      body.dashboard #content-related {
-        flex: auto !important;
-        max-width: none !important;
-        width: 100% !important;
+      .stats-grid {
+        grid-template-columns: 1fr !important;
+        gap: 0.75rem !important;
       }
 
-      /* Charts cũng bỏ margin-left nếu có */
-      .charts-container {
-        margin: 2rem 0 !important;
-        width: auto !important;
+      .charts-container canvas {
+        height: 280px !important;
+      }
+
+      .welcome-title {
+        font-size: 1.25rem !important;
+      }
+
+      .welcome-subtitle {
+        font-size: 0.8rem !important;
       }
     }
+
+    /* === Animation === */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .chart-card,
+    .stat-card,
+    #content-main .module {
+      animation: fadeInUp 0.4s ease forwards !important;
+    }
+
+    .chart-card:nth-child(2) { animation-delay: 0.1s !important; }
+    .stat-card:nth-child(2) { animation-delay: 0.05s !important; }
+    .stat-card:nth-child(3) { animation-delay: 0.1s !important; }
+    .stat-card:nth-child(4) { animation-delay: 0.15s !important; }
   </style>
 {% endblock %}
 
 {% block content %}
-  {{ block.super }}
-
-  {# ==== Các biểu đồ ==== #}
-  <div class="charts-container">
-    <div>
-      <h3 style="margin-bottom:.5rem; color:#14394b;">Số bữa ăn theo tháng</h3>
-      <canvas id="chartMealsByMonth"></canvas>
+  <div class="dashboard-main">
+    <!-- Compact Welcome Header -->
+    <div class="welcome-header">
+      <h1 class="welcome-title">
+        <i class="fas fa-tachometer-alt"></i>
+        Bảng điều khiển
+      </h1>
+      <p class="welcome-subtitle">Tổng quan hoạt động hệ thống</p>
     </div>
-    <div>
-      <h3 style="margin-bottom:.5rem; color:#14394b;">Học phí theo tháng</h3>
-      <canvas id="chartPaidByMonth"></canvas>
+
+    <!-- Compact Stats Cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon" style="background: var(--success-color);">
+          <i class="fas fa-utensils"></i>
+        </div>
+        <div class="stat-value" id="total-meals">0</div>
+        <div class="stat-label">Tổng bữa ăn</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background: var(--primary-color);">
+          <i class="fas fa-users"></i>
+        </div>
+        <div class="stat-value" id="total-students">247</div>
+        <div class="stat-label">Học sinh</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background: var(--warning-color);">
+          <i class="fas fa-coins"></i>
+        </div>
+        <div class="stat-value" id="total-revenue">0₫</div>
+        <div class="stat-label">Doanh thu</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background: var(--accent-color);">
+          <i class="fas fa-calendar-alt"></i>
+        </div>
+        <div class="stat-value" id="current-month">T12</div>
+        <div class="stat-label">Tháng hiện tại</div>
+      </div>
+    </div>
+
+    <!-- Giữ nguyên nội dung gốc Django admin -->
+    {{ block.super }}
+
+    <!-- Optimized Charts -->
+    <div class="charts-container">
+      <div class="chart-card">
+        <h3 class="chart-title">
+          <i class="fas fa-chart-line"></i>
+          Số bữa ăn theo tháng
+        </h3>
+        <canvas id="chartMealsByMonth"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3 class="chart-title">
+          <i class="fas fa-chart-bar"></i>
+          Học phí theo tháng
+        </h3>
+        <canvas id="chartPaidByMonth"></canvas>
+      </div>
     </div>
   </div>
 
   <script>
     document.addEventListener('DOMContentLoaded', function(){
-      // Đổi “Meals” → “CHỨC NĂNG”
-      const cap = document.querySelector(
+      // Đổi text captions
+      const mealsCap = document.querySelector(
         '#content-main .app-meals.module table caption a.section'
       );
-      if (cap) { cap.textContent = 'CHỨC NĂNG'; cap.title = 'Các chức năng'; }
+      if (mealsCap) {
+        mealsCap.textContent = 'CHỨC NĂNG';
+        mealsCap.setAttribute('title', 'Các chức năng');
+      }
 
-      // Chèn 2 link mới vào menu “Chức năng”
+      const authCap = document.querySelector(
+        '#content-main .app-auth.module table caption a.section'
+      );
+      if (authCap) {
+        authCap.textContent = 'XÁC THỰC VÀ ỦY QUYỀN';
+        authCap.setAttribute('title', 'Xác thực và ủy quyền');
+      }
+
+      // Chèn 2 link mới vào menu "Chức năng" 
       const tbody = document.querySelector(
         '#content-main .app-meals.module table tbody'
       );
       if (tbody) {
-        tbody.insertAdjacentHTML('afterbegin', `
-          <tr>
-            <th scope="row"><a href="{% url 'meals:student_payment_edit' %}">Chỉnh sửa công nợ</a></th>
+        // Function to create new row
+        function makeRow(url, text, iconClass, cssClass) {
+          const tr = document.createElement('tr');
+          tr.className = cssClass;
+          tr.innerHTML = `
+            <th scope="row">
+              <a href="${url}">
+                <i class="${iconClass}"></i>
+                ${text}
+              </a>
+            </th>
             <td></td>
-            <td><a href="{% url 'meals:student_payment_edit' %}" class="changelink">Đi đến</a></td>
-          </tr>
-          <tr>
-            <th scope="row"><a href="{% url 'meals:statistics' %}">Thống kê</a></th>
-            <td></td>
-            <td><a href="{% url 'meals:statistics' %}" class="changelink">Đi đến</a></td>
-          </tr>
-        `);
+            <td>
+              <a href="${url}" class="changelink">{% trans "Đi đến" %}</a>
+            </td>
+          `;
+          return tr;
+        }
+
+        const statsURL = "{% url 'meals:statistics' %}";
+        const debtURL  = "{% url 'meals:student_payment_edit' %}";
+        const statsText= "{% trans 'Thống kê' %}";
+        const debtText = "{% trans 'Chỉnh sửa công nợ' %}";
+
+        // Chèn "Chỉnh sửa công nợ" và "Thống kê" lên đầu danh sách
+        tbody.insertBefore(makeRow(debtURL, debtText, 'fas fa-edit', 'row2'), tbody.firstChild);
+        tbody.insertBefore(makeRow(statsURL, statsText, 'fas fa-chart-pie', 'row1'), tbody.firstChild);
+
+        // Thêm icons vào các menu items có sẵn
+        const links = tbody.querySelectorAll('th a');
+        links.forEach(link => {
+          const text = link.textContent.trim();
+          const iconSpan = link.querySelector('i');
+          
+          if (!iconSpan) { // Chỉ thêm icon nếu chưa có
+            let iconClass = '';
+            if (text.includes('Students') || text.includes('Học sinh')) {
+              iconClass = 'fas fa-users';
+            } else if (text.includes('Meal records') || text.includes('Bữa ăn') || text.includes('meal')) {
+              iconClass = 'fas fa-utensils';
+            } else if (text.includes('Meal balance audits') || text.includes('audit')) {
+              iconClass = 'fas fa-file-alt';
+            } else if (text.includes('Student health infos') || text.includes('health')) {
+              iconClass = 'fas fa-heart';
+            } else if (text.includes('Study groups') || text.includes('Study classes')) {
+              iconClass = 'fas fa-users-cog';
+            }
+            
+            if (iconClass) {
+              const icon = document.createElement('i');
+              icon.className = iconClass;
+              link.insertBefore(icon, link.firstChild);
+            }
+          }
+        });
       }
 
-      // hàm lấy màu từ CSS variables
-      // Hàm lấy CSS var
-    function getV(name){
-      return getComputedStyle(document.documentElement)
-             .getPropertyValue(name).trim();
-    }
+      // Thêm icons vào auth module
+      const authTbody = document.querySelector(
+        '#content-main .app-auth.module table tbody'
+      );
+      if (authTbody) {
+        const authLinks = authTbody.querySelectorAll('th a');
+        authLinks.forEach(link => {
+          const text = link.textContent.trim();
+          const iconSpan = link.querySelector('i');
+          
+          if (!iconSpan) {
+            let iconClass = '';
+            if (text.includes('Groups') || text.includes('Nhóm')) {
+              iconClass = 'fas fa-users-cog';
+            } else if (text.includes('Users') || text.includes('Người dùng')) {
+              iconClass = 'fas fa-user';
+            }
+            
+            if (iconClass) {
+              const icon = document.createElement('i');
+              icon.className = iconClass;
+              link.insertBefore(icon, link.firstChild);
+            }
+          }
+        });
+      }
 
-    const months      = {{ chart_meal_labels|safe }};
-    const mealCounts  = {{ chart_meal_data|safe }};
-    const paidAmounts = {{ chart_paid_month_data|safe }};
+      // Hàm lấy CSS variables
+      function getV(name){
+        return getComputedStyle(document.documentElement)
+               .getPropertyValue(name).trim();
+      }
 
-    // Lấy màu từ biến
-    const lineColor = getV('--chart-line-color'),
-          fillColor = getV('--chart-fill-color'),
-          gridColor = getV('--chart-grid-color');
+      const months      = {{ chart_meal_labels|safe }};
+      const mealCounts  = {{ chart_meal_data|safe }};
+      const paidAmounts = {{ chart_paid_month_data|safe }};
 
-    // Vẽ chart Số bữa ăn
-    const chartMeals = new Chart(
-      document.getElementById('chartMealsByMonth').getContext('2d'),
-      {
-        type: 'line',
-        data: {
-          labels: months,
-          datasets: [{
-            label: 'Số bữa ăn (' + new Date().getFullYear() + ')',
-            data: mealCounts,
-            fill: false,
-            borderColor: lineColor,
-            backgroundColor: fillColor,
-            pointBackgroundColor: lineColor,
-            pointBorderColor: '#fff',
-            tension: 0.1
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            x: {
-              grid: { color: gridColor }
+      // Update stats
+      const totalMeals = mealCounts.reduce((a, b) => a + b, 0);
+      const totalRevenue = paidAmounts.reduce((a, b) => a + b, 0);
+      
+      document.getElementById('total-meals').textContent = totalMeals.toLocaleString();
+      document.getElementById('total-revenue').textContent = totalRevenue.toLocaleString() + '₫';
+
+      // Lấy màu từ biến
+      const lineColor = getV('--chart-line-color'),
+            fillColor = getV('--chart-fill-color'),
+            gridColor = getV('--chart-grid-color');
+
+      // Vẽ chart Số bữa ăn
+      const chartMeals = new Chart(
+        document.getElementById('chartMealsByMonth').getContext('2d'),
+        {
+          type: 'line',
+          data: {
+            labels: months,
+            datasets: [{
+              label: 'Số bữa ăn (' + new Date().getFullYear() + ')',
+              data: mealCounts,
+              fill: true,
+              borderColor: lineColor,
+              backgroundColor: fillColor,
+              pointBackgroundColor: lineColor,
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2,
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              tension: 0.4,
+              borderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: true,
+                position: 'top',
+                labels: {
+                  font: { size: 11, weight: '600' },
+                  color: getV('--text-primary')
+                }
+              }
             },
-            y: {
-              beginAtZero: true,
-              grid: { color: gridColor },
-              ticks: { callback: v => v.toLocaleString() + '₫' }
+            scales: {
+              x: {
+                grid: { color: gridColor, borderDash: [3, 3] },
+                ticks: { 
+                  color: getV('--text-secondary'),
+                  font: { size: 10 }
+                }
+              },
+              y: {
+                beginAtZero: true,
+                grid: { color: gridColor, borderDash: [3, 3] },
+                ticks: { 
+                  callback: v => v.toLocaleString(),
+                  color: getV('--text-secondary'),
+                  font: { size: 10 }
+                }
+              }
             }
           }
         }
-      }
-    );
+      );
 
-    // Vẽ chart Học phí
-    const chartPaid = new Chart(
-      document.getElementById('chartPaidByMonth').getContext('2d'),
-      {
+      // Vẽ chart Học phí
+      const ctx = document.getElementById('chartPaidByMonth').getContext('2d');
+      const gradient = ctx.createLinearGradient(0, 0, 0, 350);
+      gradient.addColorStop(0, lineColor);
+      gradient.addColorStop(1, fillColor);
+
+      const chartPaid = new Chart(ctx, {
         type: 'bar',
         data: {
           labels: months,
           datasets: [{
             label: 'Học phí (' + new Date().getFullYear() + ')',
             data: paidAmounts,
-            backgroundColor: fillColor,
+            backgroundColor: gradient,
             borderColor: lineColor,
-            borderWidth: 1
+            borderWidth: 2,
+            borderRadius: 4,
+            borderSkipped: false
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+              labels: {
+                font: { size: 11, weight: '600' },
+                color: getV('--text-primary')
+              }
+            }
+          },
           scales: {
             x: {
-              grid: { color: gridColor }
+              grid: { color: gridColor, borderDash: [3, 3] },
+              ticks: { 
+                color: getV('--text-secondary'),
+                font: { size: 10 }
+              }
             },
             y: {
               beginAtZero: true,
-              grid: { color: gridColor },
-              ticks: { callback: v => v.toLocaleString() + '₫' }
+              grid: { color: gridColor, borderDash: [3, 3] },
+              ticks: { 
+                callback: v => v.toLocaleString() + '₫',
+                color: getV('--text-secondary'),
+                font: { size: 10 }
+              }
             }
           }
         }
-      }
-    );
-
-    // Observer để update màu khi theme change
-    new MutationObserver(muts => {
-      muts.forEach(m => {
-        if (m.attributeName === 'data-theme') {
-          const nl = getV('--chart-line-color'),
-                nf = getV('--chart-fill-color'),
-                ng = getV('--chart-grid-color');
-          // update line chart
-          chartMeals.data.datasets.forEach(ds => {
-            ds.borderColor = nl;
-            ds.pointBackgroundColor = nl;
-            ds.backgroundColor = nf;
-          });
-          chartMeals.options.scales.x.grid.color = ng;
-          chartMeals.options.scales.y.grid.color = ng;
-          chartMeals.update();
-          // update bar chart
-          chartPaid.data.datasets.forEach(ds => {
-            ds.borderColor = nl;
-            ds.backgroundColor = nf;
-          });
-          chartPaid.options.scales.x.grid.color = ng;
-          chartPaid.options.scales.y.grid.color = ng;
-          chartPaid.update();
-        }
       });
-    }).observe(document.documentElement, { attributes: true });
 
-  });
+      // Observer để update màu khi theme change
+      new MutationObserver(muts => {
+        muts.forEach(m => {
+          if (m.attributeName === 'data-theme') {
+            const nl = getV('--chart-line-color'),
+                  nf = getV('--chart-fill-color'),
+                  ng = getV('--chart-grid-color');
+            
+            // Update line chart
+            chartMeals.data.datasets.forEach(ds => {
+              ds.borderColor = nl;
+              ds.pointBackgroundColor = nl;
+              ds.backgroundColor = nf;
+            });
+            chartMeals.options.scales.x.grid.color = ng;
+            chartMeals.options.scales.y.grid.color = ng;
+            chartMeals.update();
+            
+            // Update bar chart
+            const newGradient = ctx.createLinearGradient(0, 0, 0, 350);
+            newGradient.addColorStop(0, nl);
+            newGradient.addColorStop(1, nf);
+            
+            chartPaid.data.datasets.forEach(ds => {
+              ds.borderColor = nl;
+              ds.backgroundColor = newGradient;
+            });
+            chartPaid.options.scales.x.grid.color = ng;
+            chartPaid.options.scales.y.grid.color = ng;
+            chartPaid.update();
+          }
+        });
+      }).observe(document.documentElement, { attributes: true });
+    });
   </script>
 {% endblock %}
 
