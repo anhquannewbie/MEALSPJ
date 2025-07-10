@@ -394,9 +394,8 @@
     body:not(.dashboard) input[type="datetime-local"],
     body:not(.dashboard) select,
     body:not(.dashboard) textarea {
-      width: 100% !important;
+      width: 96% !important;
       max-width: 100% !important;
-      padding: 0.75rem !important;
       border: 1px solid var(--border-color) !important;
       border-radius: 0.5rem !important;
       background: var(--bg-primary) !important;
@@ -404,6 +403,7 @@
       font-size: 0.9rem !important;
       transition: all 0.2s ease !important;
       box-sizing: border-box !important;
+      margin-right: 20111px !important;
     }
 
     body:not(.dashboard) input:focus,
@@ -594,7 +594,11 @@
       display: flex !important;
       align-items: center !important;
       gap: 1rem !important;
-      flex-wrap: nowrap !important;
+      flex-direction: row !important;
+    }
+
+    body:not(.dashboard) #changelist-search * {
+      margin: 0 !important;
     }
 
     body:not(.dashboard) #changelist-search label {
@@ -616,6 +620,9 @@
       max-width: 400px !important;
       height: 38px !important;
       box-sizing: border-box !important;
+      vertical-align: middle !important;
+      line-height: 1.2 !important;
+      margin: 0 !important;
     }
 
     body:not(.dashboard) #changelist-search input[type="submit"] {
@@ -626,12 +633,14 @@
       border-radius: 0.375rem !important;
       font-weight: 500 !important;
       cursor: pointer !important;
-      margin: 0 !important;
       font-size: 0.9rem !important;
       transition: all 0.2s ease !important;
       height: 38px !important;
       box-sizing: border-box !important;
       flex-shrink: 0 !important;
+      vertical-align: middle !important;
+      line-height: 1.2 !important;
+      flex-shrink: 0 !important; 
     }
 
     body:not(.dashboard) #changelist-search input[type="submit"]:hover {
@@ -646,8 +655,8 @@
       margin: 0 !important;
       display: flex !important;
       align-items: center !important;
-      justify-content: space-between !important;
-      flex-wrap: wrap !important;
+      justify-content: flex-start !important;
+      flex-wrap: nowrap !important;
       gap: 1rem !important;
     }
 
@@ -656,6 +665,11 @@
       display: flex !important;
       align-items: center !important;
       gap: 0.75rem !important;
+      margin: 0 !important;
+      width: 100% !important;
+    }
+
+    body:not(.dashboard) #toolbar * {
       margin: 0 !important;
     }
 
@@ -674,6 +688,11 @@
       padding: 0.5rem 0.75rem !important;
       border-radius: 0.375rem !important;
       font-size: 0.9rem !important;
+      vertical-align: middle !important;
+      line-height: 1.2 !important;
+      height: 38px !important;
+      box-sizing: border-box !important;
+      margin: 0 !important;
     }
 
     body:not(.dashboard) #toolbar input[type="submit"],
@@ -688,12 +707,36 @@
       font-size: 0.9rem !important;
       white-space: nowrap !important;
       transition: all 0.2s ease !important;
+      vertical-align: middle !important;
+      line-height: 1.2 !important;
+      height: 38px !important;
+      box-sizing: border-box !important;
+      margin: 0 !important;
+      flex-shrink: 0 !important; 
+      margin-left: 20px !important; 
     }
 
     body:not(.dashboard) #toolbar input[type="submit"]:hover,
     body:not(.dashboard) #toolbar button:hover {
       transform: translateY(-1px) !important;
       box-shadow: var(--shadow-md) !important;
+    }
+
+    /* Style cho span kết quả tìm kiếm */
+    body:not(.dashboard) #toolbar .small.quiet {
+      color: var(--text-secondary) !important;
+      font-size: 0.8rem !important;
+      margin-left: 0.5rem !important;
+      white-space: nowrap !important;
+    }
+
+    body:not(.dashboard) #toolbar .small.quiet a {
+      color: var(--primary-color) !important;
+      text-decoration: none !important;
+    }
+
+    body:not(.dashboard) #toolbar .small.quiet a:hover {
+      text-decoration: underline !important;
     }
 
     /* Filter sidebar styling */
@@ -706,6 +749,8 @@
       width: 280px !important;
       min-width: 280px !important;
       flex-shrink: 0 !important;
+      margin-right: 40px !important;
+      margin-top: 10px !important;
     }
 
     body:not(.dashboard) #changelist-filter h2 {
@@ -781,12 +826,16 @@
     /* Action buttons styling */
     body:not(.dashboard) .actions {
       background: var(--bg-primary) !important;
-      padding: 1rem 1.5rem !important;
+      padding: 1rem 0rem !important;
       border-bottom: 1px solid var(--border-color) !important;
       display: flex !important;
       align-items: center !important;
       gap: 1rem !important;
       flex-wrap: nowrap !important;
+      margin: 0 !important;
+    }
+
+    body:not(.dashboard) .actions * {
       margin: 0 !important;
     }
 
@@ -796,8 +845,23 @@
       margin: 0 !important;
       font-size: 0.9rem !important;
       flex-shrink: 0 !important;
+      margin-left: 90px !important;
     }
-
+    body:not(.dashboard) .question {
+        color: var(--text-secondary) !important;
+      font-size: 0.85rem !important;
+      font-style: italic !important;
+      margin-left: 10px !important; /* Đẩy về bên phải */
+      margin-top: 15px !important;
+    }
+    /* Style cho text "X của Y được chọn" */
+    body:not(.dashboard) .actions .action-counter {
+      color: var(--text-secondary) !important;
+      font-size: 0.85rem !important;
+      font-style: italic !important;
+      margin-left: 10px !important; /* Đẩy về bên phải */
+      margin-top: 15px !important;
+    }
     body:not(.dashboard) .actions select {
       background: var(--bg-secondary) !important;
       border: 1px solid var(--border-color) !important;
@@ -809,6 +873,9 @@
       height: 38px !important;
       box-sizing: border-box !important;
       flex-shrink: 0 !important;
+      vertical-align: middle !important;
+      line-height: 1.2 !important;
+      margin: 0 !important;
     }
 
     body:not(.dashboard) .actions button,
@@ -816,17 +883,20 @@
       background: var(--primary-gradient) !important;
       color: #ffffff !important;
       border: none !important;
-      padding: 0.5rem 1rem !important;
+      padding: 0.375rem 0.875rem !important;  /* Giảm từ 0.5rem thành 0.375rem */
       border-radius: 0.375rem !important;
       font-weight: 500 !important;
       cursor: pointer !important;
-      font-size: 0.9rem !important;
+      font-size: 0.85rem !important;           /* Giảm từ 0.9rem thành 0.85rem */
       margin: 0 !important;
       transition: all 0.2s ease !important;
-      height: 38px !important;
+      height: 32px !important;                 /* Giảm từ 38px thành 32px */
       box-sizing: border-box !important;
       flex-shrink: 0 !important;
       white-space: nowrap !important;
+      vertical-align: middle !important;
+      line-height: 1.2 !important;
+      margin-top: 20px !important;
     }
 
     body:not(.dashboard) .actions button:hover,
@@ -984,7 +1054,6 @@
       }
 
       body:not(.dashboard) #toolbar {
-        flex-direction: column !important;
         align-items: stretch !important;
         gap: 0.75rem !important;
       }
@@ -1182,6 +1251,64 @@
     html[data-theme="dark"] body:not(.dashboard) textarea::placeholder {
       color: var(--text-secondary) !important;
     }
+    /* === FORCE BUTTON MARGIN FIX === */
+  /* === FORCE ALL FORM ELEMENTS AS FLEX ITEMS === */
+  #toolbar form,
+  div#toolbar form,
+  body:not(.dashboard) #toolbar form {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+    width: 100% !important;
+    margin: 0 !important;
+    flex-wrap: nowrap !important;
+  }
+
+  /* Force tất cả children thành flex items */
+  #toolbar form > *,
+  div#toolbar form > *,
+  body:not(.dashboard) #toolbar form > * {
+    display: inline-flex !important;
+    align-items: center !important;
+    margin: 0 !important;
+  }
+
+  /* Specific elements */
+  #toolbar form label,
+  #toolbar form img {
+    flex-shrink: 0 !important;
+    display: inline-flex !important;
+  }
+
+  #toolbar form input[type="text"] {
+    flex: 1 !important;
+    max-width: 400px !important;
+    display: inline-flex !important;
+  }
+
+  #toolbar form input[type="submit"] {
+    flex-shrink: 0 !important;
+    display: inline-flex !important;
+    margin: 0 !important;
+    margin-left: 0 !important;
+  }
+
+  #toolbar form .small.quiet {
+    flex-shrink: 0 !important;
+    display: inline-flex !important;
+    margin-left: 0.5rem !important;
+  }
+
+  /* Force container div */
+  #toolbar form > div {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+    width: 100% !important;
+    flex-wrap: nowrap !important;
+  }
   </style>
 
   <script>

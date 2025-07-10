@@ -805,7 +805,6 @@ class StudentAdmin( admin.ModelAdmin):
         super().delete_model(request, obj)
 
 class MealRecordAdmin( admin.ModelAdmin):
-    change_list_template = "admin/meals/mealrecord/change_list.html"
     list_display = ('student', 'date', 'meal_type', 'status')
     fields = ('student','date','meal_type','status','non_eat','absence_reason')
     list_filter  = (
