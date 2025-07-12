@@ -22,6 +22,9 @@
       --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
       --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
       --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 10px 10px -5px rgb(0 0 0 / 0.04);
+      --filter-bg: linear-gradient(145deg, #f1f5f9 0%, #e2e8f0 100%);
+      --filter-accent: #4f46e5;
     }
 
     /* Dark mode */
@@ -41,6 +44,9 @@
       --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);
       --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.5);
       --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
+      --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 10px 10px -5px rgb(0 0 0 / 0.2);
+      --filter-bg: linear-gradient(145deg, #1f2937 0%, #111827 100%);
+      --filter-accent: #6366f1;
     }
 
     /* === Global Styles === */
@@ -146,6 +152,11 @@
       box-sizing: border-box !important;
     }
 
+    /* Tạo khoảng trống bên phải cho filter khi có filter */
+    body:not(.dashboard).filtered #content {
+      padding-right: 320px !important; /* 280px + 40px gap */
+    }
+
     /* Modern sidebar modules */
     body:not(.dashboard) #nav-sidebar .module {
       margin: 0 1rem 1rem 1rem !important;
@@ -156,7 +167,7 @@
       overflow: hidden !important;
     }
 
-    /* Sidebar module headers - giống y hệt dashboard */
+    /* Sidebar module headers - FORCE background đầy đủ */
     body:not(.dashboard) #nav-sidebar .module table caption {
       background: var(--primary-gradient) !important;
       color: #ffffff !important;
@@ -165,11 +176,31 @@
       padding: 0.75rem 1rem !important;
       text-align: left !important;
       margin: 0 !important;
-      display: block !important;
       width: 100% !important;
       box-sizing: border-box !important;
       text-transform: uppercase !important;
       letter-spacing: 0.05em !important;
+      border-radius: 0.75rem 0.75rem 0 0 !important;
+      border: none !important;
+      background-clip: border-box !important;
+      background-size: cover !important;
+      background-repeat: no-repeat !important;
+      background-attachment: local !important;
+      position: relative !important;
+      min-height: 45px !important;
+      overflow: hidden !important;
+    }
+
+    /* Force background to extend fully */
+    body:not(.dashboard) #nav-sidebar .module table caption::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--primary-gradient);
+      z-index: -1;
     }
 
     body:not(.dashboard) #nav-sidebar .module table caption a.section {
@@ -179,6 +210,28 @@
       color: inherit !important;
       text-decoration: none !important;
       width: 100% !important;
+      height: 100% !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      background: transparent !important;
+      position: relative !important;
+      z-index: 1 !important;
+      min-height: 45px !important;
+      box-sizing: border-box !important;
+    }
+
+    /* === ẨN HOÀN TOÀN CÔNG NỢ HỌC SINH === */
+    /* CSS selector để ẩn row studentpayment */
+    body:not(.dashboard) #nav-sidebar .module table tbody tr.model-studentpayment {
+      display: none !important;
+    }
+    
+    /* Backup selectors */
+    body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th a[href*="studentpayment"]),
+    body:not(.dashboard) #nav-sidebar .module table tbody tr th a[href*="studentpayment"],
+    body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th a:contains("Công nợ học sinh")),
+    body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th:contains("Công nợ học sinh")) {
+      display: none !important;
     }
 
     /* Add icons to sidebar headers */
@@ -236,14 +289,6 @@
     }
 
     /* Sidebar links */
-    body:not(.dashboard) #nav-sidebar .module table tbody tr th {
-      padding: 0.75rem 1rem !important;
-      text-align: left !important;
-      font-weight: 500 !important;
-      width: 70% !important;
-      box-sizing: border-box !important;
-    }
-
     body:not(.dashboard) #nav-sidebar .module table tbody tr th a {
       color: var(--text-primary) !important;
       text-decoration: none !important;
@@ -271,13 +316,6 @@
     }
 
     /* Sidebar action links */
-    body:not(.dashboard) #nav-sidebar .module table tbody tr td {
-      width: 30% !important;
-      padding: 0.75rem 1rem !important;
-      text-align: center !important;
-      box-sizing: border-box !important;
-    }
-
     body:not(.dashboard) #nav-sidebar .module table tbody tr td a.changelink {
       background: var(--primary-gradient) !important;
       color: #ffffff !important;
@@ -315,24 +353,318 @@
       color: inherit !important;
     }
 
-    /* === Main Content Styling for Sidebar Pages === */
-    body:not(.dashboard) #content-main {
-      background: var(--bg-secondary) !important;
-      border-radius: 0.75rem !important;
-      box-shadow: var(--shadow-md) !important;
-      border: 1px solid var(--border-color) !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      overflow: hidden !important;
+    /* === ẨN CÔNG NỢ HỌC SINH === */
+    /* Ẩn row có text "Công nợ học sinh" */
+    body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th a[href*="student_debt"]),
+    body:not(.dashboard) #nav-sidebar .module table tbody tr th a[href*="student_debt"],
+    body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th a:contains("Công nợ học sinh")),
+    body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th:contains("Công nợ học sinh")) {
+      display: none !important;
     }
 
-    /* Content Header */
-    body:not(.dashboard) #content-main > .module {
+    /* === BỎ ADDLINK THÊM VÀO BỮA ĂN TRONG CONTENT AREA === */
+    /* CHỈ ẨN addlink trong content area, KHÔNG ẩn trong sidebar */
+    body:not(.dashboard) #content .object-tools .addlink,
+    body:not(.dashboard) #content .object-tools a[href*="/add/"],
+    body:not(.dashboard) #content .addlink,
+    body:not(.dashboard) #content-main .object-tools .addlink,
+    body:not(.dashboard) #content-main .object-tools a[href*="/add/"],
+    body:not(.dashboard) #content-main .addlink {
+      display: none !important;
+    }
+
+    /* GIỮ LẠI addlink trong sidebar */
+    body:not(.dashboard) #nav-sidebar .addlink,
+    body:not(.dashboard) #nav-sidebar .object-tools .addlink {
+      display: inline-flex !important;
+    }
+
+    /* === MAIN LAYOUT CONTAINER === */
+    /* Tạo container tổng cho toàn bộ content */
+    body:not(.dashboard) #content-main {
+      display: flex !important;
+      gap: 1.5rem !important;
+      align-items: flex-start !important;
       background: transparent !important;
       border: none !important;
       box-shadow: none !important;
       border-radius: 0 !important;
+      padding: 0 !important;
       margin: 0 !important;
+      overflow: visible !important;
+    }
+
+    /* === MAIN CONTENT AREA === */
+    /* Content chính (bảng, form, etc.) chiếm phần lớn không gian */
+    body:not(.dashboard) #changelist,
+    body:not(.dashboard) .module:not(#changelist-filter) {
+      flex: 1 !important;
+      min-width: 0 !important;
+      background: var(--bg-secondary) !important;
+      border-radius: 0.75rem !important;
+      box-shadow: var(--shadow-md) !important;
+      border: 1px solid var(--border-color) !important;
+      overflow: hidden !important;
+      margin: 0 !important;
+    }
+
+    /* Reset changelist layout về dạng block thông thường */
+    body:not(.dashboard) #changelist {
+      display: block !important;
+    }
+
+    body:not(.dashboard) #changelist .results {
+      width: 100% !important;
+      margin: 0 !important;
+    }
+
+    /* === ENHANCED FILTER SIDEBAR === */
+    /* Đưa filter về phía bên phải với thiết kế hiện đại */
+    body:not(.dashboard) #changelist-filter {
+      position: fixed !important;
+      top: 80px !important;
+      right: 20px !important;
+      bottom: 20px !important;
+      width: 320px !important;
+      min-width: 320px !important;
+      max-width: 320px !important;
+      background: var(--filter-bg) !important;
+      border: 2px solid var(--filter-accent) !important;
+      border-radius: 1rem !important;
+      box-shadow: var(--shadow-xl) !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      overflow: hidden !important;
+      z-index: 998 !important;
+      flex-shrink: 0 !important;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+      animation: filterSlideIn 0.5s ease !important;
+      backdrop-filter: blur(10px) !important;
+      -webkit-backdrop-filter: blur(10px) !important;
+    }
+
+    body:not(.dashboard) #changelist-filter.hidden {
+      transform: translateX(100%) !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+
+    /* === ENHANCED FILTER CONTENT === */
+    body:not(.dashboard) #changelist-filter h2 {
+      background: linear-gradient(135deg, var(--filter-accent) 0%, #7c3aed 100%) !important;
+      color: #ffffff !important;
+      padding: 1.25rem !important;
+      margin: 0 !important;
+      font-size: 1rem !important;
+      font-weight: 700 !important;
+      border-radius: 1rem 1rem 0 0 !important;
+      text-align: center !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 0.75rem !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.1em !important;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3) !important;
+    }
+
+    body:not(.dashboard) #changelist-filter h2::before {
+      content: "🎯";
+      font-size: 1.2rem;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    /* Filter scrollable content */
+    body:not(.dashboard) #changelist-filter > div {
+      height: calc(100% - 80px) !important;
+      overflow-y: auto !important;
+      scrollbar-width: thin !important;
+      scrollbar-color: var(--filter-accent) transparent !important;
+    }
+
+    body:not(.dashboard) #changelist-filter > div::-webkit-scrollbar {
+      width: 6px !important;
+    }
+
+    body:not(.dashboard) #changelist-filter > div::-webkit-scrollbar-track {
+      background: transparent !important;
+    }
+
+    body:not(.dashboard) #changelist-filter > div::-webkit-scrollbar-thumb {
+      background: var(--filter-accent) !important;
+      border-radius: 3px !important;
+    }
+
+    body:not(.dashboard) #changelist-filter h3 {
+      background: linear-gradient(90deg, rgba(79, 70, 229, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%) !important;
+      color: var(--filter-accent) !important;
+      padding: 1rem 1.25rem !important;
+      margin: 0 !important;
+      font-size: 0.95rem !important;
+      font-weight: 700 !important;
+      border-bottom: 2px solid rgba(79, 70, 229, 0.2) !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 0.75rem !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.05em !important;
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 10 !important;
+      backdrop-filter: blur(5px) !important;
+    }
+
+    /* Enhanced filter section icons */
+    body:not(.dashboard) #changelist-filter h3::before {
+      content: "📊";
+      font-size: 1rem;
+      background: linear-gradient(135deg, var(--filter-accent), #7c3aed);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    body:not(.dashboard) #changelist-filter ul {
+      margin: 0 !important;
+      padding: 0 !important;
+      list-style: none !important;
+      background: var(--bg-secondary) !important;
+    }
+
+    body:not(.dashboard) #changelist-filter li {
+      padding: 0 !important;
+      border-bottom: 1px solid rgba(79, 70, 229, 0.1) !important;
+      transition: all 0.3s ease !important;
+      position: relative !important;
+      overflow: hidden !important;
+    }
+
+    body:not(.dashboard) #changelist-filter li:last-child {
+      border-bottom: none !important;
+    }
+
+    body:not(.dashboard) #changelist-filter li:hover {
+      background: linear-gradient(90deg, rgba(79, 70, 229, 0.05) 0%, rgba(124, 58, 237, 0.05) 100%) !important;
+      transform: translateX(2px) !important;
+    }
+
+    body:not(.dashboard) #changelist-filter li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: linear-gradient(135deg, var(--filter-accent), #7c3aed);
+      transform: scaleY(0);
+      transition: transform 0.3s ease;
+    }
+
+    body:not(.dashboard) #changelist-filter li:hover::before {
+      transform: scaleY(1);
+    }
+
+    body:not(.dashboard) #changelist-filter a {
+      display: block !important;
+      padding: 1rem 1.25rem !important;
+      color: var(--text-primary) !important;
+      text-decoration: none !important;
+      font-size: 0.9rem !important;
+      font-weight: 500 !important;
+      transition: all 0.3s ease !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      line-height: 1.5 !important;
+      position: relative !important;
+    }
+
+    body:not(.dashboard) #changelist-filter a::after {
+      content: "";
+      position: absolute;
+      right: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--filter-accent);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    body:not(.dashboard) #changelist-filter a:hover {
+      color: var(--filter-accent) !important;
+      background: transparent !important;
+      transform: translateX(8px) !important;
+      font-weight: 600 !important;
+    }
+
+    body:not(.dashboard) #changelist-filter a:hover::after {
+      opacity: 1;
+    }
+
+    body:not(.dashboard) #changelist-filter .selected {
+      background: linear-gradient(90deg, rgba(79, 70, 229, 0.15) 0%, rgba(124, 58, 237, 0.15) 100%) !important;
+      border-left: 4px solid var(--filter-accent) !important;
+    }
+
+    body:not(.dashboard) #changelist-filter .selected a {
+      background: transparent !important;
+      color: var(--filter-accent) !important;
+      font-weight: 700 !important;
+      position: relative !important;
+    }
+
+    body:not(.dashboard) #changelist-filter .selected a::before {
+      content: "●";
+      position: absolute;
+      right: 1.25rem;
+      font-weight: bold;
+      font-size: 1rem;
+      color: var(--filter-accent);
+      animation: selectedPulse 2s infinite;
+    }
+
+    @keyframes selectedPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.2); }
+    }
+
+    /* Enhanced toggle button */
+    body:not(.dashboard) .filter-toggle {
+      position: fixed !important;
+      top: 120px !important;
+      right: 20px !important;
+      width: 50px !important;
+      height: 50px !important;
+      background: linear-gradient(135deg, var(--filter-accent) 0%, #7c3aed 100%) !important;
+      color: #ffffff !important;
+      border: none !important;
+      border-radius: 50% !important;
+      font-size: 1.4rem !important;
+      cursor: pointer !important;
+      box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4) !important;
+      z-index: 999 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+      backdrop-filter: blur(10px) !important;
+    }
+
+    body:not(.dashboard) .filter-toggle:hover {
+      transform: scale(1.15) rotate(5deg) !important;
+      box-shadow: 0 12px 35px rgba(79, 70, 229, 0.6) !important;
+    }
+
+    body:not(.dashboard) .filter-toggle:active {
+      transform: scale(0.95) !important;
     }
 
     /* Main content headers */
@@ -403,7 +735,6 @@
       font-size: 0.9rem !important;
       transition: all 0.2s ease !important;
       box-sizing: border-box !important;
-      margin-right: 20111px !important;
     }
 
     body:not(.dashboard) input:focus,
@@ -640,7 +971,6 @@
       flex-shrink: 0 !important;
       vertical-align: middle !important;
       line-height: 1.2 !important;
-      flex-shrink: 0 !important; 
     }
 
     body:not(.dashboard) #changelist-search input[type="submit"]:hover {
@@ -712,8 +1042,8 @@
       height: 38px !important;
       box-sizing: border-box !important;
       margin: 0 !important;
-      flex-shrink: 0 !important; 
-      margin-left: 20px !important; 
+      flex-shrink: 0 !important;
+      margin-left: 20px !important;
     }
 
     body:not(.dashboard) #toolbar input[type="submit"]:hover,
@@ -737,90 +1067,6 @@
 
     body:not(.dashboard) #toolbar .small.quiet a:hover {
       text-decoration: underline !important;
-    }
-
-    /* Filter sidebar styling */
-    body:not(.dashboard) #changelist-filter {
-      background: var(--bg-secondary) !important;
-      border: 1px solid var(--border-color) !important;
-      border-radius: 0.5rem !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      width: 280px !important;
-      min-width: 280px !important;
-      flex-shrink: 0 !important;
-      margin-right: 40px !important;
-      margin-top: 10px !important;
-    }
-
-    body:not(.dashboard) #changelist-filter h2 {
-      background: var(--primary-gradient) !important;
-      color: #ffffff !important;
-      padding: 0.75rem 1rem !important;
-      margin: 0 !important;
-      font-size: 0.9rem !important;
-      font-weight: 600 !important;
-      border-radius: 0.5rem 0.5rem 0 0 !important;
-    }
-
-    body:not(.dashboard) #changelist-filter h3 {
-      background: var(--bg-primary) !important;
-      color: var(--text-primary) !important;
-      padding: 0.5rem 1rem !important;
-      margin: 0 !important;
-      font-size: 0.85rem !important;
-      font-weight: 600 !important;
-      border-bottom: 1px solid var(--border-color) !important;
-    }
-
-    body:not(.dashboard) #changelist-filter ul {
-      margin: 0 !important;
-      padding: 0 !important;
-      list-style: none !important;
-    }
-
-    body:not(.dashboard) #changelist-filter li {
-      padding: 0 !important;
-      border-bottom: 1px solid var(--border-color) !important;
-    }
-
-    body:not(.dashboard) #changelist-filter li:last-child {
-      border-bottom: none !important;
-    }
-
-    body:not(.dashboard) #changelist-filter a {
-      display: block !important;
-      padding: 0.5rem 1rem !important;
-      color: var(--text-primary) !important;
-      text-decoration: none !important;
-      font-size: 0.85rem !important;
-      transition: all 0.2s ease !important;
-      white-space: nowrap !important;
-      overflow: hidden !important;
-      text-overflow: ellipsis !important;
-    }
-
-    body:not(.dashboard) #changelist-filter a:hover {
-      background: var(--bg-primary) !important;
-      color: var(--primary-color) !important;
-    }
-
-    body:not(.dashboard) #changelist-filter .selected a {
-      background: var(--primary-color) !important;
-      color: #ffffff !important;
-      font-weight: 500 !important;
-    }
-
-    /* Main content with filter layout */
-    body:not(.dashboard) #changelist {
-      display: flex !important;
-      gap: 1.5rem !important;
-      align-items: flex-start !important;
-    }
-
-    body:not(.dashboard) #changelist .results {
-      flex: 1 !important;
-      min-width: 0 !important;
     }
 
     /* Action buttons styling */
@@ -847,21 +1093,24 @@
       flex-shrink: 0 !important;
       margin-left: 90px !important;
     }
+
     body:not(.dashboard) .question {
-        color: var(--text-secondary) !important;
+      color: var(--text-secondary) !important;
       font-size: 0.85rem !important;
       font-style: italic !important;
-      margin-left: 10px !important; /* Đẩy về bên phải */
+      margin-left: 10px !important;
       margin-top: 15px !important;
     }
+
     /* Style cho text "X của Y được chọn" */
     body:not(.dashboard) .actions .action-counter {
       color: var(--text-secondary) !important;
       font-size: 0.85rem !important;
       font-style: italic !important;
-      margin-left: 10px !important; /* Đẩy về bên phải */
+      margin-left: 10px !important;
       margin-top: 15px !important;
     }
+
     body:not(.dashboard) .actions select {
       background: var(--bg-secondary) !important;
       border: 1px solid var(--border-color) !important;
@@ -883,14 +1132,14 @@
       background: var(--primary-gradient) !important;
       color: #ffffff !important;
       border: none !important;
-      padding: 0.375rem 0.875rem !important;  /* Giảm từ 0.5rem thành 0.375rem */
+      padding: 0.375rem 0.875rem !important;
       border-radius: 0.375rem !important;
       font-weight: 500 !important;
       cursor: pointer !important;
-      font-size: 0.85rem !important;           /* Giảm từ 0.9rem thành 0.85rem */
+      font-size: 0.85rem !important;
       margin: 0 !important;
       transition: all 0.2s ease !important;
-      height: 32px !important;                 /* Giảm từ 38px thành 32px */
+      height: 32px !important;
       box-sizing: border-box !important;
       flex-shrink: 0 !important;
       white-space: nowrap !important;
@@ -903,42 +1152,6 @@
     body:not(.dashboard) .actions input[type="submit"]:hover {
       transform: translateY(-1px) !important;
       box-shadow: var(--shadow-md) !important;
-    }
-
-    /* Add button styling */
-    body:not(.dashboard) .object-tools {
-      display: flex !important;
-      gap: 0.5rem !important;
-      align-items: center !important;
-    }
-
-    body:not(.dashboard) .object-tools a,
-    body:not(.dashboard) .addlink {
-      background: var(--success-color) !important;
-      color: #ffffff !important;
-      padding: 0.5rem 1rem !important;
-      border-radius: 0.375rem !important;
-      text-decoration: none !important;
-      font-size: 0.85rem !important;
-      font-weight: 500 !important;
-      display: inline-flex !important;
-      align-items: center !important;
-      gap: 0.375rem !important;
-      transition: all 0.2s ease !important;
-    }
-
-    body:not(.dashboard) .object-tools a:hover,
-    body:not(.dashboard) .addlink:hover {
-      transform: translateY(-1px) !important;
-      box-shadow: var(--shadow-md) !important;
-      background: #16a34a !important;
-    }
-
-    body:not(.dashboard) .object-tools a::before,
-    body:not(.dashboard) .addlink::before {
-      content: "+" !important;
-      font-weight: bold !important;
-      font-size: 1rem !important;
     }
 
     /* Pagination */
@@ -972,7 +1185,33 @@
       color: #ffffff !important;
     }
 
-    /* === Responsive Design === */
+    /* === RESPONSIVE DESIGN FOR FILTER === */
+    @media (max-width: 1440px) {
+      /* Trên màn hình nhỏ hơn, đưa filter xuống dưới content */
+      body:not(.dashboard) #changelist-filter {
+        position: static !important;
+        top: unset !important;
+        right: unset !important;
+        bottom: unset !important;
+        width: 100% !important;
+        max-width: none !important;
+        margin-top: 1.5rem !important;
+        max-height: 400px !important;
+      }
+
+      body:not(.dashboard).filtered #content {
+        padding-right: 1.5rem !important;
+      }
+
+      body:not(.dashboard) #content-main {
+        flex-direction: column !important;
+      }
+
+      body:not(.dashboard) .filter-toggle {
+        display: none !important;
+      }
+    }
+
     @media (max-width: 1024px) {
       body:not(.dashboard) #nav-sidebar {
         transform: translateX(-100%) !important;
@@ -1070,15 +1309,13 @@
         width: 100% !important;
       }
 
-      /* Mobile filter sidebar */
-      body:not(.dashboard) #changelist {
-        flex-direction: column !important;
-        gap: 1rem !important;
-      }
-
       body:not(.dashboard) #changelist-filter {
-        width: 100% !important;
-        min-width: auto !important;
+        order: 2 !important;
+        margin-top: 1rem !important;
+      }
+      
+      body:not(.dashboard) #changelist {
+        order: 1 !important;
       }
     }
 
@@ -1251,68 +1488,337 @@
     html[data-theme="dark"] body:not(.dashboard) textarea::placeholder {
       color: var(--text-secondary) !important;
     }
+
+    /* === FILTER ANIMATIONS === */
+    @keyframes filterRefresh {
+      0% { transform: translateX(10px); opacity: 0.8; }
+      100% { transform: translateX(0); opacity: 1; }
+    }
+    
+    @keyframes filterSlideIn {
+      from { 
+        transform: translateX(100%) scale(0.95); 
+        opacity: 0; 
+      }
+      to { 
+        transform: translateX(0) scale(1); 
+        opacity: 1; 
+      }
+    }
+
     /* === FORCE BUTTON MARGIN FIX === */
-  /* === FORCE ALL FORM ELEMENTS AS FLEX ITEMS === */
-  #toolbar form,
-  div#toolbar form,
-  body:not(.dashboard) #toolbar form {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 0.75rem !important;
-    width: 100% !important;
-    margin: 0 !important;
-    flex-wrap: nowrap !important;
-  }
+    #toolbar form,
+    div#toolbar form,
+    body:not(.dashboard) #toolbar form {
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      gap: 0.75rem !important;
+      width: 100% !important;
+      margin: 0 !important;
+      flex-wrap: nowrap !important;
+    }
 
-  /* Force tất cả children thành flex items */
-  #toolbar form > *,
-  div#toolbar form > *,
-  body:not(.dashboard) #toolbar form > * {
-    display: inline-flex !important;
-    align-items: center !important;
-    margin: 0 !important;
-  }
+    /* Force tất cả children thành flex items */
+    #toolbar form > *,
+    div#toolbar form > *,
+    body:not(.dashboard) #toolbar form > * {
+      display: inline-flex !important;
+      align-items: center !important;
+      margin: 0 !important;
+    }
 
-  /* Specific elements */
-  #toolbar form label,
-  #toolbar form img {
-    flex-shrink: 0 !important;
-    display: inline-flex !important;
-  }
+    /* Specific elements */
+    #toolbar form label,
+    #toolbar form img {
+      flex-shrink: 0 !important;
+      display: inline-flex !important;
+    }
 
-  #toolbar form input[type="text"] {
-    flex: 1 !important;
-    max-width: 400px !important;
-    display: inline-flex !important;
-  }
+    #toolbar form input[type="text"] {
+      flex: 1 !important;
+      max-width: 400px !important;
+      display: inline-flex !important;
+    }
 
-  #toolbar form input[type="submit"] {
-    flex-shrink: 0 !important;
-    display: inline-flex !important;
-    margin: 0 !important;
-    margin-left: 0 !important;
-  }
+    #toolbar form input[type="submit"] {
+      flex-shrink: 0 !important;
+      display: inline-flex !important;
+      margin: 0 !important;
+      margin-left: 0 !important;
+    }
 
-  #toolbar form .small.quiet {
-    flex-shrink: 0 !important;
-    display: inline-flex !important;
-    margin-left: 0.5rem !important;
-  }
+    #toolbar form .small.quiet {
+      flex-shrink: 0 !important;
+      display: inline-flex !important;
+      margin-left: 0.5rem !important;
+    }
 
-  /* Force container div */
-  #toolbar form > div {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 0.75rem !important;
-    width: 100% !important;
-    flex-wrap: nowrap !important;
-  }
+    /* Force container div */
+    #toolbar form > div {
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      gap: 0.75rem !important;
+      width: 100% !important;
+      flex-wrap: nowrap !important;
+    }
   </style>
 
   <script>
     document.addEventListener('DOMContentLoaded', function(){
+      // === FILTER POSITIONING & TOGGLE ===
+      function initFilterLayout() {
+        const filter = document.getElementById('changelist-filter');
+        const body = document.body;
+        
+        if (filter && !body.classList.contains('dashboard')) {
+          // Thêm class 'filtered' vào body khi có filter
+          body.classList.add('filtered');
+          
+          // Tạo toggle button cho filter (chỉ trên desktop)
+          if (window.innerWidth > 1440) {
+            const toggleBtn = document.createElement('button');
+            toggleBtn.className = 'filter-toggle';
+            toggleBtn.title = 'Ẩn/Hiện bộ lọc';
+            toggleBtn.innerHTML = '<i class="fas fa-times"></i>';
+            document.body.appendChild(toggleBtn);
+            
+            // Xử lý toggle filter
+            toggleBtn.addEventListener('click', function() {
+              const isHidden = filter.classList.contains('hidden');
+              
+              if (isHidden) {
+                filter.classList.remove('hidden');
+                body.classList.add('filtered');
+                toggleBtn.innerHTML = '<i class="fas fa-times"></i>';
+                toggleBtn.title = 'Ẩn bộ lọc';
+              } else {
+                filter.classList.add('hidden');
+                body.classList.remove('filtered');
+                toggleBtn.innerHTML = '<i class="fas fa-filter"></i>';
+                toggleBtn.title = 'Hiện bộ lọc';
+              }
+            });
+          }
+          
+          // Auto-hide filter on mobile
+          function checkMobileFilter() {
+            const toggleBtn = document.querySelector('.filter-toggle');
+            if (window.innerWidth <= 1440) {
+              filter.classList.remove('hidden');
+              body.classList.remove('filtered');
+              if (toggleBtn) toggleBtn.style.display = 'none';
+            } else {
+              if (toggleBtn) toggleBtn.style.display = 'flex';
+            }
+          }
+          
+          // Check on load and resize
+          checkMobileFilter();
+          window.addEventListener('resize', checkMobileFilter);
+          
+          // Smooth scroll cho filter links
+          const filterLinks = filter.querySelectorAll('a');
+          filterLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+              // Add loading state
+              const originalText = this.textContent;
+              this.style.opacity = '0.6';
+              this.textContent = originalText + ' ⏳';
+              
+              // Reset after navigation (will be interrupted by page load)
+              setTimeout(() => {
+                this.style.opacity = '1';
+                this.textContent = originalText;
+              }, 100);
+            });
+          });
+          
+          // Enhanced filter styling
+          const filterTitle = filter.querySelector('h2');
+          if (filterTitle) {
+            filterTitle.innerHTML = '<i class="fas fa-magic"></i> BỘ LỌC THÔNG MINH';
+          }
+          
+          // Add search functionality to filter
+          addFilterSearch(filter);
+        } else if (!filter && body.classList.contains('filtered')) {
+          // Remove filtered class if no filter exists
+          body.classList.remove('filtered');
+        }
+      }
+      
+      // === FILTER SEARCH FUNCTIONALITY ===
+      function addFilterSearch(filter) {
+        const filterSections = filter.querySelectorAll('ul');
+        
+        filterSections.forEach((ul, index) => {
+          const section = ul.closest('div, li') || ul.parentElement;
+          const header = section.querySelector('h3');
+          
+          if (header && ul.children.length > 5) { // Only add search if many options
+            const searchContainer = document.createElement('div');
+            searchContainer.style.cssText = `
+              padding: 0.75rem 1.25rem;
+              background: rgba(79, 70, 229, 0.05);
+              border-bottom: 1px solid rgba(79, 70, 229, 0.1);
+            `;
+            
+            const searchInput = document.createElement('input');
+            searchInput.type = 'text';
+            searchInput.placeholder = '🔍 Tìm kiếm nhanh...';
+            searchInput.style.cssText = `
+              width: 100%;
+              padding: 0.75rem;
+              border: 2px solid var(--filter-accent);
+              border-radius: 0.5rem;
+              background: var(--bg-secondary);
+              color: var(--text-primary);
+              font-size: 0.85rem;
+              box-sizing: border-box;
+              transition: all 0.3s ease;
+              box-shadow: 0 2px 8px rgba(79, 70, 229, 0.1);
+            `;
+            
+            searchInput.addEventListener('focus', function() {
+              this.style.boxShadow = '0 4px 16px rgba(79, 70, 229, 0.2)';
+              this.style.borderColor = '#7c3aed';
+            });
+            
+            searchInput.addEventListener('blur', function() {
+              this.style.boxShadow = '0 2px 8px rgba(79, 70, 229, 0.1)';
+              this.style.borderColor = 'var(--filter-accent)';
+            });
+            
+            searchContainer.appendChild(searchInput);
+            ul.parentNode.insertBefore(searchContainer, ul);
+            
+            // Search functionality
+            searchInput.addEventListener('input', function() {
+              const searchTerm = this.value.toLowerCase();
+              const items = ul.querySelectorAll('li');
+              let visibleCount = 0;
+              
+              items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                  item.style.display = '';
+                  item.style.animation = 'fadeInUp 0.3s ease';
+                  visibleCount++;
+                } else {
+                  item.style.display = 'none';
+                }
+              });
+              
+              // Show/hide no results message
+              let noResultsMsg = ul.querySelector('.no-results');
+              
+              if (visibleCount === 0 && searchTerm) {
+                if (!noResultsMsg) {
+                  noResultsMsg = document.createElement('li');
+                  noResultsMsg.className = 'no-results';
+                  noResultsMsg.style.cssText = `
+                    padding: 1.5rem;
+                    text-align: center;
+                    color: var(--text-secondary);
+                    font-style: italic;
+                    font-size: 0.9rem;
+                    background: rgba(79, 70, 229, 0.05);
+                  `;
+                  noResultsMsg.innerHTML = '🔍 Không tìm thấy kết quả phù hợp';
+                  ul.appendChild(noResultsMsg);
+                }
+                noResultsMsg.style.display = '';
+              } else if (noResultsMsg) {
+                noResultsMsg.style.display = 'none';
+              }
+            });
+          }
+        });
+      }
+      
+      // === FILTER KEYBOARD SHORTCUTS ===
+      function initFilterKeyboardShortcuts() {
+        document.addEventListener('keydown', function(e) {
+          // Alt + F to toggle filter
+          if (e.altKey && e.key.toLowerCase() === 'f') {
+            e.preventDefault();
+            const toggleBtn = document.querySelector('.filter-toggle');
+            if (toggleBtn) {
+              toggleBtn.click();
+            }
+          }
+          
+          // Escape to close filter (when focused inside filter)
+          if (e.key === 'Escape') {
+            const filter = document.getElementById('changelist-filter');
+            if (filter && filter.contains(document.activeElement)) {
+              filter.classList.add('hidden');
+              document.body.classList.remove('filtered');
+              const toggleBtn = document.querySelector('.filter-toggle');
+              if (toggleBtn) {
+                toggleBtn.innerHTML = '<i class="fas fa-filter"></i>';
+                toggleBtn.title = 'Hiện bộ lọc';
+              }
+            }
+          }
+        });
+      }
+      
+      // === ENHANCED FILTER ANIMATIONS ===
+      function addFilterAnimations() {
+        const filter = document.getElementById('changelist-filter');
+        if (!filter) return;
+        
+        // Add CSS animations
+        const style = document.createElement('style');
+        style.textContent = `
+          @keyframes fadeInUp {
+            from {
+              opacity: 0;
+              transform: translateY(10px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          
+          @keyframes filterGlow {
+            0%, 100% {
+              box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4);
+            }
+            50% {
+              box-shadow: 0 12px 35px rgba(124, 58, 237, 0.6);
+            }
+          }
+          
+          body:not(.dashboard) #changelist-filter:hover {
+            animation: filterGlow 2s ease-in-out infinite;
+          }
+        `;
+        document.head.appendChild(style);
+        
+        // Add loading animation for filter changes
+        const observer = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type === 'childList' || mutation.type === 'subtree') {
+              // Filter content changed, add refresh animation
+              filter.style.animation = 'filterRefresh 0.3s ease';
+              setTimeout(() => {
+                filter.style.animation = '';
+              }, 300);
+            }
+          });
+        });
+        
+        observer.observe(filter, {
+          childList: true,
+          subtree: true
+        });
+      }
+
       // Mobile menu functionality
       if (window.innerWidth <= 1024 && !document.body.classList.contains('dashboard')) {
         const mobileBtn = document.createElement('button');
@@ -1387,6 +1893,41 @@
         tbody.insertBefore(makeRow(debtURL, debtText, 'fas fa-edit', 'row2'), tbody.firstChild);
         tbody.insertBefore(makeRow(statsURL, statsText, 'fas fa-chart-pie', 'row1'), tbody.firstChild);
 
+        // ẨN HOÀN TOÀN CÔNG NỢ HỌC SINH - nhiều cách để đảm bảo
+        const allRows = tbody.querySelectorAll('tr');
+        allRows.forEach(row => {
+          const linkText = row.querySelector('th a');
+          if (linkText && (
+            linkText.textContent.includes('Công nợ học sinh') ||
+            linkText.textContent.includes('Student debt') ||
+            linkText.textContent.includes('studentpayment') ||
+            linkText.href.includes('student_debt') ||
+            linkText.href.includes('studentpayment') ||
+            row.classList.contains('model-studentpayment')
+          )) {
+            row.style.display = 'none !important';
+            row.style.visibility = 'hidden !important';
+            row.remove(); // Xóa luôn khỏi DOM
+          }
+        });
+
+        // Thêm CSS rule để đảm bảo ẩn hoàn toàn
+        const hideStyle = document.createElement('style');
+        hideStyle.textContent = `
+          .model-studentpayment,
+          tr.model-studentpayment,
+          [href*="studentpayment"],
+          a[href*="studentpayment"],
+          tr:has(a[href*="studentpayment"]) {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
+          }
+        `;
+        document.head.appendChild(hideStyle);
+
         // Thêm icons vào các menu items có sẵn
         const links = tbody.querySelectorAll('th a');
         links.forEach(link => {
@@ -1442,6 +1983,39 @@
               link.insertBefore(icon, link.firstChild);
             }
           }
+        });
+      }
+
+      // === INITIALIZE ALL FILTER FEATURES ===
+      initFilterLayout();
+      initFilterKeyboardShortcuts();
+      addFilterAnimations();
+      
+      // Reinitialize on AJAX content changes (Django admin sometimes uses AJAX)
+      if (window.MutationObserver) {
+        const observer = new MutationObserver(function(mutations) {
+          let shouldReinit = false;
+          mutations.forEach(function(mutation) {
+            if (mutation.addedNodes.length > 0) {
+              mutation.addedNodes.forEach(function(node) {
+                if (node.nodeType === 1 && (
+                    node.id === 'changelist-filter' || 
+                    node.querySelector && node.querySelector('#changelist-filter')
+                  )) {
+                  shouldReinit = true;
+                }
+              });
+            }
+          });
+          
+          if (shouldReinit) {
+            setTimeout(initFilterLayout, 100);
+          }
+        });
+        
+        observer.observe(document.body, {
+          childList: true,
+          subtree: true
         });
       }
     });
