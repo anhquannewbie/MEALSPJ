@@ -1051,6 +1051,49 @@
     .chart-card:nth-child(2) { animation: slideInRight 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.6s forwards !important; opacity: 0; }
 
     #content-main .module { animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.7s forwards !important; opacity: 0; }
+    #burger-menu-btn {
+      display: none;
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 1.7rem;
+      margin-left: 0.5rem;
+      cursor: pointer;
+      z-index: 1100;
+    }
+
+    #mobile-menu-popup {
+      display: none;
+      position: absolute;
+      right: 1rem;
+      top: 65px;
+      background: var(--bg-secondary, #fff);
+      box-shadow: 0 2px 16px rgba(0,0,0,0.15);
+      border-radius: 1rem;
+      z-index: 2000;
+      min-width: 170px;
+      overflow: hidden;
+      animation: slideInDown 0.2s;
+    }
+    #mobile-menu-popup.active {
+      display: block !important;
+    }
+    #mobile-menu-popup a {
+      display: block;
+      padding: 1rem 1.4rem;
+      color: var(--primary-color, #6366f1);
+      font-weight: 600;
+      border-bottom: 1px solid #eee;
+      background: none;
+      text-decoration: none;
+      font-size: 1rem;
+    }
+    #mobile-menu-popup a:last-child { border-bottom: none; }
+    #mobile-menu-popup a:hover { background: var(--bg-tertiary, #f1f5f9); }
+    @media (max-width: 768px) {
+      #header #user-tools { display: none !important; }
+      #burger-menu-btn { display: block !important; }
+    }
   </style>
 {% endblock %}
 
@@ -1214,6 +1257,39 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function(){
+      (function() {
+        var header = document.getElementById('header');
+        var userTools = document.getElementById('user-tools');
+        if (header && userTools) {
+          // Tạo nút burger
+          var burgerBtn = document.createElement('button');
+          burgerBtn.id = 'burger-menu-btn';
+          burgerBtn.innerHTML = '<i class="fas fa-bars"></i>';
+          burgerBtn.setAttribute('aria-label', 'Menu');
+
+          // Tạo popup menu
+          var mobileMenu = document.createElement('div');
+          mobileMenu.id = 'mobile-menu-popup';
+          mobileMenu.innerHTML = userTools.innerHTML; // Copy toàn bộ link
+
+          // Thêm nút burger ngay sau userTools
+          userTools.parentNode.insertBefore(burgerBtn, userTools.nextSibling);
+          // Thêm popup menu vào header
+          header.appendChild(mobileMenu);
+
+          // Toggle menu khi bấm burger
+          burgerBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            mobileMenu.classList.toggle('active');
+          });
+          // Ẩn menu khi bấm ra ngoài
+          document.addEventListener('click', function(e) {
+            if (!mobileMenu.contains(e.target) && !burgerBtn.contains(e.target)) {
+              mobileMenu.classList.remove('active');
+            }
+          });
+        }
+      })();
       // Thêm icons và styling cho menu items
       const tbody = document.querySelector('#content-main .app-meals.module table tbody');
       if (tbody) {
