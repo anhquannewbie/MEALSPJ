@@ -124,9 +124,6 @@
       backdrop-filter: blur(10px) !important;
       position: relative !important;
       overflow: hidden !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: space-between !important;
     }
 
     #header::before {
@@ -145,8 +142,7 @@
       50% { transform: translateY(-10px) rotate(180deg); }
     }
 
-    #header #site-name,
-    #header #site-name a {
+    #header #site-name {
       font-size: 1.5rem !important;
       font-weight: 800 !important;
       color: #ffffff !important;
@@ -723,15 +719,14 @@
         padding: 0.8rem 1rem !important;
         display: flex !important;
         align-items: center !important;
-        justify-content: space-between !important;
+        justify-content: flex-start !important;
         flex-wrap: nowrap !important;
         min-height: 70px !important;
         overflow: visible !important;
         position: relative !important;
       }
 
-      #header #site-name,
-      #header #site-name a {
+      #header #site-name {
         font-size: 1.1rem !important;
         font-weight: 700 !important;
         gap: 0.5rem !important;
@@ -883,8 +878,7 @@
         flex-wrap: nowrap !important;
       }
 
-      #header #site-name,
-      #header #site-name a {
+      #header #site-name {
         font-size: 0.9rem !important;
         gap: 0.3rem !important;
         flex: 1 !important;
@@ -1519,13 +1513,25 @@
 {% block header %}
   <div id="header">
     <div id="site-name">
-      TRANG QUẢN TRỊ BỮA ĂN HỌC SINH
+      <a href="{% url 'admin:index' %}">TRANG QUẢN TRỊ BỮA ĂN HỌC SINH</a>
     </div>
     <button class="mobile-menu-toggle">
       <i class="fas fa-bars"></i>
     </button>
     <div id="user-tools">
-      {{ block.super }}
+      {% if user.is_authenticated %}
+        {% block userlinks %}
+          {% if site_url %}
+            <a href="{{ site_url }}">{% trans 'View site' %}</a>
+          {% endif %}
+          {% if user.has_usable_password %}
+            <a href="{% url 'admin:password_change' %}">{% trans 'Change password' %}</a>
+          {% endif %}
+          <a href="{% url 'admin:logout' %}">{% trans 'Log out' %}</a>
+        {% endblock %}
+        {% url 'admin:logout' as logout_url %}
+        {% url 'admin:password_change' as password_change_url %}
+      {% endif %}
     </div>
     <div class="mobile-menu">
       {% if user.is_authenticated %}
