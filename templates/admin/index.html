@@ -1,2579 +1,1210 @@
-{% extends "admin/base.html" %}
-{% load static i18n admin_urls %}
+{# project_root/templates/admin/index.html #}
+{% extends "admin/index.html" %}
+{% load i18n %}
 
-{% block extrahead %}
+{% block extrastyle %}
   {{ block.super }}
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
   <style>
     /* === CSS Variables === */
     :root {
-      --primary-color: #2563eb;
-      --primary-gradient: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      --primary-color: #6366f1;
+      --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       --secondary-color: #64748b;
       --accent-color: #0ea5e9;
       --success-color: #10b981;
       --warning-color: #f59e0b;
       --danger-color: #ef4444;
+      --info-color: #3b82f6;
       --bg-primary: #f8fafc;
       --bg-secondary: #ffffff;
+      --bg-tertiary: #f1f5f9;
       --text-primary: #1e293b;
       --text-secondary: #64748b;
+      --text-muted: #94a3b8;
       --border-color: #e2e8f0;
       --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
       --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
       --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-      --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 10px 10px -5px rgb(0 0 0 / 0.04);
-      --filter-bg: linear-gradient(145deg, #f1f5f9 0%, #e2e8f0 100%);
-      --filter-accent: #4f46e5;
+      --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+      --chart-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --chart-gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      --chart-gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      --chart-grid-color: rgba(148, 163, 184, 0.2);
+      --glassmorphism: rgba(255, 255, 255, 0.25);
+      --glassmorphism-border: rgba(255, 255, 255, 0.18);
     }
 
     /* Dark mode */
     html[data-theme="dark"] {
-      --primary-color: #3b82f6;
-      --primary-gradient: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      --primary-color: #818cf8;
+      --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       --secondary-color: #94a3b8;
       --accent-color: #06b6d4;
       --success-color: #22c55e;
       --warning-color: #fbbf24;
       --danger-color: #f87171;
-      --bg-primary: #111827;
-      --bg-secondary: #1f2937;
-      --text-primary: #f9fafb;
-      --text-secondary: #d1d5db;
-      --border-color: #374151;
-      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);
-      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.5);
-      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
-      --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 10px 10px -5px rgb(0 0 0 / 0.2);
-      --filter-bg: linear-gradient(145deg, #1f2937 0%, #111827 100%);
-      --filter-accent: #6366f1;
+      --info-color: #60a5fa;
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-tertiary: #334155;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --border-color: #334155;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+      --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.3);
+      --chart-grid-color: rgba(148, 163, 184, 0.1);
+      --glassmorphism: rgba(0, 0, 0, 0.25);
+      --glassmorphism-border: rgba(255, 255, 255, 0.1);
     }
 
     /* === Global Styles === */
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    body.dashboard {
       background: var(--bg-primary) !important;
-      margin: 0 !important;
-      padding: 0 !important;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+      overflow-x: hidden !important;
     }
 
-    /* === Header Modernization === */
-    #header {
-      background: var(--primary-gradient) !important;
-      padding: 0.75rem 2rem !important;
-      box-shadow: var(--shadow-lg) !important;
-      border: none !important;
-      position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      z-index: 1000 !important;
-      height: 60px !important;
-      box-sizing: border-box !important;
+    /* Hide sidebar and recent actions */
+    body.dashboard nav#nav-sidebar,
+    body.dashboard #content-related {
+      display: none !important;
     }
 
-    #header #site-name,
-    #header #site-name a {
-      font-size: 1.25rem !important;
-      font-weight: 700 !important;
-      color: #ffffff !important;
-      text-decoration: none !important;
-      display: flex !important;
-      align-items: center !important;
-      gap: 0.5rem !important;
-      margin: 0 !important;
-      padding: 0 !important;
-    }
-
-    #header #site-name::before {
-      content: "🚀";
-      font-size: 1rem;
-    }
-
-    #header #user-tools {
-      display: flex !important;
-      align-items: center !important;
-      gap: 1rem !important;
-    }
-
-    #header #user-tools a {
-      color: rgba(255, 255, 255, 0.9) !important;
-      font-size: 0.8rem !important;
-      font-weight: 500 !important;
-      padding: 0.375rem 0.75rem !important;
-      border-radius: 0.375rem !important;
-      transition: all 0.2s ease !important;
-      text-decoration: none !important;
-    }
-
-    #header #user-tools a:hover {
-      background: rgba(255, 255, 255, 0.1) !important;
-      color: #ffffff !important;
-    }
-
-    /* === Body Padding for Fixed Header === */
-    body {
-      padding-top: 60px !important;
-    }
-
-    /* === Sidebar Control === */
-    /* CHỈ ẨN sidebar trên Dashboard */
-    body.dashboard #nav-sidebar { 
-      display: none !important; 
-    }
     body.dashboard #content,
     body.dashboard #content-main {
       margin-left: 0 !important;
       width: auto !important;
+      max-width: none !important;
     }
 
-    /* Trên mọi page khác, bắt buộc hiển thị sidebar */
-    body:not(.dashboard) #nav-sidebar { 
+    body.dashboard #content {
       display: block !important;
-      width: 390px !important;
-      background: var(--bg-secondary) !important;
-      border-right: 1px solid var(--border-color) !important;
-      box-shadow: var(--shadow-lg) !important;
-      position: fixed !important;
-      top: 60px !important;
-      left: 0 !important;
-      bottom: 0 !important;
-      overflow-y: auto !important;
-      z-index: 999 !important;
-      padding: 1rem 0 !important;
-    }
-
-    /* Adjust content margin for sidebar pages */
-    body:not(.dashboard) #content {
-      margin-left: 390px !important;
-      background: var(--bg-primary) !important;
-      min-height: calc(100vh - 60px) !important;
+      margin: 0 !important;
       padding: 1.5rem !important;
-      box-sizing: border-box !important;
     }
-
-    /* Tạo khoảng trống bên phải cho filter khi có filter */
-    body:not(.dashboard).filtered #content {
-      padding-right: 320px !important; /* 280px + 40px gap */
-    }
-
-    /* Modern sidebar modules */
-    body:not(.dashboard) #nav-sidebar .module {
-      margin: 0 1rem 1rem 1rem !important;
-      background: var(--bg-secondary) !important;
-      border-radius: 0.75rem !important;
-      box-shadow: var(--shadow-md) !important;
-      border: 1px solid var(--border-color) !important;
-      overflow: hidden !important;
-    }
-    .inline-group .tabular td.original p {
-      position: absolute;
-      left: 0;
-      height: 1.1em;
-      padding: 2px 9px;
-      overflow: hidden;
-      font-size: 0.5625rem;
-      font-weight: bold;
-      color: var(--body-quiet-color);
-      _width: 700px;
-      margin-left: 20px;
-    }
-    /* Sidebar module headers - FORCE background đầy đủ */
-    body:not(.dashboard) #nav-sidebar .module table caption {
-      background: var(--primary-gradient) !important;
-      color: #ffffff !important;
-      font-weight: 600 !important;
-      font-size: 0.9rem !important;
-      padding: 0.75rem 1rem !important;
-      text-align: left !important;
-      margin: 0 !important;
-      width: 100% !important;
-      box-sizing: border-box !important;
-      text-transform: uppercase !important;
-      letter-spacing: 0.05em !important;
-      border-radius: 0.75rem 0.75rem 0 0 !important;
-      border: none !important;
-      background-clip: border-box !important;
-      background-size: cover !important;
-      background-repeat: no-repeat !important;
-      background-attachment: local !important;
-      position: relative !important;
-      min-height: 45px !important;
-      overflow: hidden !important;
-    }
-
-    /* Force background to extend fully */
-    body:not(.dashboard) #nav-sidebar .module table caption::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: var(--primary-gradient);
-      z-index: -1;
-    }
-
-    body:not(.dashboard) #nav-sidebar .module table caption a.section {
-      display: flex !important;
-      align-items: center !important;
-      gap: 0.5rem !important;
-      color: inherit !important;
-      text-decoration: none !important;
-      width: 100% !important;
-      height: 100% !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      background: transparent !important;
-      position: relative !important;
-      z-index: 1 !important;
-      min-height: 45px !important;
-      box-sizing: border-box !important;
-    }
-
     /* === ẨN HOÀN TOÀN CÔNG NỢ HỌC SINH === */
-    /* CSS selector để ẩn row studentpayment */
+    /* Ẩn dòng studentpayment trong cả dashboard và sidebar */
+    body #content-main .app-meals.module table tbody tr.model-studentpayment,
     body:not(.dashboard) #nav-sidebar .module table tbody tr.model-studentpayment {
       display: none !important;
     }
     
-    /* Backup selectors */
+    /* Backup selectors cho dashboard */
+    body.dashboard #content-main .app-meals.module table tbody tr:has(th a[href*="studentpayment"]),
+    body.dashboard #content-main .app-meals.module table tbody tr th a[href*="studentpayment"],
+    body.dashboard #content-main .app-meals.module table tbody tr:has(th a:contains("Công nợ học sinh")),
+    body.dashboard #content-main .app-meals.module table tbody tr:has(th:contains("Công nợ học sinh")) {
+      display: none !important;
+    }
+    
+    /* Backup selectors cho sidebar */
     body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th a[href*="studentpayment"]),
     body:not(.dashboard) #nav-sidebar .module table tbody tr th a[href*="studentpayment"],
     body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th a:contains("Công nợ học sinh")),
     body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th:contains("Công nợ học sinh")) {
       display: none !important;
     }
-
-    /* Add icons to sidebar headers */
-    body:not(.dashboard) #nav-sidebar .app-meals.module table caption::before {
-      content: "⚙️";
-      font-size: 0.9rem;
+    /* Hide default h1 title */
+    body.dashboard #content h1 {
+      display: none !important;
+    }
+    /* === Enhanced Header === */
+    #header {
+      background: var(--primary-gradient) !important;
+      padding: 1rem 2rem !important;
+      box-shadow: var(--shadow-xl) !important;
+      border: none !important;
+      backdrop-filter: blur(10px) !important;
+      position: relative !important;
+      overflow: hidden !important;
     }
 
-    body:not(.dashboard) #nav-sidebar .app-auth.module table caption::before {
-      content: "🔐";
-      font-size: 0.9rem;
+    #header::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd"><g fill="%23ffffff" fill-opacity="0.05"><circle cx="30" cy="30" r="4"/></g></svg>');
+      animation: float 20s ease-in-out infinite;
     }
 
-    /* Sidebar tables */
-    body:not(.dashboard) #nav-sidebar .module table {
-      width: 100% !important;
-      border-collapse: collapse !important;
-      margin: 0 !important;
-      table-layout: fixed !important;
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-10px) rotate(180deg); }
     }
 
-    body:not(.dashboard) #nav-sidebar .module table caption {
-      width: 100% !important;
-      box-sizing: border-box !important;
-      table-layout: fixed !important;
-    }
-
-    body:not(.dashboard) #nav-sidebar .module table tbody tr {
-      transition: all 0.2s ease !important;
-      border-bottom: 1px solid var(--border-color) !important;
-      width: 100% !important;
-    }
-
-    body:not(.dashboard) #nav-sidebar .module table tbody tr:hover {
-      background: var(--bg-primary) !important;
-    }
-
-    body:not(.dashboard) #nav-sidebar .module table tbody tr:last-child {
-      border-bottom: none !important;
-    }
-
-    body:not(.dashboard) #nav-sidebar .module table tbody tr th {
-      width: 70% !important;
-      padding: 0.75rem 1rem !important;
-      text-align: left !important;
-      font-weight: 500 !important;
-      box-sizing: border-box !important;
-    }
-
-    body:not(.dashboard) #nav-sidebar .module table tbody tr td {
-      width: 30% !important;
-      padding: 0.75rem 1rem !important;
-      text-align: center !important;
-      box-sizing: border-box !important;
-    }
-
-    /* Sidebar links */
-    body:not(.dashboard) #nav-sidebar .module table tbody tr th a {
-      color: var(--text-primary) !important;
+    #header #site-name,
+    #header #site-name a {
+      font-size: 1.5rem !important;
+      font-weight: 800 !important;
+      color: #ffffff !important;
       text-decoration: none !important;
       display: flex !important;
       align-items: center !important;
-      gap: 0.5rem !important;
-      font-size: 0.85rem !important;
-      transition: all 0.2s ease !important;
-      line-height: 1.3 !important;
-      white-space: nowrap !important;
-      overflow: hidden !important;
-      text-overflow: ellipsis !important;
-      width: 100% !important;
+      gap: 0.75rem !important;
+      position: relative !important;
+      z-index: 2 !important;
     }
 
-    body:not(.dashboard) #nav-sidebar .module table tbody tr th a i {
-      flex-shrink: 0 !important;
-      width: 16px !important;
-      text-align: center !important;
+    #header #site-name::before {
+      content: "🚀";
+      font-size: 1.25rem;
+      animation: bounce 2s infinite;
     }
 
-    body:not(.dashboard) #nav-sidebar .module table tbody tr th a:hover {
-      color: var(--primary-color) !important;
-      transform: translateX(2px) !important;
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-10px); }
+      60% { transform: translateY(-5px); }
     }
 
-    /* Sidebar action links */
-    body:not(.dashboard) #nav-sidebar .module table tbody tr td a.changelink {
+    #header #user-tools {
+      display: flex !important;
+      align-items: center !important;
+      gap: 1rem !important;
+      position: relative !important;
+      z-index: 2 !important;
+    }
+
+    #header #user-tools a {
+      color: rgba(255, 255, 255, 0.9) !important;
+      font-size: 0.875rem !important;
+      font-weight: 600 !important;
+      padding: 0.5rem 1rem !important;
+      border-radius: 0.5rem !important;
+      transition: all 0.3s ease !important;
+      text-decoration: none !important;
+      backdrop-filter: blur(10px) !important;
+      background: rgba(255, 255, 255, 0.1) !important;
+      border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    }
+
+    #header #user-tools a:hover {
+      background: rgba(255, 255, 255, 0.2) !important;
+      color: #ffffff !important;
+      transform: translateY(-2px) !important;
+      box-shadow: var(--shadow-lg) !important;
+    }
+
+    /* === Enhanced Hero Welcome Section (Option 1 + Option 3) === */
+    .hero-welcome {
       background: var(--primary-gradient) !important;
       color: #ffffff !important;
-      padding: 0.25rem 0.5rem !important;
-      border-radius: 0.25rem !important;
-      text-decoration: none !important;
-      font-size: 0.7rem !important;
-      font-weight: 500 !important;
-      transition: all 0.2s ease !important;
-      display: inline-flex !important;
-      align-items: center !important;
-      gap: 0.25rem !important;
-      text-transform: uppercase !important;
-      letter-spacing: 0.05em !important;
-      white-space: nowrap !important;
-    }
-
-    body:not(.dashboard) #nav-sidebar .module table tbody tr td a.changelink:hover {
-      transform: translateY(-1px) !important;
-      box-shadow: var(--shadow-sm) !important;
-    }
-
-    body:not(.dashboard) #nav-sidebar .module table tbody tr td a.changelink::after {
-      content: "→";
-      font-weight: bold;
-      font-size: 0.7rem;
-    }
-
-    /* Disable caption links */
-    body:not(.dashboard) #nav-sidebar .app-meals.module table caption a.section,
-    body:not(.dashboard) #nav-sidebar .app-auth.module table caption a.section {
-      pointer-events: none !important;
-      cursor: default !important;
-      text-decoration: none !important;
-      color: inherit !important;
-    }
-
-    /* === ẨN CÔNG NỢ HỌC SINH === */
-    /* Ẩn row có text "Công nợ học sinh" */
-    body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th a[href*="student_debt"]),
-    body:not(.dashboard) #nav-sidebar .module table tbody tr th a[href*="student_debt"],
-    body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th a:contains("Công nợ học sinh")),
-    body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th:contains("Công nợ học sinh")) {
-      display: none !important;
-    }
-
-    /* === BỎ ADDLINK THÊM VÀO BỮA ĂN TRONG CONTENT AREA === */
-    /* CHỈ ẨN addlink trong content area, KHÔNG ẩn trong sidebar */
-    body:not(.dashboard) #content .object-tools .addlink,
-    body:not(.dashboard) #content .object-tools a[href*="/add/"],
-    body:not(.dashboard) #content .addlink,
-    body:not(.dashboard) #content-main .object-tools .addlink,
-    body:not(.dashboard) #content-main .object-tools a[href*="/add/"],
-    body:not(.dashboard) #content-main .addlink {
-      display: none !important;
-    }
-
-    /* GIỮ LẠI addlink trong sidebar */
-    body:not(.dashboard) #nav-sidebar .addlink,
-    body:not(.dashboard) #nav-sidebar .object-tools .addlink {
-      display: inline-flex !important;
-    }
-
-    /* === FIX MISSING ACTION BUTTONS === */
-    /* Allow custom classroom action buttons to be visible */
-    body:not(.dashboard) #content .object-tools a[href*="/delete_students/"],
-    body:not(.dashboard) #content .object-tools a[href*="/export_students/"],
-    body:not(.dashboard) #content .object-tools a[href*="/import_students/"],
-    body:not(.dashboard) #content .object-tools a[href*="/promote_students/"],
-    body:not(.dashboard) #content a[href*="/delete_students/"],
-    body:not(.dashboard) #content a[href*="/export_students/"],
-    body:not(.dashboard) #content a[href*="/import_students/"],
-    body:not(.dashboard) #content a[href*="/promote_students/"] {
-      display: inline-flex !important;
-    }
-
-    /* === HIDE DUPLICATE MARKERS === */
-    /* Hide the original template-generated buttons to avoid duplicates */
-    /* Target the standalone <li> elements that are outside <ul> */
-    body:not(.dashboard) #content li:has(a[href*="/delete_students/"]),
-    body:not(.dashboard) #content li:has(a[href*="/export_students/"]),
-    body:not(.dashboard) #content li:has(a[href*="/import_students/"]),
-    body:not(.dashboard) #content li:has(a[href*="/promote_students/"]) {
-      display: none !important;
-    }
-
-    /* Also hide by direct element targeting */
-    body:not(.dashboard) #content li a.deletelink[href*="/delete_students/"],
-    body:not(.dashboard) #content li a.addlink[href*="/export_students/"],
-    body:not(.dashboard) #content li a.addlink[href*="/import_students/"],
-    body:not(.dashboard) #content li a.addlink[href*="/promote_students/"] {
-      display: none !important;
-    }
-
-    /* Hide parent <li> elements by targeting specific hrefs */
-    body:not(.dashboard) #content li:has(a[href="/admin/meals/classroom/27/delete_students/"]),
-    body:not(.dashboard) #content li:has(a[href="/admin/meals/classroom/27/export_students/"]),
-    body:not(.dashboard) #content li:has(a[href="/admin/meals/classroom/27/import_students/"]),
-    body:not(.dashboard) #content li:has(a[href="/admin/meals/classroom/27/promote_students/"]) {
-      display: none !important;
-    }
-
-    /* Fallback - hide any standalone li after object-tools */
-    body:not(.dashboard) #content .object-tools ~ li {
-      display: none !important;
-    }
-
-    /* === CUSTOM ACTION BUTTONS STYLING === */
-    /* Transform addlinks to proper buttons */
-    body:not(.dashboard) #content .object-tools a[href*="/delete_students/"],
-    body:not(.dashboard) #content .object-tools a[href*="/export_students/"],
-    body:not(.dashboard) #content .object-tools a[href*="/import_students/"],
-    body:not(.dashboard) #content .object-tools a[href*="/promote_students/"] {
-      display: inline-flex !important;
-      align-items: center !important;
-      gap: 0.5rem !important;
-      padding: 0.75rem 1.25rem !important;
-      border-radius: 0.5rem !important;
-      text-decoration: none !important;
-      font-weight: 600 !important;
-      font-size: 0.9rem !important;
-      transition: all 0.3s ease !important;
-      cursor: pointer !important;
-      border: none !important;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-      text-transform: none !important;
-      letter-spacing: normal !important;
-    }
-
-    /* Specific button colors */
-    body:not(.dashboard) #content .object-tools a[href*="/delete_students/"] {
-      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
-      color: #ffffff !important;
-    }
-
-    body:not(.dashboard) #content .object-tools a[href*="/delete_students/"]:hover {
-      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
-      transform: translateY(-2px) !important;
-      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3) !important;
-    }
-
-    body:not(.dashboard) #content .object-tools a[href*="/export_students/"] {
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
-      color: #ffffff !important;
-    }
-
-    body:not(.dashboard) #content .object-tools a[href*="/export_students/"]:hover {
-      background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
-      transform: translateY(-2px) !important;
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
-    }
-
-    body:not(.dashboard) #content .object-tools a[href*="/import_students/"] {
-      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
-      color: #ffffff !important;
-    }
-
-    body:not(.dashboard) #content .object-tools a[href*="/import_students/"]:hover {
-      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
-      transform: translateY(-2px) !important;
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3) !important;
-    }
-
-    body:not(.dashboard) #content .object-tools a[href*="/promote_students/"] {
-      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
-      color: #ffffff !important;
-    }
-
-    body:not(.dashboard) #content .object-tools a[href*="/promote_students/"]:hover {
-      background: linear-gradient(135deg, #d97706 0%, #b45309 100%) !important;
-      transform: translateY(-2px) !important;
-      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3) !important;
-    }
-
-    /* History button styling to match */
-    body:not(.dashboard) #content .object-tools a.historylink {
-      display: inline-flex !important;
-      align-items: center !important;
-      gap: 0.5rem !important;
-      padding: 0.75rem 1.25rem !important;
-      border-radius: 0.5rem !important;
-      text-decoration: none !important;
-      font-weight: 600 !important;
-      font-size: 0.9rem !important;
-      transition: all 0.3s ease !important;
-      cursor: pointer !important;
-      border: none !important;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-      background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%) !important;
-      color: #ffffff !important;
-      margin-right: 20px;
-    }
-
-    body:not(.dashboard) #content .object-tools a.historylink:hover {
-      background: linear-gradient(135deg, #4b5563 0%, #374151 100%) !important;
-      transform: translateY(-2px) !important;
-      box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3) !important;
-    }
-
-    /* === OBJECT-TOOLS LAYOUT === */
-    /* Restructure object-tools to vertical layout */
-    body:not(.dashboard) #content .object-tools {
-      background: transparent !important;
-      padding: 0 !important;
-      border: none !important;
-      margin: 0 !important;
-      margin-bottom: 1.5rem !important;
-      display: flex !important;
-      flex-direction: column !important;
-      gap: 1rem !important;
-      border-radius: 0 !important;
-      box-shadow: none !important;
-      position: relative !important;
-      z-index: 1 !important;
-      
-    }
-
-    /* First row: History button */
-    body:not(.dashboard) #content .object-tools ul {
-      list-style: none !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      display: flex !important;
-      gap: 0.75rem !important;
-      flex-wrap: wrap !important;
-      order: 1 !important;
-      background: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
-    }
-
-    body:not(.dashboard) #content .object-tools li {
-      margin: 0 !important;
-      padding: 0 !important;
-      background: transparent !important;
-    }
-
-    /* Second row: Custom action buttons */
-    body:not(.dashboard) #content .object-tools::after {
-      content: "";
-      display: flex !important;
-      gap: 0.75rem !important;
-      flex-wrap: wrap !important;
-      order: 2 !important;
-    }
-
-    /* Force clear any floating or positioning issues */
-    body:not(.dashboard) #content .object-tools + * {
-      clear: both !important;
-      margin-top: 0 !important;
-    }
-
-    /* === MAIN LAYOUT CONTAINER === */
-    /* Tạo container tổng cho toàn bộ content */
-    body:not(.dashboard) #content-main {
-      display: flex !important;
-      /* gap: 1.5rem !important; */
-      align-items: flex-start !important;
-      background: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
-      border-radius: 0 !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      overflow: visible !important;
-    }
-
-    /* === MAIN CONTENT AREA === */
-    /* Content chính (bảng, form, etc.) chiếm phần lớn không gian */
-    body:not(.dashboard) #changelist,
-    body:not(.dashboard) .module:not(#changelist-filter) {
-      flex: 1 !important;
-      min-width: 0 !important;
-      background: var(--bg-secondary) !important;
-      border-radius: 0.75rem !important;
-      box-shadow: var(--shadow-md) !important;
-      border: 1px solid var(--border-color) !important;
-      overflow: hidden !important;
-      margin: 0 !important;
-      position: relative !important;
-      z-index: 1 !important;
-    }
-
-    /* Reset changelist layout về dạng block thông thường */
-    body:not(.dashboard) #changelist {
-      display: block !important;
-      clear: both !important;
-    }
-
-    body:not(.dashboard) #changelist .results {
-      width: 100% !important;
-      margin: 0 !important;
-      position: relative !important;
-    }
-
-    /* Ensure proper spacing after object-tools */
-    body:not(.dashboard) #changelist-search,
-    body:not(.dashboard) #toolbar,
-    body:not(.dashboard) .actions,
-    body:not(.dashboard) .results {
-      margin-top: 0 !important;
-      clear: both !important;
-    }
-
-    /* === ENHANCED FILTER SIDEBAR === */
-    /* Đưa filter về phía bên phải với thiết kế hiện đại */
-    body:not(.dashboard) #changelist-filter {
-      position: fixed !important;
-      top: 80px !important;
-      right: 20px !important;
-      bottom: 20px !important;
-      width: 320px !important;
-      min-width: 320px !important;
-      max-width: 320px !important;
-      background: var(--filter-bg) !important;
-      border: 2px solid var(--filter-accent) !important;
-      border-radius: 1rem !important;
-      box-shadow: var(--shadow-xl) !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      overflow: hidden !important;
-      z-index: 998 !important;
-      flex-shrink: 0 !important;
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
-      animation: filterSlideIn 0.5s ease !important;
-      backdrop-filter: blur(10px) !important;
-      -webkit-backdrop-filter: blur(10px) !important;
-    }
-
-    body:not(.dashboard) #changelist-filter.hidden {
-      transform: translateX(100%) !important;
-      opacity: 0 !important;
-      pointer-events: none !important;
-    }
-
-    /* === ENHANCED FILTER CONTENT === */
-    body:not(.dashboard) #changelist-filter h2 {
-      background: linear-gradient(135deg, var(--filter-accent) 0%, #7c3aed 100%) !important;
-      color: #ffffff !important;
-      padding: 1.25rem !important;
-      margin: 0 !important;
-      font-size: 1rem !important;
-      font-weight: 700 !important;
-      border-radius: 1rem 1rem 0 0 !important;
+      padding: 3rem 2rem !important;
+      border-radius: 1.5rem !important;
+      margin-bottom: 2rem !important;
       text-align: center !important;
+      box-shadow: 
+        var(--shadow-xl),
+        0 0 30px rgba(102, 126, 234, 0.3),
+        inset 0 0 30px rgba(255, 255, 255, 0.1) !important;
+      border: 1px solid rgba(255, 255, 255, 0.2) !important;
+      position: relative !important;
+      overflow: hidden !important;
+    }
+
+    /* Neon border animation from Option 3 */
+    .hero-welcome::before {
+      content: "";
+      position: absolute;
+      inset: -2px;
+      background: linear-gradient(45deg, #667eea, #764ba2, #667eea, #764ba2);
+      background-size: 400% 400%;
+      border-radius: inherit;
+      z-index: -1;
+      animation: neonBorder 20s ease infinite;
+    }
+
+    @keyframes neonBorder {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    /* Floating particles from Option 1 */
+    .hero-welcome::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        radial-gradient(2px 2px at 20px 30px, rgba(255,255,255,0.3), transparent),
+        radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.2), transparent),
+        radial-gradient(1px 1px at 90px 40px, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.3), transparent),
+        radial-gradient(2px 2px at 160px 30px, rgba(255,255,255,0.2), transparent);
+      background-repeat: repeat;
+      background-size: 200px 100px;
+      animation: sparkle 15s linear infinite;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    @keyframes sparkle {
+      0% { transform: translateY(0px) translateX(0px) rotate(0deg); opacity: 1; }
+      25% { transform: translateY(-10px) translateX(5px) rotate(90deg); opacity: 0.8; }
+      50% { transform: translateY(-5px) translateX(-3px) rotate(180deg); opacity: 0.6; }
+      75% { transform: translateY(-15px) translateX(8px) rotate(270deg); opacity: 0.9; }
+      100% { transform: translateY(0px) translateX(0px) rotate(360deg); opacity: 1; }
+    }
+
+    /* Gradient text animation from Option 1 */
+    .hero-title {
+      font-size: 2.5rem !important;
+      font-weight: 800 !important;
+      margin: 0 0 0.75rem 0 !important;
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-      gap: 0.75rem !important;
-      text-transform: uppercase !important;
-      letter-spacing: 0.1em !important;
-      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3) !important;
-    }
-
-    body:not(.dashboard) #changelist-filter h2::before {
-      content: "🎯";
-      font-size: 1.2rem;
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.1); }
-    }
-
-    /* Filter scrollable content */
-    body:not(.dashboard) #changelist-filter > div {
-      overflow-y: auto !important;
-      scrollbar-width: thin !important;
-      scrollbar-color: var(--filter-accent) transparent !important;
-      padding: 0 !important; /* Loại bỏ padding mặc định */
-      margin: 0 !important; /* Loại bỏ margin mặc định */
-    }
-
-    body:not(.dashboard) #changelist-filter > div::-webkit-scrollbar {
-      width: 6px !important;
-    }
-
-    body:not(.dashboard) #changelist-filter > div::-webkit-scrollbar-track {
-      background: transparent !important;
-    }
-
-    body:not(.dashboard) #changelist-filter > div::-webkit-scrollbar-thumb {
-      background: var(--filter-accent) !important;
-      border-radius: 3px !important;
-    }
-
-    /* Loại bỏ khoảng trống trong filter form rows */
-    body:not(.dashboard) #changelist-filter .form-row {
-      margin: 0 !important;
-      padding: 1rem 1.25rem !important;
-      border-bottom: 1px solid rgba(79, 70, 229, 0.1) !important;
-      background: var(--bg-secondary) !important;
-    }
-
-    body:not(.dashboard) #changelist-filter .form-row:first-child {
-      margin-top: 0 !important;
-      padding-top: 1rem !important;
-    }
-
-    body:not(.dashboard) #changelist-filter .form-row:last-child {
-      border-bottom: none !important;
-      margin-bottom: 0 !important;
-      padding-bottom: 1rem !important;
-    }
-
-    body:not(.dashboard) #changelist-filter .form-row label {
-      margin: 0 !important;
-      padding: 0 !important;
-      display: block !important;
-      font-weight: 600 !important;
-      color: var(--filter-accent) !important;
-      text-transform: uppercase !important;
-      font-size: 0.85rem !important;
-      letter-spacing: 0.05em !important;
-      margin-bottom: 0.5rem !important;
-    }
-
-    body:not(.dashboard) #changelist-filter .form-row select,
-    body:not(.dashboard) #changelist-filter .form-row input {
-      margin: 0 !important;
-      width: 100% !important;
-      padding: 0.75rem !important;
-      border: 2px solid var(--filter-accent) !important;
-      border-radius: 0.5rem !important;
-      background: var(--bg-primary) !important;
-      color: var(--text-primary) !important;
-      font-size: 0.9rem !important;
-      box-sizing: border-box !important;
-    }
-
-    body:not(.dashboard) #changelist-filter h3 {
-      background: linear-gradient(90deg, rgba(79, 70, 229, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%) !important;
-      color: var(--filter-accent) !important;
-      padding: 1rem 1.25rem !important;
-      margin: 0 !important;
-      font-size: 0.95rem !important;
-      font-weight: 700 !important;
-      border-bottom: 2px solid rgba(79, 70, 229, 0.2) !important;
-      display: flex !important;
-      align-items: center !important;
-      gap: 0.75rem !important;
-      text-transform: uppercase !important;
-      letter-spacing: 0.05em !important;
-      position: sticky !important;
-      top: 0 !important;
-      z-index: 10 !important;
-      backdrop-filter: blur(5px) !important;
-    }
-
-    /* Enhanced filter section icons */
-    body:not(.dashboard) #changelist-filter h3::before {
-      content: "📊";
-      font-size: 1rem;
-      background: linear-gradient(135deg, var(--filter-accent), #7c3aed);
+      gap: 1rem !important;
+      position: relative !important;
+      z-index: 2 !important;
+      background: linear-gradient(-45deg, #ffffff, #f0f0ff, #ffffff, #e6e6ff);
+      background-size: 400% 400%;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
+      animation: gradientShift 3s ease infinite, textGlow 2s ease-in-out infinite alternate;
+      overflow: hidden;
     }
 
-    body:not(.dashboard) #changelist-filter ul {
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes textGlow {
+      from { 
+        filter: drop-shadow(0 0 5px rgba(255,255,255,0.3));
+        transform: scale(1);
+      }
+      to { 
+        filter: drop-shadow(0 0 15px rgba(255,255,255,0.6));
+        transform: scale(1.02);
+      }
+    }
+
+    /* Shine effect from Option 3 */
+    .hero-title::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+      transform: translateX(-100%);
+      animation: shine 3s infinite;
+    }
+
+    @keyframes shine {
+      0% { transform: translateX(-100%); }
+      50%, 100% { transform: translateX(100%); }
+    }
+
+    .hero-subtitle {
+      font-size: 2rem !important; /* Tăng kích cỡ */
+      font-weight: 900 !important; /* Font nhẹ, thanh lịch */
       margin: 0 !important;
-      padding: 0 !important;
-      list-style: none !important;
-      background: var(--bg-secondary) !important;
+      opacity: 1 !important; /* Bắt đầu ẩn cho animation */
+      position: relative !important;
+      z-index: 2 !important;
+      letter-spacing: 0.04em !important; /* Khoảng cách chữ rộng */
+      text-shadow: 
+        0 2px 8px rgba(0,0,0,0.15),
+        0 0 12px rgba(255,255,255,0.2) !important; /* Ánh sáng mềm */
+      line-height: 1.4 !important;
+      font-family: 'Inter', -apple-system, sans-serif !important;
+      text-transform: none !important;
+      animation: 
+        /* subtitleSlideUp 1s ease-out 0.9s forwards,
+        subtitleBreath 5s ease-in-out 2.5s infinite !important; */
     }
 
-    body:not(.dashboard) #changelist-filter li {
-      padding: 0 !important;
-      border-bottom: 1px solid rgba(79, 70, 229, 0.1) !important;
-      transition: all 0.3s ease !important;
+    /* Animation mượt mà cho subtitle */
+    @keyframes subtitleSlideUp {
+      0% { 
+        opacity: 0;
+        transform: translateY(15px);
+        filter: blur(3px);
+      }
+      70% {
+        opacity: 0.8;
+        transform: translateY(-2px);
+        filter: blur(0px);
+      }
+      100% { 
+        opacity: 1;
+        transform: translateY(0px);
+        filter: blur(0px);
+      }
+    }
+
+    /* Hiệu ứng thở nhẹ nhàng */
+    @keyframes subtitleBreath {
+      0%, 100% { 
+        text-shadow: 
+          0 2px 8px rgba(0,0,0,0.15),
+          0 0 12px rgba(255,255,255,0.2);
+        transform: scale(1);
+      }
+      50% { 
+        text-shadow: 
+          0 2px 8px rgba(0,0,0,0.15),
+          0 0 20px rgba(255,255,255,0.4),
+          0 0 30px rgba(255,255,255,0.1);
+        transform: scale(1.01);
+      }
+    }
+
+    .hero-stats {
+      display: flex !important;
+      justify-content: center !important;
+      gap: 2rem !important;
+      margin-top: 2rem !important;
+      position: relative !important;
+      z-index: 2 !important;
+    }
+
+    .hero-stat {
+      text-align: center !important;
+      animation: statPulse 5s ease-in-out infinite;
+    }
+
+    /* Enhanced stats with pulse effect from Option 1 */
+    .hero-stat-value {
+      font-size: 2rem !important;
+      font-weight: 700 !important;
+      display: block !important;
+    }
+
+    @keyframes statPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .hero-stat-label {
+      font-size: 0.875rem !important;
+      opacity: 0.8 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.05em !important;
+    }
+
+    /* === Advanced Stats Grid === */
+    .stats-grid {
+      display: grid !important;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+      gap: 1.5rem !important;
+      margin-bottom: 2rem !important;
+    }
+
+    .stat-card {
+      background: var(--bg-secondary) !important;
+      backdrop-filter: blur(10px) !important;
+      border-radius: 1.25rem !important;
+      padding: 1.5rem !important;
+      box-shadow: var(--shadow-lg) !important;
+      border: 1px solid var(--glassmorphism-border) !important;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
       position: relative !important;
       overflow: hidden !important;
     }
 
-    body:not(.dashboard) #changelist-filter li:last-child {
-      border-bottom: none !important;
-    }
-
-    body:not(.dashboard) #changelist-filter li:hover {
-      background: linear-gradient(90deg, rgba(79, 70, 229, 0.05) 0%, rgba(124, 58, 237, 0.05) 100%) !important;
-      transform: translateX(2px) !important;
-    }
-
-    body:not(.dashboard) #changelist-filter li::before {
+    .stat-card::before {
       content: "";
       position: absolute;
-      left: 0;
       top: 0;
-      bottom: 0;
-      width: 3px;
-      background: linear-gradient(135deg, var(--filter-accent), #7c3aed);
-      transform: scaleY(0);
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: var(--primary-gradient);
+      transform: scaleX(0);
       transition: transform 0.3s ease;
     }
 
-    body:not(.dashboard) #changelist-filter li:hover::before {
-      transform: scaleY(1);
+    .stat-card:hover {
+      transform: translateY(-8px) scale(1.02) !important;
+      box-shadow: var(--shadow-xl) !important;
     }
 
-    body:not(.dashboard) #changelist-filter a {
-      display: block !important;
-      padding: 1rem 1.25rem !important;
-      color: var(--text-primary) !important;
-      text-decoration: none !important;
-      font-size: 0.9rem !important;
-      font-weight: 500 !important;
-      transition: all 0.3s ease !important;
-      white-space: nowrap !important;
-      overflow: hidden !important;
-      text-overflow: ellipsis !important;
-      line-height: 1.5 !important;
-      position: relative !important;
+    .stat-card:hover::before {
+      transform: scaleX(1);
     }
 
-    body:not(.dashboard) #changelist-filter a::after {
-      content: "";
-      position: absolute;
-      right: 1rem;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--filter-accent);
-      opacity: 0;
-      transition: opacity 0.3s ease;
+    .stat-header {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      margin-bottom: 1rem !important;
     }
 
-    body:not(.dashboard) #changelist-filter a:hover {
-      color: var(--filter-accent) !important;
-      background: transparent !important;
-      transform: translateX(8px) !important;
-      font-weight: 600 !important;
-    }
-
-    body:not(.dashboard) #changelist-filter a:hover::after {
-      opacity: 1;
-    }
-
-    body:not(.dashboard) #changelist-filter .selected {
-      background: linear-gradient(90deg, rgba(79, 70, 229, 0.15) 0%, rgba(124, 58, 237, 0.15) 100%) !important;
-      border-left: 4px solid var(--filter-accent) !important;
-    }
-
-    body:not(.dashboard) #changelist-filter .selected a {
-      background: transparent !important;
-      color: var(--filter-accent) !important;
-      font-weight: 700 !important;
-      position: relative !important;
-    }
-
-    body:not(.dashboard) #changelist-filter .selected a::before {
-      content: "●";
-      position: absolute;
-      right: 1.25rem;
-      font-weight: bold;
-      font-size: 1rem;
-      color: var(--filter-accent);
-      animation: selectedPulse 2s infinite;
-    }
-
-    @keyframes selectedPulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.6; transform: scale(1.2); }
-    }
-
-    /* Enhanced toggle button */
-    body:not(.dashboard) .filter-toggle {
-      position: fixed !important;
-      top: 120px !important;
-      right: 20px !important;
-      width: 50px !important;
-      height: 50px !important;
-      background: linear-gradient(135deg, var(--filter-accent) 0%, #7c3aed 100%) !important;
-      color: #ffffff !important;
-      border: none !important;
-      border-radius: 50% !important;
-      font-size: 1.4rem !important;
-      cursor: pointer !important;
-      box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4) !important;
-      z-index: 999 !important;
+    .stat-icon {
+      width: 3.5rem !important;
+      height: 3.5rem !important;
+      border-radius: 1rem !important;
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-      backdrop-filter: blur(10px) !important;
-    }
-
-    body:not(.dashboard) .filter-toggle:hover {
-      transform: scale(1.15) rotate(5deg) !important;
-      box-shadow: 0 12px 35px rgba(79, 70, 229, 0.6) !important;
-    }
-
-    body:not(.dashboard) .filter-toggle:active {
-      transform: scale(0.95) !important;
-    }
-
-    /* Main content headers */
-    body:not(.dashboard) #content h1,
-    body:not(.dashboard) #content-main h1 {
-      background: var(--primary-gradient) !important;
-      color: #ffffff !important;
-      font-weight: 600 !important;
       font-size: 1.25rem !important;
-      margin: 0 !important;
-      padding: 1rem 1.5rem !important;
-      display: flex !important;
-      align-items: center !important;
-      gap: 0.5rem !important;
-      border-radius: 0.75rem 0.75rem 0 0 !important;
-    }
-
-    body:not(.dashboard) #content h1::before,
-    body:not(.dashboard) #content-main h1::before {
-      content: "📄";
-      font-size: 1rem;
-    }
-
-    /* Content Body */
-    body:not(.dashboard) #content-main .module h2,
-    body:not(.dashboard) #content-main .module h3 {
-      background: var(--bg-primary) !important;
-      color: var(--text-primary) !important;
-      font-weight: 600 !important;
-      padding: 0.75rem 1.5rem !important;
-      margin: 0 !important;
-      border-bottom: 1px solid var(--border-color) !important;
-      font-size: 1rem !important;
-    }
-
-    /* Form styling for sidebar pages */
-    body:not(.dashboard) .form-row {
-      margin: 0 1.5rem 1.5rem 1.5rem !important;
-      padding-top: 1rem !important;
-    }
-
-    body:not(.dashboard) .form-row:first-child {
-      padding-top: 1.5rem !important;
-    }
-
-    body:not(.dashboard) .form-row label {
-      color: var(--text-primary) !important;
-      font-weight: 600 !important;
-      margin-bottom: 0.5rem !important;
-      display: block !important;
-      font-size: 0.9rem !important;
-    }
-
-    body:not(.dashboard) input[type="text"],
-    body:not(.dashboard) input[type="email"],
-    body:not(.dashboard) input[type="password"],
-    body:not(.dashboard) input[type="number"],
-    body:not(.dashboard) input[type="date"],
-    body:not(.dashboard) input[type="datetime-local"],
-    body:not(.dashboard) select,
-    body:not(.dashboard) textarea {
-      width: 96% !important;
-      max-width: 100% !important;
-      border: 1px solid var(--border-color) !important;
-      border-radius: 0.5rem !important;
-      background: var(--bg-primary) !important;
-      color: var(--text-primary) !important;
-      font-size: 0.9rem !important;
-      transition: all 0.2s ease !important;
-      box-sizing: border-box !important;
-    }
-
-    body:not(.dashboard) input:focus,
-    body:not(.dashboard) select:focus,
-    body:not(.dashboard) textarea:focus {
-      outline: none !important;
-      border-color: var(--primary-color) !important;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
-    }
-
-    /* Multi-column form layout fix */
-    body:not(.dashboard) .form-row::after {
-      content: "";
-      display: table;
-      clear: both;
-    }
-
-    body:not(.dashboard) .form-row > div {
-      float: none !important;
-      width: 100% !important;
-      margin-right: 0 !important;
-    }
-
-    /* Inline form elements */
-    body:not(.dashboard) .form-row.field-name .form-row,
-    body:not(.dashboard) .form-row.field-first_name,
-    body:not(.dashboard) .form-row.field-last_name {
-      display: inline-block !important;
-      width: 48% !important;
-      margin-right: 2% !important;
-      vertical-align: top !important;
-    }
-
-    body:not(.dashboard) .form-row.field-last_name {
-      margin-right: 0 !important;
-    }
-
-    /* Button styling */
-    body:not(.dashboard) .submit-row {
-      background: var(--bg-primary) !important;
-      padding: 1rem 1.5rem !important;
-      border-top: 1px solid var(--border-color) !important;
-      margin: 0 !important;
-      text-align: right !important;
-    }
-
-    body:not(.dashboard) .submit-row input[type="submit"],
-    body:not(.dashboard) .button,
-    body:not(.dashboard) input[type="submit"] {
-      background: var(--primary-gradient) !important;
       color: #ffffff !important;
-      padding: 0.75rem 1.5rem !important;
-      border: none !important;
-      border-radius: 0.5rem !important;
-      font-size: 0.9rem !important;
+      position: relative !important;
+    }
+
+    .stat-icon::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 2px;
+      background: var(--primary-gradient);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+    }
+
+    .stat-value {
+      font-size: 2rem !important;
+      font-weight: 800 !important;
+      color: var(--text-primary) !important;
+      margin: 0 !important;
+      background: var(--primary-gradient) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+      background-clip: text !important;
+    }
+
+    .stat-label {
+      color: var(--text-secondary) !important;
+      font-size: 0.875rem !important;
       font-weight: 600 !important;
-      cursor: pointer !important;
-      transition: all 0.2s ease !important;
-      text-decoration: none !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.05em !important;
+      margin: 0.5rem 0 0 0 !important;
+    }
+
+    .stat-trend {
+      font-size: 0.75rem !important;
+      font-weight: 600 !important;
+      padding: 0.25rem 0.5rem !important;
+      border-radius: 0.375rem !important;
       display: inline-flex !important;
-      align-items: center !important;
-      gap: 0.5rem !important;
-    }
-
-    body:not(.dashboard) .submit-row input[type="submit"]:hover,
-    body:not(.dashboard) .button:hover,
-    body:not(.dashboard) input[type="submit"]:hover {
-      transform: translateY(-1px) !important;
-      box-shadow: var(--shadow-md) !important;
-    }
-
-    /* Table styling for sidebar pages */
-    body:not(.dashboard) .results {
-      margin: 0 !important;
-      border-radius: 0 !important;
-      background: var(--bg-secondary) !important;
-    }
-
-    body:not(.dashboard) .results table,
-    body:not(.dashboard) #changelist-search table {
-      width: 100% !important;
-      border-collapse: collapse !important;
-      background: var(--bg-secondary) !important;
-      margin: 0 !important;
-      color: var(--text-primary) !important;
-    }
-
-    body:not(.dashboard) .results thead th {
-      background: var(--bg-primary) !important;
-      color: var(--text-primary) !important;
-      font-weight: 600 !important;
-      padding: 1rem !important;
-      text-align: left !important;
-      border-bottom: 1px solid var(--border-color) !important;
-      font-size: 0.9rem !important;
-    }
-
-    body:not(.dashboard) .results thead th a {
-      color: var(--text-primary) !important;
-      text-decoration: none !important;
-      display: flex !important;
       align-items: center !important;
       gap: 0.25rem !important;
     }
 
-    body:not(.dashboard) .results thead th a:hover {
-      color: var(--primary-color) !important;
+    .stat-trend.up {
+      background: rgba(34, 197, 94, 0.1) !important;
+      color: var(--success-color) !important;
     }
 
-    body:not(.dashboard) .results tbody tr {
-      transition: all 0.2s ease !important;
-      border-bottom: 1px solid var(--border-color) !important;
-      background: var(--bg-secondary) !important;
+    .stat-trend.down {
+      background: rgba(239, 68, 68, 0.1) !important;
+      color: var(--danger-color) !important;
     }
 
-    body:not(.dashboard) .results tbody tr:hover {
-      background: var(--bg-primary) !important;
+    /* === Enhanced Chart Container === */
+    .charts-section {
+      margin-top: 3rem !important;
     }
 
-    body:not(.dashboard) .results tbody tr:nth-child(even) {
-      background: rgba(var(--bg-primary), 0.3) !important;
-    }
-
-    body:not(.dashboard) .results tbody tr:nth-child(even):hover {
-      background: var(--bg-primary) !important;
-    }
-
-    body:not(.dashboard) .results tbody td {
-      padding: 1rem !important;
-      color: var(--text-primary) !important;
-      font-size: 0.9rem !important;
-      vertical-align: middle !important;
-      border-bottom: 1px solid var(--border-color) !important;
-    }
-
-    body:not(.dashboard) .results tbody td a {
-      color: var(--primary-color) !important;
-      text-decoration: none !important;
-      font-weight: 500 !important;
-    }
-
-    body:not(.dashboard) .results tbody td a:hover {
-      color: var(--accent-color) !important;
-      text-decoration: underline !important;
-    }
-
-    /* Checkbox styling */
-    body:not(.dashboard) input[type="checkbox"] {
-      width: 16px !important;
-      height: 16px !important;
-      accent-color: var(--primary-color) !important;
-      border: 1px solid var(--border-color) !important;
-      border-radius: 0.25rem !important;
-    }
-
-    /* Row action icons */
-    body:not(.dashboard) .results tbody td .viewlink,
-    body:not(.dashboard) .results tbody td .changelink,
-    body:not(.dashboard) .results tbody td .deletelink {
-      display: inline-block !important;
-      width: 16px !important;
-      height: 16px !important;
-      margin: 0 0.25rem !important;
-      opacity: 0.7 !important;
-      transition: opacity 0.2s ease !important;
-    }
-
-    body:not(.dashboard) .results tbody td .viewlink:hover,
-    body:not(.dashboard) .results tbody td .changelink:hover,
-    body:not(.dashboard) .results tbody td .deletelink:hover {
-      opacity: 1 !important;
-    }
-
-    /* Changelist styling */
-    body:not(.dashboard) #changelist {
-      background: transparent !important;
-    }
-
-    body:not(.dashboard) #changelist .results {
-      overflow-x: auto !important;
-    }
-
-    body:not(.dashboard) #changelist-search {
-      background: var(--bg-primary) !important;
-      padding: 1rem 1.5rem !important;
-      border-bottom: 1px solid var(--border-color) !important;
-      margin: 0 !important;
+    .section-header {
       display: flex !important;
       align-items: center !important;
-      gap: 1rem !important;
-      flex-direction: row !important;
+      justify-content: space-between !important;
+      margin-bottom: 1.5rem !important;
     }
 
-    body:not(.dashboard) #changelist-search * {
-      margin: 0 !important;
-    }
-
-    body:not(.dashboard) #changelist-search label {
+    .section-title {
+      font-size: 1.5rem !important;
+      font-weight: 700 !important;
       color: var(--text-primary) !important;
-      font-weight: 500 !important;
       margin: 0 !important;
-      flex-shrink: 0 !important;
-    }
-
-    body:not(.dashboard) #changelist-search input[type="text"] {
-      background: var(--bg-secondary) !important;
-      border: 1px solid var(--border-color) !important;
-      color: var(--text-primary) !important;
-      padding: 0.5rem 0.75rem !important;
-      border-radius: 0.375rem !important;
-      font-size: 0.9rem !important;
-      min-width: 250px !important;
-      flex: 1 !important;
-      max-width: 400px !important;
-      height: 38px !important;
-      box-sizing: border-box !important;
-      vertical-align: middle !important;
-      line-height: 1.2 !important;
-      margin: 0 !important;
-    }
-
-    body:not(.dashboard) #changelist-search input[type="submit"] {
-      background: var(--primary-gradient) !important;
-      color: #ffffff !important;
-      border: none !important;
-      padding: 0.5rem 1rem !important;
-      border-radius: 0.375rem !important;
-      font-weight: 500 !important;
-      cursor: pointer !important;
-      font-size: 0.9rem !important;
-      transition: all 0.2s ease !important;
-      height: 38px !important;
-      box-sizing: border-box !important;
-      flex-shrink: 0 !important;
-      vertical-align: middle !important;
-      line-height: 1.2 !important;
-    }
-
-    body:not(.dashboard) #changelist-search input[type="submit"]:hover {
-      transform: translateY(-1px) !important;
-      box-shadow: var(--shadow-md) !important;
-    }
-
-    body:not(.dashboard) #toolbar {
-      background: var(--bg-primary) !important;
-      padding: 1rem 1.5rem !important;
-      border-bottom: 1px solid var(--border-color) !important;
-      margin: 0 !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: flex-start !important;
-      flex-wrap: nowrap !important;
-      gap: 1rem !important;
-    }
-
-    /* Form controls alignment */
-    body:not(.dashboard) #toolbar form {
       display: flex !important;
       align-items: center !important;
       gap: 0.75rem !important;
+      margin-left: 20px !important;
+      animation: slideInLeft 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.8s forwards !important;
+      opacity: 0;
+    }
+
+    .chart-controls {
+      display: flex !important;
+      gap: 0.75rem !important;
+    }
+
+    .chart-control-btn {
+      padding: 0.5rem 1rem !important;
+      border: 1px solid var(--border-color) !important;
+      border-radius: 0.5rem !important;
+      background: var(--bg-secondary) !important;
+      color: var(--text-secondary) !important;
+      font-size: 0.875rem !important;
+      font-weight: 500 !important;
+      cursor: pointer !important;
+      transition: all 0.2s ease !important;
+    }
+
+    .chart-control-btn:hover,
+    .chart-control-btn.active {
+      background: var(--primary-color) !important;
+      color: #ffffff !important;
+      border-color: var(--primary-color) !important;
+    }
+
+    .charts-grid {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 2rem !important;
+      margin-bottom: 2rem !important;
+    }
+
+    .chart-card {
+      background: var(--bg-secondary) !important;
+      backdrop-filter: blur(10px) !important;
+      border-radius: 1.5rem !important;
+      padding: 2rem !important;
+      box-shadow: var(--shadow-lg) !important;
+      border: 1px solid var(--glassmorphism-border) !important;
+      position: relative !important;
+      overflow: hidden !important;
+      transition: all 0.3s ease !important;
+      margin-left: 20px;
+    }
+
+    .chart-card:hover {
+      transform: translateY(-4px) !important;
+      box-shadow: var(--shadow-xl) !important;
+    }
+
+    .chart-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: var(--primary-gradient);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+
+    .chart-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .chart-header {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      margin-bottom: 1.5rem !important;
+    }
+
+    .chart-title {
+      font-size: 1.125rem !important;
+      font-weight: 700 !important;
+      color: var(--text-primary) !important;
       margin: 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 0.5rem !important;
+    }
+
+    .chart-subtitle {
+      font-size: 0.875rem !important;
+      color: var(--text-secondary) !important;
+      margin: 0.25rem 0 0 0 !important;
+    }
+
+    .chart-value {
+      text-align: right !important;
+    }
+
+    .chart-main-value {
+      font-size: 1.5rem !important;
+      font-weight: 800 !important;
+      color: var(--text-primary) !important;
+      margin: 0 !important;
+    }
+
+    .chart-change {
+      font-size: 0.75rem !important;
+      font-weight: 600 !important;
+      margin: 0.25rem 0 0 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: flex-end !important;
+      gap: 0.25rem !important;
+    }
+
+    .chart-container {
+      position: relative !important;
+      height: 350px !important;
       width: 100% !important;
     }
 
-    body:not(.dashboard) #toolbar * {
-      margin: 0 !important;
+    .chart-container canvas {
+      border-radius: 0.75rem !important;
     }
 
-    body:not(.dashboard) #toolbar label {
-      color: var(--text-primary) !important;
-      font-weight: 500 !important;
-      margin: 0 !important;
-      font-size: 0.9rem !important;
-      white-space: nowrap !important;
-    }
-
-    body:not(.dashboard) #toolbar select {
+    /* === Enhanced Module Styling === */
+    body.dashboard #content-main .module {
       background: var(--bg-secondary) !important;
-      border: 1px solid var(--border-color) !important;
-      color: var(--text-primary) !important;
-      padding: 0.5rem 0.75rem !important;
-      border-radius: 0.375rem !important;
-      font-size: 0.9rem !important;
-      vertical-align: middle !important;
-      line-height: 1.2 !important;
-      height: 38px !important;
-      box-sizing: border-box !important;
-      margin: 0 !important;
-    }
-
-    body:not(.dashboard) #toolbar input[type="submit"],
-    body:not(.dashboard) #toolbar button {
-      background: var(--primary-gradient) !important;
-      color: #ffffff !important;
-      border: none !important;
-      padding: 0.5rem 1rem !important;
-      border-radius: 0.375rem !important;
-      font-weight: 500 !important;
-      cursor: pointer !important;
-      font-size: 0.9rem !important;
-      white-space: nowrap !important;
-      transition: all 0.2s ease !important;
-      vertical-align: middle !important;
-      line-height: 1.2 !important;
-      height: 38px !important;
-      box-sizing: border-box !important;
-      margin: 0 !important;
-      flex-shrink: 0 !important;
-      margin-left: 20px !important;
-    }
-
-    body:not(.dashboard) #toolbar input[type="submit"]:hover,
-    body:not(.dashboard) #toolbar button:hover {
-      transform: translateY(-1px) !important;
-      box-shadow: var(--shadow-md) !important;
-    }
-
-    /* Style cho span kết quả tìm kiếm */
-    body:not(.dashboard) #toolbar .small.quiet {
-      color: var(--text-secondary) !important;
-      font-size: 0.8rem !important;
-      margin-left: 0.5rem !important;
-      white-space: nowrap !important;
-    }
-
-    body:not(.dashboard) #toolbar .small.quiet a {
-      color: var(--primary-color) !important;
-      text-decoration: none !important;
-    }
-
-    body:not(.dashboard) #toolbar .small.quiet a:hover {
-      text-decoration: underline !important;
-    }
-
-    /* Action buttons styling */
-    body:not(.dashboard) .actions {
-      background: var(--bg-primary) !important;
-      padding: 1rem 0rem !important;
-      border-bottom: 1px solid var(--border-color) !important;
-      display: flex !important;
-      align-items: center !important;
-      gap: 1rem !important;
-      flex-wrap: nowrap !important;
-      margin: 0 !important;
-    }
-
-    body:not(.dashboard) .actions * {
-      margin: 0 !important;
-    }
-
-    body:not(.dashboard) .actions label {
-      color: var(--text-primary) !important;
-      font-weight: 500 !important;
-      margin: 0 !important;
-      font-size: 0.9rem !important;
-      flex-shrink: 0 !important;
-      margin-left: 90px !important;
-    }
-
-    body:not(.dashboard) .question {
-      color: var(--text-secondary) !important;
-      font-size: 0.85rem !important;
-      font-style: italic !important;
-      margin-left: 10px !important;
-      margin-top: 15px !important;
-    }
-
-    /* Style cho text "X của Y được chọn" */
-    body:not(.dashboard) .actions .action-counter {
-      color: var(--text-secondary) !important;
-      font-size: 0.85rem !important;
-      font-style: italic !important;
-      margin-left: 10px !important;
-      margin-top: 15px !important;
-    }
-
-    body:not(.dashboard) .actions select {
-      background: var(--bg-secondary) !important;
-      border: 1px solid var(--border-color) !important;
-      color: var(--text-primary) !important;
-      padding: 0.5rem 0.75rem !important;
-      border-radius: 0.375rem !important;
-      min-width: 180px !important;
-      font-size: 0.9rem !important;
-      height: 38px !important;
-      box-sizing: border-box !important;
-      flex-shrink: 0 !important;
-      vertical-align: middle !important;
-      line-height: 1.2 !important;
-      margin: 0 !important;
-    }
-
-    body:not(.dashboard) .actions button,
-    body:not(.dashboard) .actions input[type="submit"] {
-      background: var(--primary-gradient) !important;
-      color: #ffffff !important;
-      border: none !important;
-      padding: 0.375rem 0.875rem !important;
-      border-radius: 0.375rem !important;
-      font-weight: 500 !important;
-      cursor: pointer !important;
-      font-size: 0.85rem !important;
-      margin: 0 !important;
-      transition: all 0.2s ease !important;
-      height: 32px !important;
-      box-sizing: border-box !important;
-      flex-shrink: 0 !important;
-      white-space: nowrap !important;
-      vertical-align: middle !important;
-      line-height: 1.2 !important;
+      backdrop-filter: blur(10px) !important;
+      border-radius: 1.25rem !important;
+      box-shadow: var(--shadow-lg) !important;
+      border: 1px solid var(--glassmorphism-border) !important;
+      overflow: hidden !important;
       margin-top: 20px !important;
+      margin-bottom: 4rem !important;
+      transition: all 0.3s ease !important;
+    }
+    
+    body.dashboard #content-main .module:hover {
+      transform: translateY(-2px) !important;
+      box-shadow: var(--shadow-xl) !important;
     }
 
-    body:not(.dashboard) .actions button:hover,
-    body:not(.dashboard) .actions input[type="submit"]:hover {
-      transform: translateY(-1px) !important;
-      box-shadow: var(--shadow-md) !important;
-    }
-
-    /* Pagination */
-    body:not(.dashboard) .paginator {
+    body.dashboard #content-main .module table caption {
+      background: var(--primary-gradient) !important;
+      color: #ffffff !important;
+      font-weight: 700 !important;
+      font-size: 1rem !important;
       padding: 1rem 1.5rem !important;
-      background: var(--bg-primary) !important;
-      border-top: 1px solid var(--border-color) !important;
-      text-align: center !important;
+      text-align: left !important;
+      margin: 0 !important;
+      align-items: center !important;
+      gap: 0.75rem !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.05em !important;
+    }
+    .module table {
+        border-collapse: collapse;
+        margin-bottom: 33px;
+    }
+    /* === Responsive Design === */
+    @media (max-width: 1200px) {
+      .charts-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1.5rem !important;
+      }
+
+      .hero-stats {
+        gap: 1rem !important;
+      }
+
+      .hero-stat-value {
+        font-size: 1.5rem !important;
+      }
     }
 
-    body:not(.dashboard) .paginator a,
-    body:not(.dashboard) .paginator .this-page {
-      display: inline-block !important;
-      padding: 0.5rem 0.75rem !important;
-      margin: 0 0.25rem !important;
-      border-radius: 0.375rem !important;
-      text-decoration: none !important;
-      color: var(--text-primary) !important;
-      background: var(--bg-secondary) !important;
-      border: 1px solid var(--border-color) !important;
-      transition: all 0.2s ease !important;
-    }
-
-    body:not(.dashboard) .paginator a:hover {
-      background: var(--primary-color) !important;
-      color: #ffffff !important;
-    }
-
-    body:not(.dashboard) .paginator .this-page {
-      background: var(--primary-color) !important;
-      color: #ffffff !important;
-    }
-
-    /* === RESPONSIVE DESIGN FOR FILTER === */
-    @media (max-width: 1440px) {
-      /* Trên màn hình nhỏ hơn, đưa filter về trên cùng ngay dưới header */
-      body:not(.dashboard) #changelist-filter {
-        position: fixed !important;
-        top: 60px !important; /* Ngay dưới header */
-        left: 0 !important;
-        right: 0 !important;
-        bottom: unset !important;
-        width: 100% !important;
-        max-width: none !important;
-        height: auto !important;
-        max-height: 50vh !important; /* Tăng chiều cao lên 50% viewport height */
-        min-height: 400px !important; /* Đảm bảo chiều cao tối thiểu */
-        z-index: 997 !important; /* Thấp hơn header nhưng cao hơn content */
-        border-radius: 0 !important;
-        border-left: none !important;
-        border-right: none !important;
-        border-top: none !important;
-        margin: 0 !important;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
-      }
-
-      body:not(.dashboard).filtered #content {
-        padding-right: 1.5rem !important;
-        padding-top: calc(1.5rem + 50vh) !important; /* Điều chỉnh theo chiều cao filter */
-      }
-
-      body:not(.dashboard) #content-main {
-        flex-direction: column !important;
-      }
-
-      body:not(.dashboard) .filter-toggle {
-        display: none !important;
-      }
-
-      /* Adjust filter content for mobile */
-      body:not(.dashboard) #changelist-filter h2 {
-        padding: 0.75rem 1rem !important;
-        font-size: 0.9rem !important;
-        border-radius: 0 !important;
-        flex-shrink: 0 !important; /* Không cho header co lại */
-        margin-bottom: 0 !important; /* Loại bỏ margin bottom */
-      }
-
-      body:not(.dashboard) #changelist-filter > div {
-        height: calc(100% - 60px) !important; /* Chiều cao còn lại sau khi trừ header */
-        max-height: none !important; /* Bỏ giới hạn max-height */
-        overflow-y: auto !important;
-        flex: 1 !important;
-        padding-top: 0 !important; /* Loại bỏ padding top */
-      }
-
-      /* Đảm bảo filter container sử dụng flexbox */
-      body:not(.dashboard) #changelist-filter {
-        display: flex !important;
-        flex-direction: column !important;
-      }
-
-      /* Loại bỏ khoảng trống thừa trong filter sections - MOBILE SPECIFIC */
-      body:not(.dashboard) #changelist-filter > div > * {
-        margin-top: 0 !important;
-        margin-bottom: 0 !important;
-      }
-
-      body:not(.dashboard) #changelist-filter > div > *:first-child {
-        margin-top: 0 !important;
-        padding-top: 0 !important;
-      }
-
-      /* MOBILE: Tối ưu spacing cho filter items */
-      body:not(.dashboard) #changelist-filter .form-row {
-        margin: 0 !important;
-        padding: 0.75rem 1rem !important;
-        border-bottom: 1px solid var(--border-color) !important;
-      }
-
-      body:not(.dashboard) #changelist-filter .form-row:first-child {
-        margin-top: 0 !important;
-        padding-top: 0.75rem !important;
-      }
-
-      body:not(.dashboard) #changelist-filter .form-row:last-child {
-        border-bottom: none !important;
-        margin-bottom: 0 !important;
-        padding-bottom: 0.75rem !important;
-      }
-
-      /* MOBILE: Loại bỏ khoảng trống cho checkbox và label */
-      body:not(.dashboard) #changelist-filter .form-row label {
-        margin: 0 !important;
-        padding: 0 !important;
-        margin-bottom: 0.5rem !important;
-        display: block !important;
-      }
-
-      body:not(.dashboard) #changelist-filter .form-row input[type="checkbox"] {
-        margin: 0 !important;
-        margin-right: 0.5rem !important;
-        vertical-align: middle !important;
-      }
-
-      /* MOBILE: Loại bỏ khoảng trống không cần thiết trong filter wrapper */
-      body:not(.dashboard) #changelist-filter > div {
-        height: calc(100% - 60px) !important;
-        max-height: none !important;
-        overflow-y: auto !important;
-        flex: 1 !important;
-        padding: 0 !important; /* Quan trọng: loại bỏ padding */
-        margin: 0 !important; /* Quan trọng: loại bỏ margin */
-      }
-
-      /* MOBILE: Đảm bảo không có spacing thừa ở top */
-      body:not(.dashboard) #changelist-filter > div > div:first-child,
-      body:not(.dashboard) #changelist-filter > div > form:first-child {
-        margin-top: 0 !important;
-        padding-top: 0 !important;
-      }
-
-      /* MOBILE: CSS reset cho tất cả elements trong filter */
-      body:not(.dashboard) #changelist-filter * {
-        box-sizing: border-box !important;
-      }
-
-      body:not(.dashboard) #changelist-filter p {
-        margin: 0 !important;
-        padding: 0 !important;
-      }
-
-      body:not(.dashboard) #changelist-filter div {
-        margin: 0 !important;
-      }
-
-      body:not(.dashboard) #changelist-filter div:not(.form-row) {
-        padding: 0 !important;
-      }
-
-      /* Tối ưu cho các dropdown và select */
-      body:not(.dashboard) #changelist-filter select {
-        max-width: 100% !important;
-        width: 100% !important;
+    @media (max-width: 768px) {
+      body.dashboard #content {
         padding: 0.75rem !important;
-        font-size: 16px !important; /* Prevent zoom on iOS */
-        border-radius: 0.5rem !important;
-        margin-bottom: 0.5rem !important;
       }
 
-      /* Responsive cho các section trong filter */
-      body:not(.dashboard) #changelist-filter h3 {
-        padding: 0.75rem 1rem !important;
-        font-size: 0.85rem !important;
-        flex-shrink: 0 !important;
-      }
-
-      body:not(.dashboard) #changelist-filter ul {
-        padding-bottom: 1rem !important; /* Thêm padding bottom để tránh bị cắt */
-      }
-    }
-
-    /* === MOBILE OPTIMIZATIONS === */
-    @media (max-width: 1024px) {
-      /* Header mobile adjustments */
+      /* === MOBILE HEADER OPTIMIZATION === */
       #header {
-        padding: 0.5rem 1rem !important;
-        font-size: 0.9rem !important;
+        padding: 0.8rem 1rem !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        flex-wrap: nowrap !important;
+        min-height: 70px !important;
+        overflow: visible !important;
       }
 
       #header #site-name,
       #header #site-name a {
+        font-size: 1.1rem !important;
+        font-weight: 700 !important;
+        gap: 0.5rem !important;
+        white-space: nowrap !important;
+        overflow: visible !important;
+        flex: 1 !important;
+        min-width: 0 !important;
+      }
+
+      #header #site-name::before {
         font-size: 1rem !important;
+        flex-shrink: 0 !important;
+      }
+
+      #header #user-tools {
+        gap: 0.5rem !important;
+        flex-shrink: 0 !important;
+        display: flex !important;
+        align-items: center !important;
       }
 
       #header #user-tools a {
         font-size: 0.75rem !important;
-        padding: 0.25rem 0.5rem !important;
-      }
-
-      /* Sidebar mobile behavior */
-      body:not(.dashboard) #nav-sidebar {
-        width: 300px !important;
-        transform: translateX(-100%) !important;
-        transition: transform 0.3s ease !important;
-      }
-
-      body:not(.dashboard) #nav-sidebar.mobile-open {
-        transform: translateX(0) !important;
-      }
-
-      body:not(.dashboard) #content {
-        margin-left: 0 !important;
-        padding: 1rem !important;
-        padding-top: calc(1rem + 50vh) !important; /* Đảm bảo có space cho filter trên mobile */
-      }
-
-      /* Mobile menu button */
-      #mobile-menu-btn {
-        display: block !important;
-        position: fixed !important;
-        top: 70px !important;
-        left: 1rem !important;
-        z-index: 1001 !important;
-        background: var(--primary-color) !important;
-        color: #ffffff !important;
-        border: none !important;
-        padding: 0.75rem !important;
+        padding: 0.5rem 0.8rem !important;
+        white-space: nowrap !important;
         border-radius: 0.5rem !important;
-        font-size: 1.25rem !important;
-        cursor: pointer !important;
-        box-shadow: var(--shadow-md) !important;
-        transition: all 0.2s ease !important;
+        display: inline-block !important;
       }
 
-      #mobile-menu-btn:hover {
-        background: var(--primary-gradient) !important;
+      /* === FORCE CHARTS BELOW ALL CONTENT === */
+      .charts-section {
+        margin-top: 2rem !important;
+        clear: both !important;
+        width: 100% !important;
+        display: block !important;
+        order: 999 !important;
       }
 
-      /* MOBILE FILTER - Loại bỏ hoàn toàn khoảng trống */
-      body:not(.dashboard) #changelist-filter {
-        top: 60px !important;
-        position: fixed !important;
-        order: unset !important;
-        margin: 0 !important; /* Reset margin */
-        padding: 0 !important; /* Reset padding */
-        border-radius: 0 !important;
-        max-height: 50vh !important;
-        min-height: 400px !important;
-        z-index: 997 !important;
+      /* === ENSURE MAIN CONTENT STACKS VERTICALLY === */
+      body.dashboard #content-main {
         display: flex !important;
         flex-direction: column !important;
-        left: 0 !important;
-        right: 0 !important;
         width: 100% !important;
       }
 
-      /* MOBILE FILTER HEADER - Không margin/padding thừa */
-      body:not(.dashboard) #changelist-filter h2 {
-        padding: 0.75rem 1rem !important;
-        font-size: 0.9rem !important;
-        border-radius: 0 !important;
-        flex-shrink: 0 !important;
-        margin: 0 !important; /* Reset margin */
+      /* === MODULE ORDERING === */
+      body.dashboard #content-main .module {
+        order: 1 !important;
+        margin-bottom: 1.5rem !important;
+        width: 100% !important;
       }
 
-      /* MOBILE FILTER CONTENT - Reset hoàn toàn */
-      body:not(.dashboard) #changelist-filter > div {
-        height: calc(100% - 60px) !important;
-        max-height: none !important;
-        overflow-y: auto !important;
-        flex: 1 !important;
-        padding: 0 !important; /* Reset padding */
-        margin: 0 !important; /* Reset margin */
-      }
-
-      /* MOBILE: AGGRESSIVE RESET - Xóa tất cả spacing */
-      body:not(.dashboard) #changelist-filter,
-      body:not(.dashboard) #changelist-filter * {
-        margin: 0 !important;
+      .section-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 0.75rem !important;
+        margin-bottom: 1rem !important;
         padding: 0 !important;
-        border: none !important;
       }
 
-      /* MOBILE: Chỉ giữ lại padding cần thiết */
-      body:not(.dashboard) #changelist-filter h2 {
-        padding: 0.75rem 1rem !important; /* Override aggressive reset */
-        background: linear-gradient(135deg, var(--filter-accent) 0%, #7c3aed 100%) !important;
-        color: #ffffff !important;
-        border-radius: 0 !important;
-        flex-shrink: 0 !important;
+      .section-title {
+        font-size: 1.2rem !important;
+        margin-left: 0 !important;
+        padding: 0 !important;
       }
 
-      body:not(.dashboard) #changelist-filter .form-row {
-        padding: 0.75rem 1rem !important; /* Override aggressive reset */
-        border-bottom: 1px solid var(--border-color) !important; /* Override aggressive reset */
-        background: var(--bg-secondary) !important;
+      .charts-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1.5rem !important;
+        margin-bottom: 1.5rem !important;
+        padding: 0 !important;
+        width: 100% !important;
       }
 
-      body:not(.dashboard) #changelist-filter .form-row label {
-        padding-bottom: 0.5rem !important; /* Override aggressive reset */
-        display: block !important;
-        font-weight: 600 !important;
-        color: var(--filter-accent) !important;
-      }
-
-      body:not(.dashboard) #changelist-filter .form-row select,
-      body:not(.dashboard) #changelist-filter .form-row input {
-        padding: 0.75rem !important; /* Override aggressive reset */
-        border: 2px solid var(--filter-accent) !important; /* Override aggressive reset */
-        border-radius: 0.5rem !important;
+      .chart-card {
+        padding: 1.5rem !important;
+        margin: 0 !important;
+        border-radius: 1rem !important;
         width: 100% !important;
         box-sizing: border-box !important;
-        background: var(--bg-primary) !important;
       }
 
-      /* MOBILE: Loại bỏ bất kỳ khoảng trống nào giữa elements */
-      body:not(.dashboard) #changelist-filter > div > *:not(.form-row) {
-        display: none !important; /* Ẩn tất cả elements không phải form-row */
+      .chart-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 0.5rem !important;
+        margin-bottom: 1rem !important;
       }
 
-      body:not(.dashboard) #changelist-filter > div > .form-row {
-        display: block !important; /* Đảm bảo form-row vẫn hiển thị */
+      .chart-title {
+        font-size: 1rem !important;
+        gap: 0.5rem !important;
+        line-height: 1.3 !important;
       }
 
-      /* MOBILE: Force compact layout */
-      body:not(.dashboard) #changelist-filter .form-row:first-child {
-        border-top: none !important;
+      .chart-subtitle {
+        font-size: 0.8rem !important;
+        margin: 0.25rem 0 0 0 !important;
+        line-height: 1.2 !important;
       }
 
-      body:not(.dashboard) #changelist-filter .form-row:last-child {
-        border-bottom: none !important;
+      .chart-value {
+        text-align: left !important;
+        width: 100% !important;
       }
 
-      /* MOBILE: Loại bỏ các thẻ p, div trống */
-      body:not(.dashboard) #changelist-filter p:empty,
-      body:not(.dashboard) #changelist-filter div:empty {
-        display: none !important;
-        height: 0 !important;
-        line-height: 0 !important;
+      .chart-main-value {
+        font-size: 1.25rem !important;
+        line-height: 1.2 !important;
       }
 
-      /* MOBILE: Force height của filter content */
-      body:not(.dashboard) #changelist-filter > div {
-        min-height: 0 !important;
+      .chart-container {
+        height: 280px !important;
+        width: 100% !important;
+        position: relative !important;
+        overflow: hidden !important;
+      }
+
+      .chart-container canvas {
+        max-width: 100% !important;
         height: auto !important;
-        max-height: calc(50vh - 60px) !important;
       }
 
-      /* MOBILE: Force reset tất cả spacing trong filter */
-      body:not(.dashboard) #changelist-filter > div > * {
-        margin: 0 !important;
+      /* === MOBILE MODULE STYLING === */
+      body.dashboard #content-main .module {
+        margin-top: 1rem !important;
+        margin-bottom: 2rem !important;
+        border-radius: 1rem !important;
       }
 
-      body:not(.dashboard) #changelist-filter > div > *:first-child {
-        margin-top: 0 !important;
-        padding-top: 0 !important;
-      }
-
-      body:not(.dashboard) #changelist-filter .form-row {
-        margin: 0 !important;
+      body.dashboard #content-main .module table caption {
+        font-size: 0.9rem !important;
         padding: 0.75rem 1rem !important;
-        border-bottom: 1px solid var(--border-color) !important;
       }
 
-      body:not(.dashboard) #changelist-filter .form-row:first-child {
-        margin-top: 0 !important;
-        padding-top: 0.75rem !important;
+      /* === MOBILE CHART CONTROLS === */
+      .chart-controls {
+        flex-wrap: wrap !important;
+        gap: 0.5rem !important;
       }
 
-      body:not(.dashboard) #changelist-filter .form-row:last-child {
-        border-bottom: none !important;
-        margin-bottom: 0 !important;
-        padding-bottom: 0.75rem !important;
+      .chart-control-btn {
+        font-size: 0.75rem !important;
+        padding: 0.4rem 0.8rem !important;
       }
+    }
 
-      /* MOBILE: Reset cho labels và inputs */
-      body:not(.dashboard) #changelist-filter .form-row label {
-        margin: 0 !important;
-        padding: 0 !important;
-        margin-bottom: 0.5rem !important;
-        display: block !important;
-      }
-
-      /* MOBILE: Reset cho divs và paragraphs */
-      body:not(.dashboard) #changelist-filter p,
-      body:not(.dashboard) #changelist-filter div:not(.form-row) {
-        margin: 0 !important;
-        padding: 0 !important;
-      }
-
-      /* MOBILE SEARCH AND TOOLBAR OPTIMIZATIONS */
-      body:not(.dashboard) #changelist-search {
-        flex-direction: column !important;
-        align-items: stretch !important;
-        gap: 0.75rem !important;
-        padding: 1rem !important;
-      }
-
-      body:not(.dashboard) #changelist-search label {
-        font-size: 0.85rem !important;
-        margin-bottom: 0.25rem !important;
-      }
-
-      body:not(.dashboard) #changelist-search input[type="text"] {
-        min-width: auto !important;
-        max-width: none !important;
-        width: 100% !important;
-        font-size: 16px !important; /* Prevent zoom on iOS */
-        padding: 0.75rem !important;
-        height: 44px !important; /* Touch-friendly height */
-      }
-
-      body:not(.dashboard) #changelist-search input[type="submit"] {
-        width: 100% !important;
-        padding: 0.75rem 1rem !important;
-        font-size: 1rem !important;
-        height: 44px !important;
-        border-radius: 0.5rem !important;
-      }
-
-      /* MOBILE TOOLBAR OPTIMIZATIONS */
-      body:not(.dashboard) #toolbar {
-        flex-direction: column !important;
-        align-items: stretch !important;
-        gap: 0.75rem !important;
-        padding: 1rem !important;
-      }
-
-      body:not(.dashboard) #toolbar form {
-        flex-direction: column !important;
-        align-items: stretch !important;
-        gap: 0.75rem !important;
-      }
-
-      body:not(.dashboard) #toolbar label {
-        font-size: 0.85rem !important;
-        margin-bottom: 0.25rem !important;
-      }
-
-      body:not(.dashboard) #toolbar select {
-        width: 100% !important;
-        font-size: 16px !important; /* Prevent zoom on iOS */
-        padding: 0.75rem !important;
-        height: 44px !important;
-      }
-
-      body:not(.dashboard) #toolbar input[type="submit"],
-      body:not(.dashboard) #toolbar button {
-        width: 100% !important;
-        padding: 0.75rem 1rem !important;
-        font-size: 1rem !important;
-        height: 44px !important;
-        margin-left: 0 !important;
-        border-radius: 0.5rem !important;
-      }
-
-      /* MOBILE ACTIONS OPTIMIZATIONS */
-      body:not(.dashboard) .actions {
-        flex-direction: column !important;
-        align-items: stretch !important;
-        gap: 0.75rem !important;
-        padding: 1rem !important;
-      }
-
-      body:not(.dashboard) .actions label {
-        margin-left: 0 !important;
-        font-size: 0.85rem !important;
-        margin-bottom: 0.25rem !important;
-      }
-
-      body:not(.dashboard) .actions select {
-        min-width: auto !important;
-        width: 100% !important;
-        font-size: 16px !important; /* Prevent zoom on iOS */
-        padding: 0.75rem !important;
-        height: 44px !important;
-      }
-
-      body:not(.dashboard) .actions button,
-      body:not(.dashboard) .actions input[type="submit"] {
-        width: 100% !important;
-        padding: 0.75rem 1rem !important;
-        font-size: 1rem !important;
-        height: 44px !important;
-        margin-top: 0 !important;
-        border-radius: 0.5rem !important;
-      }
-
-      body:not(.dashboard) .question,
-      body:not(.dashboard) .actions .action-counter {
-        margin-left: 0 !important;
-        margin-top: 0.5rem !important;
-        text-align: center !important;
-      }
-
-      /* Form responsive optimizations */
-      body:not(.dashboard) .form-row.field-first_name,
-      body:not(.dashboard) .form-row.field-last_name {
-        display: block !important;
-        width: 100% !important;
-        margin-right: 0 !important;
-      }
-
-      /* Input optimizations for mobile */
-      body:not(.dashboard) input[type="text"],
-      body:not(.dashboard) input[type="email"],
-      body:not(.dashboard) input[type="password"],
-      body:not(.dashboard) input[type="number"],
-      body:not(.dashboard) input[type="date"],
-      body:not(.dashboard) input[type="datetime-local"],
-      body:not(.dashboard) select,
-      body:not(.dashboard) textarea {
-        font-size: 16px !important; /* Prevent zoom on iOS */
-        padding: 0.75rem !important;
-        min-height: 44px !important; /* Touch-friendly */
-      }
-
-      /* Filter mobile adjustments - đảm bảo filter luôn ở trên cùng */
-      body:not(.dashboard) #changelist-filter {
-        top: 60px !important; /* Cố định ngay dưới header */
-        position: fixed !important;
-        order: unset !important;
-        margin-top: 0 !important;
-        border-radius: 0 !important;
-        max-height: 50vh !important; /* Tăng chiều cao cho mobile */
-        min-height: 400px !important; /* Đảm bảo chiều cao tối thiểu */
-        z-index: 997 !important;
-        display: flex !important;
-        flex-direction: column !important;
-      }
-      
-      body:not(.dashboard) #changelist {
-        order: unset !important;
-      }
-
-      /* Mobile table responsiveness */
-      body:not(.dashboard) .results {
-        overflow-x: auto !important;
-        -webkit-overflow-scrolling: touch !important;
-      }
-
-      body:not(.dashboard) .results table {
-        min-width: 600px !important;
-        font-size: 0.85rem !important;
-      }
-
-      body:not(.dashboard) .results thead th,
-      body:not(.dashboard) .results tbody td {
+    @media (max-width: 480px) {
+      body.dashboard #content {
         padding: 0.5rem !important;
-        white-space: nowrap !important;
       }
 
-      /* Object tools mobile */
-      body:not(.dashboard) #content .object-tools {
-        padding: 1rem !important;
-        flex-direction: column !important;
-        gap: 0.75rem !important;
-      }
-
-      body:not(.dashboard) #content .object-tools ul {
-        flex-direction: column !important;
-        gap: 0.5rem !important;
-      }
-
-      /* Pagination mobile */
-      body:not(.dashboard) .paginator {
-        padding: 1rem !important;
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
-        gap: 0.5rem !important;
+      #header {
+        padding: 0.5rem 0.6rem !important;
+        min-height: 55px !important;
         flex-wrap: wrap !important;
       }
 
-      body:not(.dashboard) .paginator a,
-      body:not(.dashboard) .paginator .this-page {
-        min-width: 44px !important;
-        min-height: 44px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
+      #header #site-name,
+      #header #site-name a {
         font-size: 0.9rem !important;
-      }
-    }
-
-    /* Hide mobile menu button on desktop */
-    @media (min-width: 1025px) {
-      #mobile-menu-btn {
-        display: none !important;
-      }
-    }
-
-    /* === Error and Success Messages === */
-    body:not(.dashboard) .messagelist {
-      margin: 0 1.5rem 1rem 1.5rem !important;
-      padding: 0 !important;
-      list-style: none !important;
-    }
-
-    body:not(.dashboard) .messagelist li {
-      padding: 0.75rem 1rem !important;
-      margin-bottom: 0.5rem !important;
-      border-radius: 0.5rem !important;
-      font-size: 0.9rem !important;
-    }
-
-    body:not(.dashboard) .messagelist .success {
-      background: rgba(16, 185, 129, 0.1) !important;
-      color: var(--success-color) !important;
-      border: 1px solid var(--success-color) !important;
-    }
-
-    body:not(.dashboard) .messagelist .error {
-      background: rgba(239, 68, 68, 0.1) !important;
-      color: var(--danger-color) !important;
-      border: 1px solid var(--danger-color) !important;
-    }
-
-    body:not(.dashboard) .messagelist .warning {
-      background: rgba(245, 158, 11, 0.1) !important;
-      color: var(--warning-color) !important;
-      border: 1px solid var(--warning-color) !important;
-    }
-
-    body:not(.dashboard) .messagelist .info {
-      background: rgba(59, 130, 246, 0.1) !important;
-      color: var(--primary-color) !important;
-      border: 1px solid var(--primary-color) !important;
-    }
-
-    /* === Breadcrumbs === */
-    body:not(.dashboard) .breadcrumbs {
-      background: var(--bg-primary) !important;
-      color: var(--text-secondary) !important;
-      padding: 0.75rem 1.5rem !important;
-      border-bottom: 1px solid var(--border-color) !important;
-      margin: 0 !important;
-      font-size: 0.85rem !important;
-      display: flex !important;
-      align-items: center !important;
-      gap: 0.5rem !important;
-    }
-
-    body:not(.dashboard) .breadcrumbs a {
-      color: var(--primary-color) !important;
-      text-decoration: none !important;
-    }
-
-    body:not(.dashboard) .breadcrumbs a:hover {
-      color: var(--accent-color) !important;
-      text-decoration: underline !important;
-    }
-
-    /* === Date/Time Field Fixes === */
-    body:not(.dashboard) .datetime {
-      display: flex !important;
-      align-items: center !important;
-      gap: 0.5rem !important;
-    }
-
-    body:not(.dashboard) .datetime input {
-      max-width: 150px !important;
-    }
-
-    body:not(.dashboard) .vDateField,
-    body:not(.dashboard) .vTimeField {
-      max-width: 120px !important;
-    }
-
-    /* === Inline Form Fixes === */
-    body:not(.dashboard) .inline-group {
-      margin-bottom: 1.5rem !important;
-    }
-
-    body:not(.dashboard) .inline-related {
-      background: var(--bg-primary) !important;
-      border: 1px solid var(--border-color) !important;
-      border-radius: 0.5rem !important;
-      padding: 1rem !important;
-      margin-bottom: 1rem !important;
-    }
-
-    body:not(.dashboard) .inline-related h3 {
-      background: var(--primary-gradient) !important;
-      color: #ffffff !important;
-      margin: -1rem -1rem 1rem -1rem !important;
-      padding: 0.75rem 1rem !important;
-      border-radius: 0.5rem 0.5rem 0 0 !important;
-    }
-
-    /* === Help Text === */
-    body:not(.dashboard) .help {
-      color: var(--text-secondary) !important;
-      font-size: 0.8rem !important;
-      margin-top: 0.25rem !important;
-      font-style: italic !important;
-    }
-
-    /* === Field Errors === */
-    body:not(.dashboard) .errorlist {
-      color: var(--danger-color) !important;
-      background: rgba(239, 68, 68, 0.1) !important;
-      border: 1px solid var(--danger-color) !important;
-      border-radius: 0.375rem !important;
-      padding: 0.5rem !important;
-      margin: 0.5rem 0 !important;
-      font-size: 0.85rem !important;
-      list-style: none !important;
-    }
-
-    body:not(.dashboard) .errorlist li {
-      margin: 0 !important;
-      padding: 0 !important;
-    }
-
-    /* === Empty State === */
-    body:not(.dashboard) .results p {
-      color: var(--text-secondary) !important;
-      text-align: center !important;
-      padding: 2rem !important;
-      font-style: italic !important;
-    }
-
-    /* === Loading States === */
-    body:not(.dashboard) .loading {
-      color: var(--text-secondary) !important;
-      text-align: center !important;
-      padding: 1rem !important;
-    }
-
-    /* === Dark Mode Text Contrast Fix === */
-    html[data-theme="dark"] body:not(.dashboard) {
-      color: var(--text-primary) !important;
-    }
-
-    html[data-theme="dark"] body:not(.dashboard) * {
-      border-color: var(--border-color) !important;
-    }
-
-    html[data-theme="dark"] body:not(.dashboard) .results tbody td {
-      color: var(--text-primary) !important;
-    }
-
-    html[data-theme="dark"] body:not(.dashboard) input,
-    html[data-theme="dark"] body:not(.dashboard) select,
-    html[data-theme="dark"] body:not(.dashboard) textarea {
-      background: var(--bg-secondary) !important;
-      color: var(--text-primary) !important;
-      border-color: var(--border-color) !important;
-    }
-
-    html[data-theme="dark"] body:not(.dashboard) input::placeholder,
-    html[data-theme="dark"] body:not(.dashboard) textarea::placeholder {
-      color: var(--text-secondary) !important;
-    }
-
-    /* === FILTER ANIMATIONS === */
-    @keyframes filterRefresh {
-      0% { transform: translateX(10px); opacity: 0.8; }
-      100% { transform: translateX(0); opacity: 1; }
-    }
-    
-    @keyframes filterSlideIn {
-      from { 
-        transform: translateX(100%) scale(0.95); 
-        opacity: 0; 
-      }
-      to { 
-        transform: translateX(0) scale(1); 
-        opacity: 1; 
-      }
-    }
-
-    /* === FORCE BUTTON MARGIN FIX === */
-    #toolbar form,
-    div#toolbar form,
-    body:not(.dashboard) #toolbar form {
-      display: flex !important;
-      flex-direction: row !important;
-      align-items: center !important;
-      gap: 0.75rem !important;
-      width: 100% !important;
-      margin: 0 !important;
-      flex-wrap: nowrap !important;
-    }
-
-    /* Force tất cả children thành flex items */
-    #toolbar form > *,
-    div#toolbar form > *,
-    body:not(.dashboard) #toolbar form > * {
-      display: inline-flex !important;
-      align-items: center !important;
-      margin: 0 !important;
-    }
-
-    /* Specific elements */
-    #toolbar form label,
-    #toolbar form img {
-      flex-shrink: 0 !important;
-      display: inline-flex !important;
-    }
-
-    #toolbar form input[type="text"] {
-      flex: 1 !important;
-      max-width: 400px !important;
-      display: inline-flex !important;
-    }
-
-    #toolbar form input[type="submit"] {
-      flex-shrink: 0 !important;
-      display: inline-flex !important;
-      margin: 0 !important;
-      margin-left: 0 !important;
-    }
-
-    #toolbar form .small.quiet {
-      flex-shrink: 0 !important;
-      display: inline-flex !important;
-      margin-left: 0.5rem !important;
-    }
-
-    /* Force container div */
-    #toolbar form > div {
-      display: flex !important;
-      flex-direction: row !important;
-      align-items: center !important;
-      gap: 0.75rem !important;
-      width: 100% !important;
-      flex-wrap: nowrap !important;
-    }
-
-    /* Mobile responsive adjustments override desktop */
-    @media (max-width: 1024px) {
-      #toolbar form,
-      div#toolbar form,
-      body:not(.dashboard) #toolbar form {
-        flex-direction: column !important;
+        gap: 0.3rem !important;
+        flex: 1 !important;
+        min-width: 0 !important;
       }
 
-      #toolbar form > div {
-        flex-direction: column !important;
+      #header #site-name::before {
+        font-size: 0.8rem !important;
+      }
+
+      #header #user-tools {
+        gap: 0.3rem !important;
+      }
+
+      #header #user-tools a {
+        font-size: 0.65rem !important;
+        padding: 0.25rem 0.5rem !important;
+        border-radius: 0.3rem !important;
+      }
+
+      .hero-welcome {
+        padding: 1.5rem 0.75rem !important;
+        border-radius: 0.75rem !important;
+      }
+
+      .hero-title {
+        font-size: 1.25rem !important;
+      }
+
+      .hero-subtitle {
+        font-size: 0.85rem !important;
+        letter-spacing: 0.01em !important;
+      }
+
+      .hero-stat {
+        padding: 0.6rem 0.8rem !important;
+        border-radius: 0.6rem !important;
+      }
+
+      .hero-stat-value {
+        font-size: 1.1rem !important;
+      }
+
+      .hero-stat-label {
+        font-size: 0.75rem !important;
+      }
+
+      .stat-card {
+        padding: 0.8rem !important;
+      }
+
+      .stat-value {
+        font-size: 1.3rem !important;
+      }
+
+      .chart-card {
+        padding: 1rem !important;
+      }
+
+      .chart-container {
+        height: 220px !important;
         width: 100% !important;
+        margin: 0 !important;
       }
 
-      #toolbar form input[type="text"] {
-        max-width: none !important;
-        width: 100% !important;
+      .section-title {
+        font-size: 1rem !important;
+        margin: 0 !important;
+      }
+
+      .chart-card {
+        padding: 0.8rem !important;
+        margin: 0 !important;
+        border-radius: 0.6rem !important;
+      }
+
+      .chart-title {
+        font-size: 0.85rem !important;
+        gap: 0.25rem !important;
+      }
+
+      .chart-subtitle {
+        font-size: 0.7rem !important;
+      }
+
+      .chart-main-value {
+        font-size: 1rem !important;
+      }
+
+      .charts-section {
+        margin-top: 1rem !important;
+      }
+
+      .charts-grid {
+        gap: 0.8rem !important;
+        margin-bottom: 0.8rem !important;
       }
     }
+
+    /* === Advanced Animations === */
+    @keyframes slideInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes slideInRight {
+      from {
+        opacity: 0;
+        transform: translateX(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    /* Animation cho số học sinh */
+    .animated-student-count {
+      animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.25s forwards !important;
+      opacity: 0;
+    }
+
+    .hero-welcome {
+      animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+    }
+
+    .stat-card:nth-child(1) { animation: slideInLeft 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.1s forwards !important; opacity: 0; }
+    .stat-card:nth-child(2) { animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.2s forwards !important; opacity: 0; }
+    .stat-card:nth-child(3) { animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.3s forwards !important; opacity: 0; }
+    .stat-card:nth-child(4) { animation: slideInRight 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.4s forwards !important; opacity: 0; }
+
+    .chart-card:nth-child(1) { animation: slideInLeft 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.5s forwards !important; opacity: 0; }
+    .chart-card:nth-child(2) { animation: slideInRight 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.6s forwards !important; opacity: 0; }
+
+    #content-main .module { animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.7s forwards !important; opacity: 0; }
   </style>
+{% endblock %}
+
+{% block content %}
+  <!-- Hero Welcome Section -->
+  <div class="hero-welcome">
+    <h1 class="hero-title">
+      <i class="fas fa-tachometer-alt"></i>
+      Dashboard Quản Lý
+    </h1>
+    <p class="hero-subtitle">Tổng quan và phân tích dữ liệu hệ thống</p>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <span class="hero-stat-label">Tổng bữa ăn</span>
+        <span class="hero-stat-value" id="hero-total-meals">0</span>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat-label">Học sinh</span>
+        <span class="hero-stat-value animated-student-count" id="hero-student-count">{{ current_student_count }}</span>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat-label">Doanh thu</span>
+        <span class="hero-stat-value" id="hero-total-revenue">0₫</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Enhanced Stats Grid -->
+  <div class="stats-grid">
+    <!-- Tổng bữa ăn -->
+    <div class="stat-card">
+      <div class="stat-header">
+        <div class="stat-icon" style="background: var(--chart-gradient-1);">
+          <i class="fas fa-utensils"></i>
+        </div>
+        <div class="stat-trend
+            {% if meals_trend_direction == 'up' %}up
+            {% elif meals_trend_direction == 'down' %}down
+            {% else %}neutral
+            {% endif %}">
+          <i class="fas fa-arrow-
+            {% if meals_trend_direction == 'down' %}down{% else %}up{% endif %}"></i>
+          {{ meals_trend_percentage }}%
+        </div>
+      </div>
+      <div class="stat-value" id="total-meals">{{ total_meals }}</div>
+      <div class="stat-label">Tổng bữa ăn</div>
+    </div>
+
+    <!-- Học sinh đang học -->
+    <div class="stat-card">
+      <div class="stat-header">
+        <div class="stat-icon" style="background: var(--chart-gradient-2);">
+          <i class="fas fa-users"></i>
+        </div>
+        <div class="stat-trend
+            {% if students_trend_direction == 'up' %}up
+            {% elif students_trend_direction == 'down' %}down
+            {% else %}neutral
+            {% endif %}">
+          <i class="fas fa-arrow-
+            {% if students_trend_direction == 'down' %}down{% else %}up{% endif %}"></i>
+          {{ students_trend_percentage }}%
+        </div>
+      </div>
+      <div class="stat-value animated-student-count" id="student-count">
+        {{ current_student_count }}
+      </div>
+      <div class="stat-label">Học sinh đang học</div>
+    </div>
+
+    <!-- Doanh thu tháng -->
+    <div class="stat-card">
+      <div class="stat-header">
+        <div class="stat-icon" style="background: var(--chart-gradient-3);">
+          <i class="fas fa-coins"></i>
+        </div>
+        <div class="stat-trend
+            {% if revenue_trend_direction == 'up' %}up
+            {% elif revenue_trend_direction == 'down' %}down
+            {% else %}neutral
+            {% endif %}">
+          <i class="fas fa-arrow-
+            {% if revenue_trend_direction == 'down' %}down{% else %}up{% endif %}"></i>
+          {{ revenue_trend_percentage }}%
+        </div>
+      </div>
+      <div class="stat-value" id="total-revenue">
+        {{ total_revenue|floatformat:0 }}₫
+      </div>
+      <div class="stat-label">Doanh thu tháng</div>
+    </div>
+
+    <!-- Tháng hiện tại -->
+    <div class="stat-card">
+      <div class="stat-header">
+        <div class="stat-icon" style="background: var(--warning-color);">
+          <i class="fas fa-calendar-alt"></i>
+        </div>
+        <div class="stat-trend neutral">
+          <i class="fas fa-clock"></i> Hiện tại
+        </div>
+      </div>
+      <div class="stat-value" id="current-month">THÁNG {{ current_month }}</div>
+      <div class="stat-label">Tháng hiện tại</div>
+    </div>
+  </div>
+
+  <!-- Keep original Django admin content -->
+  {{ block.super }}
+
+  <!-- Enhanced Charts Section -->
+  <div class="charts-section">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">
+          <i class="fas fa-chart-line"></i>
+          Phân tích dữ liệu
+        </h2>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">
+              <i class="fas fa-utensils"></i>
+              Bữa ăn theo tháng
+            </h3>
+            <p class="chart-subtitle">Xu hướng phục vụ bữa ăn</p>
+          </div>
+          <div class="chart-value">
+            <div class="chart-main-value" id="chart-meals-total">0</div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="chartMealsByMonth"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">
+              <i class="fas fa-coins"></i>
+              Doanh thu theo tháng
+            </h3>
+            <p class="chart-subtitle">Tình hình thu học phí</p>
+          </div>
+          <div class="chart-value">
+            <div class="chart-main-value" id="chart-revenue-total">0₫</div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="chartPaidByMonth"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script>
     document.addEventListener('DOMContentLoaded', function(){
-      // === FILTER POSITIONING & TOGGLE ===
-      function initFilterLayout() {
-        const filter = document.getElementById('changelist-filter');
-        const body = document.body;
-        
-        if (filter && !body.classList.contains('dashboard')) {
-          // Thêm class 'filtered' vào body khi có filter
-          body.classList.add('filtered');
-          
-          // Tạo toggle button cho filter (chỉ trên desktop)
-          if (window.innerWidth > 1440) {
-            const toggleBtn = document.createElement('button');
-            toggleBtn.className = 'filter-toggle';
-            toggleBtn.title = 'Ẩn/Hiện bộ lọc';
-            toggleBtn.innerHTML = '<i class="fas fa-times"></i>';
-            document.body.appendChild(toggleBtn);
-            
-            // Xử lý toggle filter
-            toggleBtn.addEventListener('click', function() {
-              const isHidden = filter.classList.contains('hidden');
-              
-              if (isHidden) {
-                filter.classList.remove('hidden');
-                body.classList.add('filtered');
-                toggleBtn.innerHTML = '<i class="fas fa-times"></i>';
-                toggleBtn.title = 'Ẩn bộ lọc';
-              } else {
-                filter.classList.add('hidden');
-                body.classList.remove('filtered');
-                toggleBtn.innerHTML = '<i class="fas fa-filter"></i>';
-                toggleBtn.title = 'Hiện bộ lọc';
-              }
-            });
-          }
-          
-          // Auto-hide filter on mobile
-          function checkMobileFilter() {
-            const toggleBtn = document.querySelector('.filter-toggle');
-            if (window.innerWidth <= 1440) {
-              filter.classList.remove('hidden');
-              body.classList.remove('filtered');
-              if (toggleBtn) toggleBtn.style.display = 'none';
-            } else {
-              if (toggleBtn) toggleBtn.style.display = 'flex';
-            }
-          }
-          
-          // Check on load and resize
-          checkMobileFilter();
-          window.addEventListener('resize', checkMobileFilter);
-          
-          // Smooth scroll cho filter links
-          const filterLinks = filter.querySelectorAll('a');
-          filterLinks.forEach(link => {
-            link.addEventListener('click', function(e) {
-              // Add loading state
-              const originalText = this.textContent;
-              this.style.opacity = '0.6';
-              this.textContent = originalText + ' ⏳';
-              
-              // Reset after navigation (will be interrupted by page load)
-              setTimeout(() => {
-                this.style.opacity = '1';
-                this.textContent = originalText;
-              }, 100);
-            });
-          });
-          
-          // Enhanced filter styling
-          const filterTitle = filter.querySelector('h2');
-          if (filterTitle) {
-            filterTitle.innerHTML = '<i class="fas fa-magic"></i> BỘ LỌC THÔNG MINH';
-          }
-          
-          // Add search functionality to filter
-          addFilterSearch(filter);
-        } else if (!filter && body.classList.contains('filtered')) {
-          // Remove filtered class if no filter exists
-          body.classList.remove('filtered');
-        }
-      }
-      
-      // === FILTER SEARCH FUNCTIONALITY ===
-      function addFilterSearch(filter) {
-        const filterSections = filter.querySelectorAll('ul');
-        
-        filterSections.forEach((ul, index) => {
-          const section = ul.closest('div, li') || ul.parentElement;
-          const header = section.querySelector('h3');
-          
-          if (header && ul.children.length > 5) { // Only add search if many options
-            const searchContainer = document.createElement('div');
-            searchContainer.style.cssText = `
-              padding: 0.75rem 1.25rem;
-              background: rgba(79, 70, 229, 0.05);
-              border-bottom: 1px solid rgba(79, 70, 229, 0.1);
-            `;
-            
-            const searchInput = document.createElement('input');
-            searchInput.type = 'text';
-            searchInput.placeholder = '🔍 Tìm kiếm nhanh...';
-            searchInput.style.cssText = `
-              width: 100%;
-              padding: 0.75rem;
-              border: 2px solid var(--filter-accent);
-              border-radius: 0.5rem;
-              background: var(--bg-secondary);
-              color: var(--text-primary);
-              font-size: 0.85rem;
-              box-sizing: border-box;
-              transition: all 0.3s ease;
-              box-shadow: 0 2px 8px rgba(79, 70, 229, 0.1);
-            `;
-            
-            searchInput.addEventListener('focus', function() {
-              this.style.boxShadow = '0 4px 16px rgba(79, 70, 229, 0.2)';
-              this.style.borderColor = '#7c3aed';
-            });
-            
-            searchInput.addEventListener('blur', function() {
-              this.style.boxShadow = '0 2px 8px rgba(79, 70, 229, 0.1)';
-              this.style.borderColor = 'var(--filter-accent)';
-            });
-            
-            searchContainer.appendChild(searchInput);
-            ul.parentNode.insertBefore(searchContainer, ul);
-            
-            // Search functionality
-            searchInput.addEventListener('input', function() {
-              const searchTerm = this.value.toLowerCase();
-              const items = ul.querySelectorAll('li');
-              let visibleCount = 0;
-              
-              items.forEach(item => {
-                const text = item.textContent.toLowerCase();
-                if (text.includes(searchTerm)) {
-                  item.style.display = '';
-                  item.style.animation = 'fadeInUp 0.3s ease';
-                  visibleCount++;
-                } else {
-                  item.style.display = 'none';
-                }
-              });
-              
-              // Show/hide no results message
-              let noResultsMsg = ul.querySelector('.no-results');
-              
-              if (visibleCount === 0 && searchTerm) {
-                if (!noResultsMsg) {
-                  noResultsMsg = document.createElement('li');
-                  noResultsMsg.className = 'no-results';
-                  noResultsMsg.style.cssText = `
-                    padding: 1.5rem;
-                    text-align: center;
-                    color: var(--text-secondary);
-                    font-style: italic;
-                    font-size: 0.9rem;
-                    background: rgba(79, 70, 229, 0.05);
-                  `;
-                  noResultsMsg.innerHTML = '🔍 Không tìm thấy kết quả phù hợp';
-                  ul.appendChild(noResultsMsg);
-                }
-                noResultsMsg.style.display = '';
-              } else if (noResultsMsg) {
-                noResultsMsg.style.display = 'none';
-              }
-            });
-          }
-        });
-      }
-      
-      // === FILTER KEYBOARD SHORTCUTS ===
-      function initFilterKeyboardShortcuts() {
-        document.addEventListener('keydown', function(e) {
-          // Alt + F to toggle filter
-          if (e.altKey && e.key.toLowerCase() === 'f') {
-            e.preventDefault();
-            const toggleBtn = document.querySelector('.filter-toggle');
-            if (toggleBtn) {
-              toggleBtn.click();
-            }
-          }
-          
-          // Escape to close filter (when focused inside filter)
-          if (e.key === 'Escape') {
-            const filter = document.getElementById('changelist-filter');
-            if (filter && filter.contains(document.activeElement)) {
-              filter.classList.add('hidden');
-              document.body.classList.remove('filtered');
-              const toggleBtn = document.querySelector('.filter-toggle');
-              if (toggleBtn) {
-                toggleBtn.innerHTML = '<i class="fas fa-filter"></i>';
-                toggleBtn.title = 'Hiện bộ lọc';
-              }
-            }
-          }
-        });
-      }
-      
-      // === ENHANCED FILTER ANIMATIONS ===
-      function addFilterAnimations() {
-        const filter = document.getElementById('changelist-filter');
-        if (!filter) return;
-        
-        // Add CSS animations
-        const style = document.createElement('style');
-        style.textContent = `
-          @keyframes fadeInUp {
-            from {
-              opacity: 0;
-              transform: translateY(10px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-          
-          @keyframes filterGlow {
-            0%, 100% {
-              box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4);
-            }
-            50% {
-              box-shadow: 0 12px 35px rgba(124, 58, 237, 0.6);
-            }
-          }
-          
-          body:not(.dashboard) #changelist-filter:hover {
-            animation: filterGlow 2s ease-in-out infinite;
-          }
-        `;
-        document.head.appendChild(style);
-        
-        // Add loading animation for filter changes
-        const observer = new MutationObserver(function(mutations) {
-          mutations.forEach(function(mutation) {
-            if (mutation.type === 'childList' || mutation.type === 'subtree') {
-              // Filter content changed, add refresh animation
-              filter.style.animation = 'filterRefresh 0.3s ease';
-              setTimeout(() => {
-                filter.style.animation = '';
-              }, 300);
-            }
-          });
-        });
-        
-        observer.observe(filter, {
-          childList: true,
-          subtree: true
-        });
-      }
-
-      // Mobile menu functionality
-      if (window.innerWidth <= 1024 && !document.body.classList.contains('dashboard')) {
-        const mobileBtn = document.createElement('button');
-        mobileBtn.id = 'mobile-menu-btn';
-        mobileBtn.innerHTML = '<i class="fas fa-bars"></i>';
-        document.body.appendChild(mobileBtn);
-
-        mobileBtn.addEventListener('click', function() {
-          const sidebar = document.getElementById('nav-sidebar');
-          if (sidebar) {
-            sidebar.classList.toggle('mobile-open');
-          }
-        });
-
-        // Close sidebar when clicking outside
-        document.addEventListener('click', function(e) {
-          const sidebar = document.getElementById('nav-sidebar');
-          const btn = document.getElementById('mobile-menu-btn');
-          if (sidebar && !sidebar.contains(e.target) && !btn.contains(e.target)) {
-            sidebar.classList.remove('mobile-open');
-          }
-        });
-      }
-
-      // Thay text "Meals" → "CHỨC NĂNG"
-      const mealsCap = document.querySelector(
-        'nav#nav-sidebar .app-meals.module table caption a.section'
-      );
-      if (mealsCap) {
-        mealsCap.textContent = 'CHỨC NĂNG';
-        mealsCap.setAttribute('title', 'Các chức năng');
-      }
-      
-      // Thay text "Authentication and Authorization" → "XÁC THỰC VÀ ỦY QUYỀN"
-      const authCap = document.querySelector(
-        'nav#nav-sidebar .app-auth.module table caption a.section'
-      );
-      if (authCap) {
-        authCap.textContent = 'XÁC THỰC VÀ ỦY QUYỀN';
-        authCap.setAttribute('title', 'Xác thực và ủy quyền');
-      }
-
-      // Tìm <tbody> của module Meals
-      const tbody = document.querySelector(
-        'nav#nav-sidebar .app-meals.module table tbody'
-      );
+      // Thêm icons và styling cho menu items
+      const tbody = document.querySelector('#content-main .app-meals.module table tbody');
       if (tbody) {
-        // Hàm tạo <tr> mới
+        // Function to create new row
         function makeRow(url, text, iconClass, cssClass) {
           const tr = document.createElement('tr');
           tr.className = cssClass;
@@ -2584,6 +1215,7 @@
                 ${text}
               </a>
             </th>
+            <td></td>
             <td>
               <a href="${url}" class="changelink">{% trans "Đi đến" %}</a>
             </td>
@@ -2596,52 +1228,16 @@
         const statsText= "{% trans 'Thống kê' %}";
         const debtText = "{% trans 'Chỉnh sửa công nợ' %}";
 
-        // Chèn "Chỉnh sửa công nợ" (row2) và "Thống kê" (row1) lên đầu danh sách
         tbody.insertBefore(makeRow(debtURL, debtText, 'fas fa-edit', 'row2'), tbody.firstChild);
         tbody.insertBefore(makeRow(statsURL, statsText, 'fas fa-chart-pie', 'row1'), tbody.firstChild);
 
-        // ẨN HOÀN TOÀN CÔNG NỢ HỌC SINH - nhiều cách để đảm bảo
-        const allRows = tbody.querySelectorAll('tr');
-        allRows.forEach(row => {
-          const linkText = row.querySelector('th a');
-          if (linkText && (
-            linkText.textContent.includes('Công nợ học sinh') ||
-            linkText.textContent.includes('Student debt') ||
-            linkText.textContent.includes('studentpayment') ||
-            linkText.href.includes('student_debt') ||
-            linkText.href.includes('studentpayment') ||
-            row.classList.contains('model-studentpayment')
-          )) {
-            row.style.display = 'none !important';
-            row.style.visibility = 'hidden !important';
-            row.remove(); // Xóa luôn khỏi DOM
-          }
-        });
-
-        // Thêm CSS rule để đảm bảo ẩn hoàn toàn
-        const hideStyle = document.createElement('style');
-        hideStyle.textContent = `
-          .model-studentpayment,
-          tr.model-studentpayment,
-          [href*="studentpayment"],
-          a[href*="studentpayment"],
-          tr:has(a[href*="studentpayment"]) {
-            display: none !important;
-            visibility: hidden !important;
-            opacity: 0 !important;
-            height: 0 !important;
-            overflow: hidden !important;
-          }
-        `;
-        document.head.appendChild(hideStyle);
-
-        // Thêm icons vào các menu items có sẵn
+        // Add icons to existing menu items
         const links = tbody.querySelectorAll('th a');
         links.forEach(link => {
           const text = link.textContent.trim();
           const iconSpan = link.querySelector('i');
           
-          if (!iconSpan) { // Chỉ thêm icon nếu chưa có
+          if (!iconSpan) {
             let iconClass = '';
             if (text.includes('Students') || text.includes('Học sinh')) {
               iconClass = 'fas fa-users';
@@ -2651,10 +1247,8 @@
               iconClass = 'fas fa-file-alt';
             } else if (text.includes('Student health infos') || text.includes('health')) {
               iconClass = 'fas fa-heart';
-            } else if (text.includes('Study groups')) {
+            } else if (text.includes('Study groups') || text.includes('Study classes')) {
               iconClass = 'fas fa-users-cog';
-            } else if (text.includes('Study classes')) {
-              iconClass = 'fas fa-chalkboard';
             }
             
             if (iconClass) {
@@ -2666,10 +1260,8 @@
         });
       }
 
-      // Thêm icons vào auth module
-      const authTbody = document.querySelector(
-        'nav#nav-sidebar .app-auth.module table tbody'
-      );
+      // Add icons to auth module
+      const authTbody = document.querySelector('#content-main .app-auth.module table tbody');
       if (authTbody) {
         const authLinks = authTbody.querySelectorAll('th a');
         authLinks.forEach(link => {
@@ -2693,232 +1285,271 @@
         });
       }
 
-      // === INITIALIZE ALL FILTER FEATURES ===
-      initFilterLayout();
-      initFilterKeyboardShortcuts();
-      addFilterAnimations();
-      
-      // === REORGANIZE ACTION BUTTONS ===
-      function reorganizeActionButtons() {
-        const objectTools = document.querySelector('#content .object-tools');
-        const moduleAligned = document.querySelector('#content .module.aligned');
-        
-        if (!objectTools || !moduleAligned) return;
-        
-        // Find all custom action buttons that are outside object-tools
-        const customButtons = document.querySelectorAll(`
-          #content a[href*="/delete_students/"]:not(.object-tools a),
-          #content a[href*="/export_students/"]:not(.object-tools a),
-          #content a[href*="/import_students/"]:not(.object-tools a),
-          #content a[href*="/promote_students/"]:not(.object-tools a)
-        `);
-        
-        if (customButtons.length > 0) {
-          // Create a container for custom buttons
-          const customButtonsContainer = document.createElement('div');
-          customButtonsContainer.className = 'custom-action-buttons';
-          customButtonsContainer.style.cssText = `
-            display: flex !important;
-            gap: 0.75rem !important;
-            flex-wrap: wrap !important;
-            margin-bottom: 1.5rem !important;
-            padding: 1rem 1.5rem !important;
-            background: var(--bg-primary) !important;
-            border-bottom: 1px solid var(--border-color) !important;
-            border-radius: 0.75rem 0.75rem 0 0 !important;
-          `;
-          
-          // Create proper styled buttons from the links
-          customButtons.forEach(originalLink => {
-            // Create new button element
-            const button = document.createElement('a');
-            button.href = originalLink.href;
-            button.style.cssText = `
-              display: inline-flex !important;
-              align-items: center !important;
-              gap: 0.5rem !important;
-              padding: 0.75rem 1.25rem !important;
-              border-radius: 0.5rem !important;
-              text-decoration: none !important;
-              font-weight: 600 !important;
-              font-size: 0.9rem !important;
-              transition: all 0.3s ease !important;
-              cursor: pointer !important;
-              border: none !important;
-              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-              text-transform: none !important;
-              letter-spacing: normal !important;
-              color: #ffffff !important;
-            `;
-            
-            // Add specific styling and content based on button type
-            if (originalLink.href.includes('/delete_students/')) {
-              button.innerHTML = '<i class="fas fa-trash-alt"></i> Xóa toàn bộ học sinh';
-              button.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
-              button.addEventListener('mouseenter', () => {
-                button.style.background = 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)';
-                button.style.transform = 'translateY(-2px)';
-                button.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.3)';
-              });
-              button.addEventListener('mouseleave', () => {
-                button.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
-                button.style.transform = 'translateY(0)';
-                button.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
-              });
-            } else if (originalLink.href.includes('/export_students/')) {
-              button.innerHTML = '<i class="fas fa-download"></i> Export Học sinh';
-              button.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-              button.addEventListener('mouseenter', () => {
-                button.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
-                button.style.transform = 'translateY(-2px)';
-                button.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)';
-              });
-              button.addEventListener('mouseleave', () => {
-                button.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-                button.style.transform = 'translateY(0)';
-                button.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
-              });
-            } else if (originalLink.href.includes('/import_students/')) {
-              button.innerHTML = '<i class="fas fa-upload"></i> Import Học sinh';
-              button.style.background = 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)';
-              button.addEventListener('mouseenter', () => {
-                button.style.background = 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)';
-                button.style.transform = 'translateY(-2px)';
-                button.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.3)';
-              });
-              button.addEventListener('mouseleave', () => {
-                button.style.background = 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)';
-                button.style.transform = 'translateY(0)';
-                button.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
-              });
-            } else if (originalLink.href.includes('/promote_students/')) {
-              button.innerHTML = '<i class="fas fa-level-up-alt"></i> Lên Lớp';
-              button.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
-              button.addEventListener('mouseenter', () => {
-                button.style.background = 'linear-gradient(135deg, #d97706 0%, #b45309 100%)';
-                button.style.transform = 'translateY(-2px)';
-                button.style.boxShadow = '0 4px 12px rgba(245, 158, 11, 0.3)';
-              });
-              button.addEventListener('mouseleave', () => {
-                button.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
-                button.style.transform = 'translateY(0)';
-                button.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
-              });
-            }
-            
-            // Add button to container
-            customButtonsContainer.appendChild(button);
-            
-            // Hide the original link
-            originalLink.style.display = 'none';
-          });
-          
-          // Insert container BEFORE the module.aligned
-          moduleAligned.parentNode.insertBefore(customButtonsContainer, moduleAligned);
-        }
-        
-        // Add icon to history button if it exists
-        const historyButton = objectTools.querySelector('.historylink');
-        if (historyButton && !historyButton.querySelector('i')) {
-          historyButton.innerHTML = '<i class="fas fa-history"></i> ' + historyButton.textContent.trim();
-        }
-        
-        // Also ensure object-tools styling is clean - NO BORDER
-        objectTools.style.cssText = `
-          background: transparent !important;
-          padding: 0 !important;
-          border: none !important;
-          margin: 0 !important;
-          margin-bottom: 1.5rem !important;
-          border-radius: 0 !important;
-          box-shadow: none !important;
-          position: relative !important;
-          z-index: 1 !important;
-          display: flex !important;
-          flex-direction: column !important;
-          gap: 1rem !important;
-          clear: both !important;
-        `;
-
-        // Style the history button container specifically
-        const historyButtonContainer = objectTools.querySelector('ul');
-        if (historyButtonContainer) {
-          historyButtonContainer.style.cssText = `
-            list-style: none !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            display: flex !important;
-            gap: 0.75rem !important;
-            flex-wrap: wrap !important;
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            position: static !important;
-            float: none !important;
-            clear: both !important;
-          `;
-        }
-
-        // Ensure any li elements are also clean
-        const allLis = objectTools.querySelectorAll('li');
-        allLis.forEach(li => {
-          li.style.cssText = `
-            margin: 0 !important;
-            padding: 0 !important;
-            background: transparent !important;
-            border: none !important;
-            list-style: none !important;
-            float: none !important;
-            position: static !important;
-          `;
-        });
+      // Update captions
+      const mealsCap = document.querySelector('#content-main .app-meals.module table caption a.section');
+      if (mealsCap) {
+        mealsCap.textContent = 'CHỨC NĂNG';
+        mealsCap.setAttribute('title', 'Các chức năng');
       }
+
+      const authCap = document.querySelector('#content-main .app-auth.module table caption a.section');
+      if (authCap) {
+        authCap.textContent = 'XÁC THỰC VÀ ỦY QUYỀN';
+        authCap.setAttribute('title', 'Xác thực và ủy quyền');
+      }
+
+      // Chart data from Django
+      const months = {{ chart_meal_labels|safe }};
+      const mealCounts = {{ chart_meal_data|safe }};
+      const paidAmounts = {{ chart_paid_month_data|safe }};
+
+      // Update stats
+      const totalMeals = mealCounts.reduce((a, b) => a + b, 0);
+      const currentMonthIndex = new Date().getMonth();  // 0 = Jan, …, 6 = Jul
+      const totalRevenue = paidAmounts[currentMonthIndex] || 0;
       
-      // Run after DOM is ready
-      setTimeout(reorganizeActionButtons, 100);
-      
-      // Reinitialize on AJAX content changes (Django admin sometimes uses AJAX)
-      if (window.MutationObserver) {
-        const observer = new MutationObserver(function(mutations) {
-          let shouldReinit = false;
-          mutations.forEach(function(mutation) {
-            if (mutation.addedNodes.length > 0) {
-              mutation.addedNodes.forEach(function(node) {
-                if (node.nodeType === 1 && (
-                    node.id === 'changelist-filter' || 
-                    node.querySelector && node.querySelector('#changelist-filter')
-                  )) {
-                  shouldReinit = true;
-                }
-              });
-            }
-          });
+      // Format numbers with animation
+      function animateNumber(element, targetValue, isRevenue = false) {
+        const startValue = 0;
+        const duration = 2000;
+        const startTime = performance.now();
+        
+        function update(currentTime) {
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const easedProgress = 1 - Math.pow(1 - progress, 3); // easeOutCubic
           
-          if (shouldReinit) {
-            setTimeout(initFilterLayout, 100);
+          const currentValue = Math.floor(startValue + (targetValue - startValue) * easedProgress);
+          const formattedValue = isRevenue ? 
+            currentValue.toLocaleString() + ' ₫' : 
+            currentValue.toLocaleString();
+            
+          element.textContent = formattedValue;
+          
+          if (progress < 1) {
+            requestAnimationFrame(update);
+          }
+        }
+        
+        requestAnimationFrame(update);
+      }
+
+      // Animate all stat numbers
+      setTimeout(() => {
+        animateNumber(document.getElementById('total-meals'), totalMeals);
+        animateNumber(document.getElementById('hero-total-meals'), totalMeals);
+        animateNumber(document.getElementById('total-revenue'), totalRevenue, true);
+        animateNumber(document.getElementById('hero-total-revenue'), totalRevenue, true);
+        animateNumber(document.getElementById('chart-meals-total'), totalMeals);
+        animateNumber(document.getElementById('chart-revenue-total'), totalRevenue, true);
+        
+        // Thêm animation cho số học sinh
+        animateNumber(document.getElementById('student-count'), {{ current_student_count }});
+        animateNumber(document.getElementById('hero-student-count'), {{ current_student_count }});
+        
+      }, 500);
+
+      // Initialize charts immediately
+      initializeCharts();
+
+      function initializeCharts() {
+        // Enhanced chart configuration
+        const chartConfig = {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            intersect: false,
+            mode: 'index',
+          },
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              titleColor: '#ffffff',
+              bodyColor: '#ffffff',
+              borderColor: 'rgba(255, 255, 255, 0.1)',
+              borderWidth: 1,
+              cornerRadius: 8,
+              displayColors: false,
+              titleFont: { size: 14, weight: 'bold' },
+              bodyFont: { size: 13 },
+              padding: 12
+            }
+          },
+          scales: {
+            x: {
+              grid: {
+                display: true,
+                color: 'rgba(148, 163, 184, 0.1)',
+                borderDash: [2, 2]
+              },
+              ticks: {
+                color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim(),
+                font: { size: 11, weight: '500' }
+              },
+              border: {
+                display: false
+              }
+            },
+            y: {
+              beginAtZero: true,
+              grid: {
+                display: true,
+                color: 'rgba(148, 163, 184, 0.1)',
+                borderDash: [2, 2]
+              },
+              ticks: {
+                color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim(),
+                font: { size: 11, weight: '500' }
+              },
+              border: {
+                display: false
+              }
+            }
+          },
+          animation: {
+            duration: 2000,
+            easing: 'easeOutCubic'
+          }
+        };
+
+        // Enhanced line chart for meals
+        const ctx1 = document.getElementById('chartMealsByMonth').getContext('2d');
+        const gradient1 = ctx1.createLinearGradient(0, 0, 0, 300);
+        gradient1.addColorStop(0, 'rgba(102, 126, 234, 0.8)');
+        gradient1.addColorStop(0.5, 'rgba(102, 126, 234, 0.4)');
+        gradient1.addColorStop(1, 'rgba(102, 126, 234, 0.1)');
+
+        const chartMeals = new Chart(ctx1, {
+          type: 'line',
+          data: {
+            labels: months,
+            datasets: [{
+              data: mealCounts,
+              fill: true,
+              backgroundColor: gradient1,
+              borderColor: '#667eea',
+              pointBackgroundColor: '#667eea',
+              pointBorderColor: '#ffffff',
+              pointBorderWidth: 3,
+              pointRadius: 6,
+              pointHoverRadius: 8,
+              pointHoverBackgroundColor: '#667eea',
+              pointHoverBorderColor: '#ffffff',
+              pointHoverBorderWidth: 3,
+              tension: 0.4,
+              borderWidth: 3
+            }]
+          },
+          options: {
+            ...chartConfig,
+            plugins: {
+              ...chartConfig.plugins,
+              tooltip: {
+                ...chartConfig.plugins.tooltip,
+                callbacks: {
+                  label: function(context) {
+                    return `Số bữa ăn: ${context.parsed.y.toLocaleString()}`;
+                  }
+                }
+              }
+            },
+            scales: {
+              ...chartConfig.scales,
+              y: {
+                ...chartConfig.scales.y,
+                ticks: {
+                  ...chartConfig.scales.y.ticks,
+                  callback: function(value) {
+                    return value.toLocaleString();
+                  }
+                }
+              }
+            }
           }
         });
-        
-        observer.observe(document.body, {
-          childList: true,
-          subtree: true
-        });
-      }
-    });
 
-    // Handle window resize
-    window.addEventListener('resize', function() {
-      if (!document.body.classList.contains('dashboard')) {
-        const sidebar = document.getElementById('nav-sidebar');
-        const btn = document.getElementById('mobile-menu-btn');
-        
-        if (window.innerWidth > 1024) {
-          if (sidebar) sidebar.classList.remove('mobile-open');
-          if (btn) btn.style.display = 'none';
-        } else {
-          if (btn) btn.style.display = 'block';
-        }
+        // Enhanced bar chart for revenue
+        const ctx2 = document.getElementById('chartPaidByMonth').getContext('2d');
+        const gradient2 = ctx2.createLinearGradient(0, 0, 0, 300);
+        gradient2.addColorStop(0, 'rgba(240, 147, 251, 0.8)');
+        gradient2.addColorStop(0.5, 'rgba(245, 87, 108, 0.6)');
+        gradient2.addColorStop(1, 'rgba(245, 87, 108, 0.1)');
+
+        const chartRevenue = new Chart(ctx2, {
+          type: 'bar',
+          data: {
+            labels: months,
+            datasets: [{
+              data: paidAmounts,
+              backgroundColor: gradient2,
+              borderColor: '#f5576c',
+              borderWidth: 2,
+              borderRadius: 8,
+              borderSkipped: false,
+              hoverBackgroundColor: 'rgba(245, 87, 108, 0.9)',
+              hoverBorderColor: '#f5576c'
+            }]
+          },
+          options: {
+            ...chartConfig,
+            plugins: {
+              ...chartConfig.plugins,
+              tooltip: {
+                ...chartConfig.plugins.tooltip,
+                callbacks: {
+                  label: function(context) {
+                    return `Doanh thu: ${context.parsed.y.toLocaleString()}₫`;
+                  }
+                }
+              }
+            },
+            scales: {
+              ...chartConfig.scales,
+              y: {
+                ...chartConfig.scales.y,
+                ticks: {
+                  ...chartConfig.scales.y.ticks,
+                  callback: function(value) {
+                    return value.toLocaleString() + '₫';
+                  }
+                }
+              }
+            }
+          }
+        });
+
+        // Chart controls (for future implementation)
+        document.querySelectorAll('.chart-control-btn').forEach(btn => {
+          btn.addEventListener('click', function() {
+            document.querySelectorAll('.chart-control-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            // Add period change logic here
+          });
+        });
+
+        // Theme change observer
+        new MutationObserver(mutations => {
+          mutations.forEach(mutation => {
+            if (mutation.attributeName === 'data-theme') {
+              const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim();
+              
+              // Update chart text colors
+              [chartMeals, chartRevenue].forEach(chart => {
+                chart.options.scales.x.ticks.color = textColor;
+                chart.options.scales.y.ticks.color = textColor;
+                chart.update('none');
+              });
+            }
+          });
+        }).observe(document.documentElement, { attributes: true });
       }
     });
   </script>
+{% endblock %}
+
+{% block sidebar %}
+  {{ block.super }}
 {% endblock %}
