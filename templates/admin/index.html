@@ -715,40 +715,44 @@
 
       /* === MOBILE HEADER OPTIMIZATION === */
       #header {
-        padding: 0.75rem 1rem !important;
+        padding: 0.6rem 0.8rem !important;
         display: flex !important;
         align-items: center !important;
         justify-content: space-between !important;
-        flex-wrap: nowrap !important;
-        min-height: auto !important;
+        flex-wrap: wrap !important;
+        min-height: 60px !important;
+        gap: 0.5rem !important;
       }
 
       #header #site-name,
       #header #site-name a {
-        font-size: 1.1rem !important;
+        font-size: 1rem !important;
         font-weight: 700 !important;
-        gap: 0.5rem !important;
+        gap: 0.4rem !important;
         white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        flex-shrink: 1 !important;
-        max-width: 60% !important;
+        overflow: visible !important;
+        text-overflow: unset !important;
+        flex: 1 !important;
+        min-width: 0 !important;
       }
 
       #header #site-name::before {
-        font-size: 1rem !important;
+        font-size: 0.9rem !important;
         flex-shrink: 0 !important;
       }
 
       #header #user-tools {
-        gap: 0.5rem !important;
+        gap: 0.4rem !important;
         flex-shrink: 0 !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
       }
 
       #header #user-tools a {
-        font-size: 0.75rem !important;
-        padding: 0.4rem 0.8rem !important;
+        font-size: 0.7rem !important;
+        padding: 0.3rem 0.6rem !important;
         white-space: nowrap !important;
+        border-radius: 0.4rem !important;
       }
 
       /* === MOBILE HERO SECTION === */
@@ -834,48 +838,57 @@
 
       /* === MOBILE CHARTS SECTION === */
       .charts-section {
-        margin-top: 2rem !important;
+        margin-top: 1.5rem !important;
+        padding: 0 !important;
       }
 
       .section-header {
         flex-direction: column !important;
         align-items: flex-start !important;
-        gap: 1rem !important;
+        gap: 0.75rem !important;
         margin-bottom: 1rem !important;
+        padding: 0 !important;
       }
 
       .section-title {
-        font-size: 1.2rem !important;
+        font-size: 1.1rem !important;
         margin-left: 0 !important;
+        padding: 0 !important;
       }
 
       .charts-grid {
         grid-template-columns: 1fr !important;
-        gap: 1.5rem !important;
-        margin-bottom: 1.5rem !important;
+        gap: 1rem !important;
+        margin-bottom: 1rem !important;
+        padding: 0 !important;
       }
 
       .chart-card {
-        padding: 1.25rem !important;
+        padding: 1rem !important;
         margin-left: 0 !important;
-        border-radius: 1rem !important;
+        margin-right: 0 !important;
+        border-radius: 0.75rem !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
       }
 
       .chart-header {
         flex-direction: column !important;
         align-items: flex-start !important;
-        gap: 0.75rem !important;
-        margin-bottom: 1rem !important;
+        gap: 0.5rem !important;
+        margin-bottom: 0.75rem !important;
       }
 
       .chart-title {
-        font-size: 1rem !important;
-        gap: 0.4rem !important;
+        font-size: 0.95rem !important;
+        gap: 0.3rem !important;
+        line-height: 1.3 !important;
       }
 
       .chart-subtitle {
-        font-size: 0.8rem !important;
-        margin: 0.25rem 0 0 0 !important;
+        font-size: 0.75rem !important;
+        margin: 0.2rem 0 0 0 !important;
+        line-height: 1.2 !important;
       }
 
       .chart-value {
@@ -884,11 +897,20 @@
       }
 
       .chart-main-value {
-        font-size: 1.25rem !important;
+        font-size: 1.1rem !important;
+        line-height: 1.2 !important;
       }
 
       .chart-container {
-        height: 280px !important;
+        height: 250px !important;
+        width: 100% !important;
+        position: relative !important;
+        overflow: hidden !important;
+      }
+
+      .chart-container canvas {
+        max-width: 100% !important;
+        height: auto !important;
       }
 
       /* === MOBILE MODULE STYLING === */
@@ -921,18 +943,31 @@
       }
 
       #header {
-        padding: 0.5rem 0.75rem !important;
+        padding: 0.5rem 0.6rem !important;
+        min-height: 55px !important;
+        flex-wrap: wrap !important;
       }
 
       #header #site-name,
       #header #site-name a {
-        font-size: 1rem !important;
-        max-width: 65% !important;
+        font-size: 0.9rem !important;
+        gap: 0.3rem !important;
+        flex: 1 !important;
+        min-width: 0 !important;
+      }
+
+      #header #site-name::before {
+        font-size: 0.8rem !important;
+      }
+
+      #header #user-tools {
+        gap: 0.3rem !important;
       }
 
       #header #user-tools a {
-        font-size: 0.7rem !important;
-        padding: 0.3rem 0.6rem !important;
+        font-size: 0.65rem !important;
+        padding: 0.25rem 0.5rem !important;
+        border-radius: 0.3rem !important;
       }
 
       .hero-welcome {
@@ -975,11 +1010,42 @@
       }
 
       .chart-container {
-        height: 250px !important;
+        height: 220px !important;
+        width: 100% !important;
+        margin: 0 !important;
       }
 
       .section-title {
-        font-size: 1.1rem !important;
+        font-size: 1rem !important;
+        margin: 0 !important;
+      }
+
+      .chart-card {
+        padding: 0.8rem !important;
+        margin: 0 !important;
+        border-radius: 0.6rem !important;
+      }
+
+      .chart-title {
+        font-size: 0.85rem !important;
+        gap: 0.25rem !important;
+      }
+
+      .chart-subtitle {
+        font-size: 0.7rem !important;
+      }
+
+      .chart-main-value {
+        font-size: 1rem !important;
+      }
+
+      .charts-section {
+        margin-top: 1rem !important;
+      }
+
+      .charts-grid {
+        gap: 0.8rem !important;
+        margin-bottom: 0.8rem !important;
       }
     }
 
