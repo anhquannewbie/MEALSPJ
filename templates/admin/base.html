@@ -694,10 +694,11 @@
 
     /* Filter scrollable content */
     body:not(.dashboard) #changelist-filter > div {
-      /* height: calc(100% - 80px) !important; */
       overflow-y: auto !important;
       scrollbar-width: thin !important;
       scrollbar-color: var(--filter-accent) transparent !important;
+      padding: 0 !important; /* Loại bỏ padding mặc định */
+      margin: 0 !important; /* Loại bỏ margin mặc định */
     }
 
     body:not(.dashboard) #changelist-filter > div::-webkit-scrollbar {
@@ -711,6 +712,50 @@
     body:not(.dashboard) #changelist-filter > div::-webkit-scrollbar-thumb {
       background: var(--filter-accent) !important;
       border-radius: 3px !important;
+    }
+
+    /* Loại bỏ khoảng trống trong filter form rows */
+    body:not(.dashboard) #changelist-filter .form-row {
+      margin: 0 !important;
+      padding: 1rem 1.25rem !important;
+      border-bottom: 1px solid rgba(79, 70, 229, 0.1) !important;
+      background: var(--bg-secondary) !important;
+    }
+
+    body:not(.dashboard) #changelist-filter .form-row:first-child {
+      margin-top: 0 !important;
+      padding-top: 1rem !important;
+    }
+
+    body:not(.dashboard) #changelist-filter .form-row:last-child {
+      border-bottom: none !important;
+      margin-bottom: 0 !important;
+      padding-bottom: 1rem !important;
+    }
+
+    body:not(.dashboard) #changelist-filter .form-row label {
+      margin: 0 !important;
+      padding: 0 !important;
+      display: block !important;
+      font-weight: 600 !important;
+      color: var(--filter-accent) !important;
+      text-transform: uppercase !important;
+      font-size: 0.85rem !important;
+      letter-spacing: 0.05em !important;
+      margin-bottom: 0.5rem !important;
+    }
+
+    body:not(.dashboard) #changelist-filter .form-row select,
+    body:not(.dashboard) #changelist-filter .form-row input {
+      margin: 0 !important;
+      width: 100% !important;
+      padding: 0.75rem !important;
+      border: 2px solid var(--filter-accent) !important;
+      border-radius: 0.5rem !important;
+      background: var(--bg-primary) !important;
+      color: var(--text-primary) !important;
+      font-size: 0.9rem !important;
+      box-sizing: border-box !important;
     }
 
     body:not(.dashboard) #changelist-filter h3 {
@@ -1457,7 +1502,7 @@
         flex-direction: column !important;
       }
 
-      /* Loại bỏ khoảng trống thừa trong filter sections */
+      /* Loại bỏ khoảng trống thừa trong filter sections - MOBILE SPECIFIC */
       body:not(.dashboard) #changelist-filter > div > * {
         margin-top: 0 !important;
         margin-bottom: 0 !important;
@@ -1468,16 +1513,71 @@
         padding-top: 0 !important;
       }
 
-      /* Tối ưu spacing cho filter items */
+      /* MOBILE: Tối ưu spacing cho filter items */
       body:not(.dashboard) #changelist-filter .form-row {
         margin: 0 !important;
         padding: 0.75rem 1rem !important;
         border-bottom: 1px solid var(--border-color) !important;
       }
 
+      body:not(.dashboard) #changelist-filter .form-row:first-child {
+        margin-top: 0 !important;
+        padding-top: 0.75rem !important;
+      }
+
       body:not(.dashboard) #changelist-filter .form-row:last-child {
         border-bottom: none !important;
         margin-bottom: 0 !important;
+        padding-bottom: 0.75rem !important;
+      }
+
+      /* MOBILE: Loại bỏ khoảng trống cho checkbox và label */
+      body:not(.dashboard) #changelist-filter .form-row label {
+        margin: 0 !important;
+        padding: 0 !important;
+        margin-bottom: 0.5rem !important;
+        display: block !important;
+      }
+
+      body:not(.dashboard) #changelist-filter .form-row input[type="checkbox"] {
+        margin: 0 !important;
+        margin-right: 0.5rem !important;
+        vertical-align: middle !important;
+      }
+
+      /* MOBILE: Loại bỏ khoảng trống không cần thiết trong filter wrapper */
+      body:not(.dashboard) #changelist-filter > div {
+        height: calc(100% - 60px) !important;
+        max-height: none !important;
+        overflow-y: auto !important;
+        flex: 1 !important;
+        padding: 0 !important; /* Quan trọng: loại bỏ padding */
+        margin: 0 !important; /* Quan trọng: loại bỏ margin */
+      }
+
+      /* MOBILE: Đảm bảo không có spacing thừa ở top */
+      body:not(.dashboard) #changelist-filter > div > div:first-child,
+      body:not(.dashboard) #changelist-filter > div > form:first-child {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+      }
+
+      /* MOBILE: CSS reset cho tất cả elements trong filter */
+      body:not(.dashboard) #changelist-filter * {
+        box-sizing: border-box !important;
+      }
+
+      body:not(.dashboard) #changelist-filter p {
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      body:not(.dashboard) #changelist-filter div {
+        margin: 0 !important;
+      }
+
+      body:not(.dashboard) #changelist-filter div:not(.form-row) {
+        padding: 0 !important;
       }
 
       /* Tối ưu cho các dropdown và select */
@@ -1557,6 +1657,85 @@
 
       #mobile-menu-btn:hover {
         background: var(--primary-gradient) !important;
+      }
+
+      /* MOBILE FILTER - Loại bỏ hoàn toàn khoảng trống */
+      body:not(.dashboard) #changelist-filter {
+        top: 60px !important;
+        position: fixed !important;
+        order: unset !important;
+        margin: 0 !important; /* Reset margin */
+        padding: 0 !important; /* Reset padding */
+        border-radius: 0 !important;
+        max-height: 50vh !important;
+        min-height: 400px !important;
+        z-index: 997 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+      }
+
+      /* MOBILE FILTER HEADER - Không margin/padding thừa */
+      body:not(.dashboard) #changelist-filter h2 {
+        padding: 0.75rem 1rem !important;
+        font-size: 0.9rem !important;
+        border-radius: 0 !important;
+        flex-shrink: 0 !important;
+        margin: 0 !important; /* Reset margin */
+      }
+
+      /* MOBILE FILTER CONTENT - Reset hoàn toàn */
+      body:not(.dashboard) #changelist-filter > div {
+        height: calc(100% - 60px) !important;
+        max-height: none !important;
+        overflow-y: auto !important;
+        flex: 1 !important;
+        padding: 0 !important; /* Reset padding */
+        margin: 0 !important; /* Reset margin */
+      }
+
+      /* MOBILE: Force reset tất cả spacing trong filter */
+      body:not(.dashboard) #changelist-filter > div > * {
+        margin: 0 !important;
+      }
+
+      body:not(.dashboard) #changelist-filter > div > *:first-child {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+      }
+
+      body:not(.dashboard) #changelist-filter .form-row {
+        margin: 0 !important;
+        padding: 0.75rem 1rem !important;
+        border-bottom: 1px solid var(--border-color) !important;
+      }
+
+      body:not(.dashboard) #changelist-filter .form-row:first-child {
+        margin-top: 0 !important;
+        padding-top: 0.75rem !important;
+      }
+
+      body:not(.dashboard) #changelist-filter .form-row:last-child {
+        border-bottom: none !important;
+        margin-bottom: 0 !important;
+        padding-bottom: 0.75rem !important;
+      }
+
+      /* MOBILE: Reset cho labels và inputs */
+      body:not(.dashboard) #changelist-filter .form-row label {
+        margin: 0 !important;
+        padding: 0 !important;
+        margin-bottom: 0.5rem !important;
+        display: block !important;
+      }
+
+      /* MOBILE: Reset cho divs và paragraphs */
+      body:not(.dashboard) #changelist-filter p,
+      body:not(.dashboard) #changelist-filter div:not(.form-row) {
+        margin: 0 !important;
+        padding: 0 !important;
       }
 
       /* MOBILE SEARCH AND TOOLBAR OPTIMIZATIONS */
