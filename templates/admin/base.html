@@ -1440,6 +1440,7 @@
         font-size: 0.9rem !important;
         border-radius: 0 !important;
         flex-shrink: 0 !important; /* Không cho header co lại */
+        margin-bottom: 0 !important; /* Loại bỏ margin bottom */
       }
 
       body:not(.dashboard) #changelist-filter > div {
@@ -1447,12 +1448,36 @@
         max-height: none !important; /* Bỏ giới hạn max-height */
         overflow-y: auto !important;
         flex: 1 !important;
+        padding-top: 0 !important; /* Loại bỏ padding top */
       }
 
       /* Đảm bảo filter container sử dụng flexbox */
       body:not(.dashboard) #changelist-filter {
         display: flex !important;
         flex-direction: column !important;
+      }
+
+      /* Loại bỏ khoảng trống thừa trong filter sections */
+      body:not(.dashboard) #changelist-filter > div > * {
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+      }
+
+      body:not(.dashboard) #changelist-filter > div > *:first-child {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+      }
+
+      /* Tối ưu spacing cho filter items */
+      body:not(.dashboard) #changelist-filter .form-row {
+        margin: 0 !important;
+        padding: 0.75rem 1rem !important;
+        border-bottom: 1px solid var(--border-color) !important;
+      }
+
+      body:not(.dashboard) #changelist-filter .form-row:last-child {
+        border-bottom: none !important;
+        margin-bottom: 0 !important;
       }
 
       /* Tối ưu cho các dropdown và select */
