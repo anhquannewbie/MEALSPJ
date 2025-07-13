@@ -166,7 +166,18 @@
       border: 1px solid var(--border-color) !important;
       overflow: hidden !important;
     }
-
+    .inline-group .tabular td.original p {
+      position: absolute;
+      left: 0;
+      height: 1.1em;
+      padding: 2px 9px;
+      overflow: hidden;
+      font-size: 0.5625rem;
+      font-weight: bold;
+      color: var(--body-quiet-color);
+      _width: 700px;
+      margin-left: 20px;
+    }
     /* Sidebar module headers - FORCE background đầy đủ */
     body:not(.dashboard) #nav-sidebar .module table caption {
       background: var(--primary-gradient) !important;
@@ -377,6 +388,177 @@
     body:not(.dashboard) #nav-sidebar .addlink,
     body:not(.dashboard) #nav-sidebar .object-tools .addlink {
       display: inline-flex !important;
+    }
+
+    /* === FIX MISSING ACTION BUTTONS === */
+    /* Allow custom classroom action buttons to be visible */
+    body:not(.dashboard) #content .object-tools a[href*="/delete_students/"],
+    body:not(.dashboard) #content .object-tools a[href*="/export_students/"],
+    body:not(.dashboard) #content .object-tools a[href*="/import_students/"],
+    body:not(.dashboard) #content .object-tools a[href*="/promote_students/"],
+    body:not(.dashboard) #content a[href*="/delete_students/"],
+    body:not(.dashboard) #content a[href*="/export_students/"],
+    body:not(.dashboard) #content a[href*="/import_students/"],
+    body:not(.dashboard) #content a[href*="/promote_students/"] {
+      display: inline-flex !important;
+    }
+
+    /* === HIDE DUPLICATE MARKERS === */
+    /* Hide the original template-generated buttons to avoid duplicates */
+    /* Target the standalone <li> elements that are outside <ul> */
+    body:not(.dashboard) #content li:has(a[href*="/delete_students/"]),
+    body:not(.dashboard) #content li:has(a[href*="/export_students/"]),
+    body:not(.dashboard) #content li:has(a[href*="/import_students/"]),
+    body:not(.dashboard) #content li:has(a[href*="/promote_students/"]) {
+      display: none !important;
+    }
+
+    /* Also hide by direct element targeting */
+    body:not(.dashboard) #content li a.deletelink[href*="/delete_students/"],
+    body:not(.dashboard) #content li a.addlink[href*="/export_students/"],
+    body:not(.dashboard) #content li a.addlink[href*="/import_students/"],
+    body:not(.dashboard) #content li a.addlink[href*="/promote_students/"] {
+      display: none !important;
+    }
+
+    /* Hide parent <li> elements by targeting specific hrefs */
+    body:not(.dashboard) #content li:has(a[href="/admin/meals/classroom/27/delete_students/"]),
+    body:not(.dashboard) #content li:has(a[href="/admin/meals/classroom/27/export_students/"]),
+    body:not(.dashboard) #content li:has(a[href="/admin/meals/classroom/27/import_students/"]),
+    body:not(.dashboard) #content li:has(a[href="/admin/meals/classroom/27/promote_students/"]) {
+      display: none !important;
+    }
+
+    /* Fallback - hide any standalone li after object-tools */
+    body:not(.dashboard) #content .object-tools ~ li {
+      display: none !important;
+    }
+
+    /* === CUSTOM ACTION BUTTONS STYLING === */
+    /* Transform addlinks to proper buttons */
+    body:not(.dashboard) #content .object-tools a[href*="/delete_students/"],
+    body:not(.dashboard) #content .object-tools a[href*="/export_students/"],
+    body:not(.dashboard) #content .object-tools a[href*="/import_students/"],
+    body:not(.dashboard) #content .object-tools a[href*="/promote_students/"] {
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 0.5rem !important;
+      padding: 0.75rem 1.25rem !important;
+      border-radius: 0.5rem !important;
+      text-decoration: none !important;
+      font-weight: 600 !important;
+      font-size: 0.9rem !important;
+      transition: all 0.3s ease !important;
+      cursor: pointer !important;
+      border: none !important;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+      text-transform: none !important;
+      letter-spacing: normal !important;
+    }
+
+    /* Specific button colors */
+    body:not(.dashboard) #content .object-tools a[href*="/delete_students/"] {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+      color: #ffffff !important;
+    }
+
+    body:not(.dashboard) #content .object-tools a[href*="/delete_students/"]:hover {
+      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3) !important;
+    }
+
+    body:not(.dashboard) #content .object-tools a[href*="/export_students/"] {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+      color: #ffffff !important;
+    }
+
+    body:not(.dashboard) #content .object-tools a[href*="/export_students/"]:hover {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
+    }
+
+    body:not(.dashboard) #content .object-tools a[href*="/import_students/"] {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+      color: #ffffff !important;
+    }
+
+    body:not(.dashboard) #content .object-tools a[href*="/import_students/"]:hover {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3) !important;
+    }
+
+    body:not(.dashboard) #content .object-tools a[href*="/promote_students/"] {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+      color: #ffffff !important;
+    }
+
+    body:not(.dashboard) #content .object-tools a[href*="/promote_students/"]:hover {
+      background: linear-gradient(135deg, #d97706 0%, #b45309 100%) !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3) !important;
+    }
+
+    /* History button styling to match */
+    body:not(.dashboard) #content .object-tools a.historylink {
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 0.5rem !important;
+      padding: 0.75rem 1.25rem !important;
+      border-radius: 0.5rem !important;
+      text-decoration: none !important;
+      font-weight: 600 !important;
+      font-size: 0.9rem !important;
+      transition: all 0.3s ease !important;
+      cursor: pointer !important;
+      border: none !important;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+      background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%) !important;
+      color: #ffffff !important;
+    }
+
+    body:not(.dashboard) #content .object-tools a.historylink:hover {
+      background: linear-gradient(135deg, #4b5563 0%, #374151 100%) !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3) !important;
+    }
+
+    /* === OBJECT-TOOLS LAYOUT === */
+    /* Restructure object-tools to vertical layout */
+    body:not(.dashboard) #content .object-tools {
+      background: var(--bg-primary) !important;
+      padding: 1.5rem !important;
+      border-bottom: 1px solid var(--border-color) !important;
+      margin: 0 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 1rem !important;
+    }
+
+    /* First row: History button */
+    body:not(.dashboard) #content .object-tools ul {
+      list-style: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      display: flex !important;
+      gap: 0.75rem !important;
+      flex-wrap: wrap !important;
+      order: 1 !important;
+    }
+
+    body:not(.dashboard) #content .object-tools li {
+      margin: 0 !important;
+    }
+
+    /* Second row: Custom action buttons */
+    body:not(.dashboard) #content .object-tools::after {
+      content: "";
+      display: flex !important;
+      gap: 0.75rem !important;
+      flex-wrap: wrap !important;
+      order: 2 !important;
     }
 
     /* === MAIN LAYOUT CONTAINER === */
@@ -1990,6 +2172,159 @@
       initFilterLayout();
       initFilterKeyboardShortcuts();
       addFilterAnimations();
+      
+      // === REORGANIZE ACTION BUTTONS ===
+      function reorganizeActionButtons() {
+        const objectTools = document.querySelector('#content .object-tools');
+        const moduleAligned = document.querySelector('#content .module.aligned');
+        
+        if (!objectTools || !moduleAligned) return;
+        
+        // Find all custom action buttons that are outside object-tools
+        const customButtons = document.querySelectorAll(`
+          #content a[href*="/delete_students/"]:not(.object-tools a),
+          #content a[href*="/export_students/"]:not(.object-tools a),
+          #content a[href*="/import_students/"]:not(.object-tools a),
+          #content a[href*="/promote_students/"]:not(.object-tools a)
+        `);
+        
+        if (customButtons.length > 0) {
+          // Create a container for custom buttons
+          const customButtonsContainer = document.createElement('div');
+          customButtonsContainer.className = 'custom-action-buttons';
+          customButtonsContainer.style.cssText = `
+            display: flex !important;
+            gap: 0.75rem !important;
+            flex-wrap: wrap !important;
+            margin-bottom: 1.5rem !important;
+            padding: 1rem 1.5rem !important;
+            background: var(--bg-primary) !important;
+            border-bottom: 1px solid var(--border-color) !important;
+            border-radius: 0.75rem 0.75rem 0 0 !important;
+          `;
+          
+          // Create proper styled buttons from the links
+          customButtons.forEach(originalLink => {
+            // Create new button element
+            const button = document.createElement('a');
+            button.href = originalLink.href;
+            button.style.cssText = `
+              display: inline-flex !important;
+              align-items: center !important;
+              gap: 0.5rem !important;
+              padding: 0.75rem 1.25rem !important;
+              border-radius: 0.5rem !important;
+              text-decoration: none !important;
+              font-weight: 600 !important;
+              font-size: 0.9rem !important;
+              transition: all 0.3s ease !important;
+              cursor: pointer !important;
+              border: none !important;
+              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+              text-transform: none !important;
+              letter-spacing: normal !important;
+              color: #ffffff !important;
+            `;
+            
+            // Add specific styling and content based on button type
+            if (originalLink.href.includes('/delete_students/')) {
+              button.innerHTML = '<i class="fas fa-trash-alt"></i> Xóa toàn bộ học sinh';
+              button.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+              button.addEventListener('mouseenter', () => {
+                button.style.background = 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)';
+                button.style.transform = 'translateY(-2px)';
+                button.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.3)';
+              });
+              button.addEventListener('mouseleave', () => {
+                button.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+                button.style.transform = 'translateY(0)';
+                button.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+              });
+            } else if (originalLink.href.includes('/export_students/')) {
+              button.innerHTML = '<i class="fas fa-download"></i> Export Học sinh';
+              button.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+              button.addEventListener('mouseenter', () => {
+                button.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
+                button.style.transform = 'translateY(-2px)';
+                button.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)';
+              });
+              button.addEventListener('mouseleave', () => {
+                button.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                button.style.transform = 'translateY(0)';
+                button.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+              });
+            } else if (originalLink.href.includes('/import_students/')) {
+              button.innerHTML = '<i class="fas fa-upload"></i> Import Học sinh';
+              button.style.background = 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)';
+              button.addEventListener('mouseenter', () => {
+                button.style.background = 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)';
+                button.style.transform = 'translateY(-2px)';
+                button.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.3)';
+              });
+              button.addEventListener('mouseleave', () => {
+                button.style.background = 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)';
+                button.style.transform = 'translateY(0)';
+                button.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+              });
+            } else if (originalLink.href.includes('/promote_students/')) {
+              button.innerHTML = '<i class="fas fa-level-up-alt"></i> Lên Lớp';
+              button.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+              button.addEventListener('mouseenter', () => {
+                button.style.background = 'linear-gradient(135deg, #d97706 0%, #b45309 100%)';
+                button.style.transform = 'translateY(-2px)';
+                button.style.boxShadow = '0 4px 12px rgba(245, 158, 11, 0.3)';
+              });
+              button.addEventListener('mouseleave', () => {
+                button.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+                button.style.transform = 'translateY(0)';
+                button.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+              });
+            }
+            
+            // Add button to container
+            customButtonsContainer.appendChild(button);
+            
+            // Hide the original link
+            originalLink.style.display = 'none';
+          });
+          
+          // Insert container BEFORE the module.aligned
+          moduleAligned.parentNode.insertBefore(customButtonsContainer, moduleAligned);
+        }
+        
+        // Add icon to history button if it exists
+        const historyButton = objectTools.querySelector('.historylink');
+        if (historyButton && !historyButton.querySelector('i')) {
+          historyButton.innerHTML = '<i class="fas fa-history"></i> ' + historyButton.textContent.trim();
+        }
+        
+        // Also ensure object-tools styling is clean - NO BORDER
+        objectTools.style.cssText = `
+          background: transparent !important;
+          padding: 0 !important;
+          border: none !important;
+          margin: 0 !important;
+          margin-bottom: 1.5rem !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+        `;
+
+        // Style the history button container specifically
+        const historyButtonContainer = objectTools.querySelector('ul');
+        if (historyButtonContainer) {
+          historyButtonContainer.style.cssText = `
+            list-style: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            display: flex !important;
+            gap: 0.75rem !important;
+            flex-wrap: wrap !important;
+          `;
+        }
+      }
+      
+      // Run after DOM is ready
+      setTimeout(reorganizeActionButtons, 100);
       
       // Reinitialize on AJAX content changes (Django admin sometimes uses AJAX)
       if (window.MutationObserver) {
