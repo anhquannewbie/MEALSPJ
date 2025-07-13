@@ -1529,21 +1529,17 @@
           {% endif %}
           <a href="{% url 'admin:logout' %}">{% trans 'Log out' %}</a>
         {% endblock %}
-        {% url 'admin:logout' as logout_url %}
-        {% url 'admin:password_change' as password_change_url %}
       {% endif %}
     </div>
     <div class="mobile-menu">
       {% if user.is_authenticated %}
-        {% block userlinks %}
-          {% if site_url %}
-            <a href="{{ site_url }}">{% trans 'View site' %}</a>
-          {% endif %}
-          {% if user.has_usable_password %}
-            <a href="{% url 'admin:password_change' %}">{% trans 'Change password' %}</a>
-          {% endif %}
-          <a href="{% url 'admin:logout' %}">{% trans 'Log out' %}</a>
-        {% endblock %}
+        {% if site_url %}
+          <a href="{{ site_url }}">{% trans 'View site' %}</a>
+        {% endif %}
+        {% if user.has_usable_password %}
+          <a href="{% url 'admin:password_change' %}">{% trans 'Change password' %}</a>
+        {% endif %}
+        <a href="{% url 'admin:logout' %}">{% trans 'Log out' %}</a>
       {% endif %}
     </div>
   </div>
