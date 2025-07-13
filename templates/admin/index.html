@@ -744,6 +744,13 @@
         flex-shrink: 0 !important;
         display: flex !important;
         align-items: center !important;
+        /* Thêm các thuộc tính sau: */
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        max-width: 60vw !important;
+        min-width: unset !important;
+        white-space: nowrap !important;
+        scrollbar-width: thin;  /* Firefox */
       }
 
       #header #user-tools a {
@@ -897,6 +904,13 @@
 
       #header #user-tools {
         gap: 0.3rem !important;
+        /* Thêm các thuộc tính sau: */
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        max-width: 50vw !important;
+        min-width: unset !important;
+        white-space: nowrap !important;
+        scrollbar-width: thin;
       }
 
       #header #user-tools a {
