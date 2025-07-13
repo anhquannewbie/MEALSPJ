@@ -1696,6 +1696,107 @@
         margin: 0 !important; /* Reset margin */
       }
 
+      /* MOBILE: AGGRESSIVE RESET - Xóa tất cả spacing */
+      body:not(.dashboard) #changelist-filter,
+      body:not(.dashboard) #changelist-filter * {
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+      }
+
+      /* MOBILE: Ẩn changelist-filter-extra-actions gây khoảng trống */
+      body:not(.dashboard) #changelist-filter-extra-actions {
+        display: none !important;
+        height: 0 !important;
+        overflow: hidden !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      /* MOBILE: Chỉ giữ lại padding cần thiết */
+      body:not(.dashboard) #changelist-filter h2 {
+        padding: 0.75rem 1rem !important; /* Override aggressive reset */
+        background: linear-gradient(135deg, var(--filter-accent) 0%, #7c3aed 100%) !important;
+        color: #ffffff !important;
+        border-radius: 0 !important;
+        flex-shrink: 0 !important;
+      }
+
+      body:not(.dashboard) #changelist-filter .form-row {
+        padding: 0.75rem 1rem !important; /* Override aggressive reset */
+        border-bottom: 1px solid var(--border-color) !important; /* Override aggressive reset */
+        background: var(--bg-secondary) !important;
+      }
+
+      body:not(.dashboard) #changelist-filter .form-row label {
+        padding-bottom: 0.5rem !important; /* Override aggressive reset */
+        display: block !important;
+        font-weight: 600 !important;
+        color: var(--filter-accent) !important;
+      }
+
+      body:not(.dashboard) #changelist-filter .form-row select,
+      body:not(.dashboard) #changelist-filter .form-row input {
+        padding: 0.75rem !important; /* Override aggressive reset */
+        border: 2px solid var(--filter-accent) !important; /* Override aggressive reset */
+        border-radius: 0.5rem !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        background: var(--bg-primary) !important;
+      }
+
+      /* MOBILE: Ẩn bất kỳ div nào có chứa "Show counts" */
+      body:not(.dashboard) #changelist-filter div:has(a[href*="_facets"]) {
+        display: none !important;
+        height: 0 !important;
+        overflow: hidden !important;
+      }
+
+      body:not(.dashboard) #changelist-filter a[href*="_facets"] {
+        display: none !important;
+      }
+
+      /* MOBILE: Loại bỏ bất kỳ khoảng trống nào giữa elements */
+      body:not(.dashboard) #changelist-filter > div > *:not(.form-row):not(h3):not(ul):not(script) {
+        display: none !important; /* Ẩn tất cả elements không cần thiết */
+      }
+
+      body:not(.dashboard) #changelist-filter > div > .form-row {
+        display: block !important; /* Đảm bảo form-row vẫn hiển thị */
+      }
+
+      body:not(.dashboard) #changelist-filter > div > h3 {
+        display: flex !important; /* Đảm bảo h3 vẫn hiển thị */
+      }
+
+      body:not(.dashboard) #changelist-filter > div > ul {
+        display: block !important; /* Đảm bảo ul vẫn hiển thị */
+      }
+
+      /* MOBILE: Force compact layout */
+      body:not(.dashboard) #changelist-filter .form-row:first-child {
+        border-top: none !important;
+      }
+
+      body:not(.dashboard) #changelist-filter .form-row:last-child {
+        border-bottom: none !important;
+      }
+
+      /* MOBILE: Loại bỏ các thẻ p, div trống */
+      body:not(.dashboard) #changelist-filter p:empty,
+      body:not(.dashboard) #changelist-filter div:empty {
+        display: none !important;
+        height: 0 !important;
+        line-height: 0 !important;
+      }
+
+      /* MOBILE: Force height của filter content */
+      body:not(.dashboard) #changelist-filter > div {
+        min-height: 0 !important;
+        height: auto !important;
+        max-height: calc(50vh - 60px) !important;
+      }
+
       /* MOBILE: Force reset tất cả spacing trong filter */
       body:not(.dashboard) #changelist-filter > div > * {
         margin: 0 !important;
