@@ -409,14 +409,15 @@
 
 <script>
 $(function(){
-    // --- 1) Khi chọn Year, gọi AJAX load Classroom ---
-   $('#id_term').on('change', function(){
-       var term = $(this).val();
-       var $classSelect = $('#id_classroom');
-       // Reset dropdown ClassRoom
-       $classSelect.html('<option value="">--- Chọn Lớp ---</option>');
+    // --- Function để load classes theo term ---
+    function loadClassesByTerm(termValue) {
+        if (!termValue) return;
+        
+        var $classSelect = $('#id_classroom');
+        // Reset dropdown ClassRoom
+        $classSelect.html('<option value="">--- Chọn Lớp ---</option>');
 
-       $.get("{% url 'meals:ajax_get_classes_by_term' %}", { term: term })
+        $.get("{% url 'meals:ajax_get_classes_by_term' %}", { term: termValue })
              .done(function(data){
                 // data là một array dạng [ {id:…, name:…}, … ]
                 data.forEach(function(obj){
@@ -426,8 +427,21 @@ $(function(){
                     $classSelect.append(opt);
                 });
              });
-       // Khi đổi Year thì cũng reset dropdown Student
-       $('#id_student').html('<option value="">--- Chọn Học sinh ---</option>');
+    }
+
+    // --- Load classes ngay khi trang được tải (nếu đã có giá trị term) ---
+    var initialTerm = $('#id_term').val();
+    if (initialTerm) {
+        loadClassesByTerm(initialTerm);
+    }
+
+    // --- 1) Khi chọn Year, gọi AJAX load Classroom ---
+    $('#id_term').on('change', function(){
+        var term = $(this).val();
+        loadClassesByTerm(term);
+        
+        // Khi đổi Year thì cũng reset dropdown Student
+        $('#id_student').html('<option value="">--- Chọn Học sinh ---</option>');
     });
     
     // Load students khi chọn lớp
