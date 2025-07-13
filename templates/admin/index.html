@@ -124,6 +124,9 @@
       backdrop-filter: blur(10px) !important;
       position: relative !important;
       overflow: hidden !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
     }
 
     #header::before {
@@ -720,7 +723,7 @@
         padding: 0.8rem 1rem !important;
         display: flex !important;
         align-items: center !important;
-        justify-content: flex-start !important;
+        justify-content: space-between !important;
         flex-wrap: nowrap !important;
         min-height: 70px !important;
         overflow: visible !important;
@@ -1515,7 +1518,9 @@
 
 {% block header %}
   <div id="header">
-    <div id="site-name">{{ block.super }}</div>
+    <div id="site-name">
+      TRANG QUẢN TRỊ BỮA ĂN HỌC SINH
+    </div>
     <button class="mobile-menu-toggle">
       <i class="fas fa-bars"></i>
     </button>
