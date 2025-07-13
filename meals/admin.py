@@ -111,9 +111,36 @@ class StudentInline(admin.TabularInline):
     extra = 0                 # không sinh form trống
     fields = ('name',)        # chỉ hiện tên (có thể thêm các field khác)
     show_change_link = True   # có link vào form edit của từng student
+def calculate_trend_percentage(current_value, previous_value):
+        """
+        Tính phần trăm thay đổi và hướng trend
+        Returns: {'percentage': int, 'direction': 'up'|'down'|'neutral'}
+        """
+        if previous_value == 0:
+            if current_value > 0:
+                return {'percentage': 100, 'direction': 'up'}
+            else:
+                return {'percentage': 0, 'direction': 'neutral'}
+        
+        change = ((current_value - previous_value) / previous_value) * 100
+        
+        if change > 0:
+            direction = 'up'
+        elif change < 0:
+            direction = 'down'
+            change = abs(change)  # Hiển thị số dương
+        else:
+            direction = 'neutral'
+        
+        return {
+            'percentage': round(change),
+            'direction': direction
+        }
 class MyAdminSite(AdminSite):
     site_header = "TRANG QUẢN TRỊ BỮA ĂN HỌC SINH"
     index_title = "Trang Chủ"
+    
+
     def each_context(self, request):
         context = super().each_context(request)
         # đây là 2 link bạn muốn show ở mọi trang admin
@@ -154,8 +181,7 @@ class MyAdminSite(AdminSite):
         extra_context['chart_meal_labels'] = json.dumps(months)
         extra_context['chart_meal_data']   = json.dumps(meal_counts)
 
-        # ==== 2) DỮ LIỆU THU HỌC PHÍ THEO THÁNG (nhóm theo chuỗi "YYYY-MM") ====
-        # Lọc ra chỉ những bản ghi của năm hiện tại
+        # ==== 2) DỮ LIỆU THU HỌC PHÍ THEO THÁNG ====
         year_prefix = f"{current_year}-"
         qs_paid = (
             StudentPayment.objects
@@ -166,7 +192,6 @@ class MyAdminSite(AdminSite):
         )
         paid_month_data = [0] * 12
         for row in qs_paid:
-            # row['month'] có dạng "2025-06" → tách lấy số 6
             try:
                 mon = int(row['month'].split('-')[1])
                 paid_month_data[mon - 1] = float(row['total_paid'] or 0)
@@ -175,7 +200,86 @@ class MyAdminSite(AdminSite):
 
         extra_context['chart_paid_month_data'] = json.dumps(paid_month_data)
 
+        today = date.today()
+        first_day_current = today.replace(day=1)
+        # Tháng trước
+        prev_month_date = first_day_current - timedelta(days=1)
+        prev_month_str = f"{prev_month_date.year}-{prev_month_date.month:02d}"
+        # 3.1) Số học sinh có payment trong tháng trước
+        current_student_count = (
+            StudentPayment.objects
+            .filter(month=prev_month_str)
+            .values('student')
+            .distinct()
+            .count()
+        )
+        print(current_student_count)
+        # 3.2) Tháng hiện tại (số, không thêm “T”)
+        current_month = today.month
+        
+        # 3.2) Tính trend percentages
+        current_month = date.today().month
+        current_year = date.today().year
+        
+        # Tháng trước
+        if current_month == 1:
+            prev_month = 12
+            prev_year = current_year - 1
+        else:
+            prev_month = current_month - 1
+            prev_year = current_year
+        
+        # Meals trend
+        current_month_meals = MealRecord.objects.filter(
+            date__year=current_year, 
+            date__month=current_month
+        ).count()
+        
+        prev_month_meals = MealRecord.objects.filter(
+            date__year=prev_year, 
+            date__month=prev_month
+        ).count()
+        
+        meals_trend   = calculate_trend_percentage(current_month_meals, prev_month_meals)
+        
+        # Students trend (so sánh với tháng trước)
+        # Giả sử bạn muốn track student count theo thời gian
+        # Có thể dựa vào StudentPayment records để ước tính
+        current_month_students = StudentPayment.objects.filter(
+            month=f"{current_year}-{current_month:02d}"
+        ).values('student').distinct().count()
+        
+        prev_month_students = StudentPayment.objects.filter(
+            month=f"{prev_year}-{prev_month:02d}"
+        ).values('student').distinct().count()
+        
+        students_trend = calculate_trend_percentage(current_month_students, prev_month_students)
+        
+        # Revenue trend
+        current_month_revenue = StudentPayment.objects.filter(
+            month=f"{current_year}-{current_month:02d}"
+        ).aggregate(total=Sum('amount_paid'))['total'] or 0
+        
+        prev_month_revenue = StudentPayment.objects.filter(
+            month=f"{prev_year}-{prev_month:02d}"
+        ).aggregate(total=Sum('amount_paid'))['total'] or 0
+        
+        revenue_trend = calculate_trend_percentage(float(current_month_revenue), float(prev_month_revenue))
+        
+        # ==== 4) PASS DATA TO TEMPLATE ====
+        extra_context.update({
+            'current_student_count': current_student_count,
+            'current_month': current_month,
+            'meals_trend_percentage': meals_trend['percentage'],
+            'meals_trend_direction': meals_trend['direction'],
+            'students_trend_percentage': students_trend['percentage'], 
+            'students_trend_direction': students_trend['direction'],
+            'revenue_trend_percentage': revenue_trend['percentage'],
+            'revenue_trend_direction': revenue_trend['direction'],
+        })
+        
         return super().index(request, extra_context)
+
 
 class ClassNameFilter(admin.SimpleListFilter):
     title = 'Lớp học'
@@ -805,7 +909,6 @@ class StudentAdmin( admin.ModelAdmin):
         super().delete_model(request, obj)
 
 class MealRecordAdmin( admin.ModelAdmin):
-    change_list_template = "admin/meals/mealrecord/change_list.html"
     list_display = ('student', 'date', 'meal_type', 'status')
     fields = ('student','date','meal_type','status','non_eat','absence_reason')
     list_filter  = (

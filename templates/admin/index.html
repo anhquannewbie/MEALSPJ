@@ -3,321 +3,1549 @@
 {% load i18n %}
 
 {% block extrastyle %}
+  {{ block.super }}
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
   <style>
-    /* === thêm biến CSS cho chart colors === */
+    /* === CSS Variables === */
     :root {
-    --chart-line-color: rgb(67, 5, 236);
-    --chart-fill-color: rgb(67, 5, 236);
-    --chart-grid-color: rgba(0,0,0,0.1);
-  }
-  /* Khi bật dark mode (Django admin gán data-theme="dark" lên <html>) */
-  html[data-theme="dark"] {
-      /* khi dark mode bật */
-      --chart-line-color: #e43011;
-      --chart-fill-color: #e43011;
-      --chart-grid-color: rgba(248, 248, 248, 0.13);
+      --primary-color: #6366f1;
+      --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --secondary-color: #64748b;
+      --accent-color: #0ea5e9;
+      --success-color: #10b981;
+      --warning-color: #f59e0b;
+      --danger-color: #ef4444;
+      --info-color: #3b82f6;
+      --bg-primary: #f8fafc;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #f1f5f9;
+      --text-primary: #1e293b;
+      --text-secondary: #64748b;
+      --text-muted: #94a3b8;
+      --border-color: #e2e8f0;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+      --chart-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --chart-gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      --chart-gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      --chart-grid-color: rgba(148, 163, 184, 0.2);
+      --glassmorphism: rgba(255, 255, 255, 0.25);
+      --glassmorphism-border: rgba(255, 255, 255, 0.18);
     }
-    /* === end thêm === */
 
-    /* Ẩn sidebar gốc chỉ trên Dashboard */
-    body.dashboard nav#nav-sidebar {
+    /* Dark mode */
+    html[data-theme="dark"] {
+      --primary-color: #818cf8;
+      --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --secondary-color: #94a3b8;
+      --accent-color: #06b6d4;
+      --success-color: #22c55e;
+      --warning-color: #fbbf24;
+      --danger-color: #f87171;
+      --info-color: #60a5fa;
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-tertiary: #334155;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --border-color: #334155;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+      --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.3);
+      --chart-grid-color: rgba(148, 163, 184, 0.1);
+      --glassmorphism: rgba(0, 0, 0, 0.25);
+      --glassmorphism-border: rgba(255, 255, 255, 0.1);
+    }
+
+    /* === Global Styles === */
+    body.dashboard {
+      background: var(--bg-primary) !important;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+      overflow-x: hidden !important;
+    }
+
+    /* Hide sidebar and recent actions */
+    body.dashboard nav#nav-sidebar,
+    body.dashboard #content-related {
       display: none !important;
     }
 
-    /* Layout flex cho Dashboard: nội dung chính + Recent actions */
-    body.dashboard #content {
-      display: flex !important;
-      margin: 2rem 0 !important;  /* chỉ giữ margin trên/dưới */
-      gap: 2rem;                   /* khoảng cách giữa các cột */
-    }
-    /* Khung “Hoạt động gần đây” */
-    body.dashboard #content-related {
-      flex: 0 0 300px;
-      display: block;
-      margin: 0;                   /* gỡ margin-left:auto */
+    body.dashboard #content,
+    body.dashboard #content-main {
+      margin-left: 0 !important;
+      width: auto !important;
+      max-width: none !important;
     }
 
-    /* Ẩn tiêu đề <h1>Bảng điều khiển> */
+    body.dashboard #content {
+      display: block !important;
+      margin: 0 !important;
+      padding: 1.5rem !important;
+    }
+    /* === ẨN HOÀN TOÀN CÔNG NỢ HỌC SINH === */
+    /* Ẩn dòng studentpayment trong cả dashboard và sidebar */
+    body #content-main .app-meals.module table tbody tr.model-studentpayment,
+    body:not(.dashboard) #nav-sidebar .module table tbody tr.model-studentpayment {
+      display: none !important;
+    }
+    
+    /* Backup selectors cho dashboard */
+    body.dashboard #content-main .app-meals.module table tbody tr:has(th a[href*="studentpayment"]),
+    body.dashboard #content-main .app-meals.module table tbody tr th a[href*="studentpayment"],
+    body.dashboard #content-main .app-meals.module table tbody tr:has(th a:contains("Công nợ học sinh")),
+    body.dashboard #content-main .app-meals.module table tbody tr:has(th:contains("Công nợ học sinh")) {
+      display: none !important;
+    }
+    
+    /* Backup selectors cho sidebar */
+    body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th a[href*="studentpayment"]),
+    body:not(.dashboard) #nav-sidebar .module table tbody tr th a[href*="studentpayment"],
+    body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th a:contains("Công nợ học sinh")),
+    body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th:contains("Công nợ học sinh")) {
+      display: none !important;
+    }
+    /* Hide default h1 title */
     body.dashboard #content h1 {
       display: none !important;
     }
-
-    /* Chart container flex:1 để chiếm phần còn lại */
-    .charts-container {
-      flex: 1;
-      margin: 2rem 0 !important;  /* chỉ giữ margin trên/dưới */
-      width: auto !important;      /* để nó tự bơm full flex */
-    }
-    .charts-container > div {
-      margin-bottom: 2rem;
-    }
-    .charts-container canvas {
-      width: 100% !important;
-      height: 400px !important;
-    }
-
-    /* Header Admin */
+    /* === Enhanced Header === */
     #header {
-      background-color: #14394b !important;
-      padding: 0.5rem 1rem;
+      background: var(--primary-gradient) !important;
+      padding: 1rem 2rem !important;
+      box-shadow: var(--shadow-xl) !important;
+      border: none !important;
+      backdrop-filter: blur(10px) !important;
+      position: relative !important;
+      overflow: hidden !important;
     }
+
+    #header::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd"><g fill="%23ffffff" fill-opacity="0.05"><circle cx="30" cy="30" r="4"/></g></svg>');
+      animation: float 20s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-10px) rotate(180deg); }
+    }
+
     #header #site-name,
     #header #site-name a {
-      font-size: 1rem !important;
-      font-weight: bold !important;
-      color: #fff !important;
-      margin: 0 !important;
-      padding: 0 !important;
+      font-size: 1.5rem !important;
+      font-weight: 800 !important;
+      color: #ffffff !important;
+      text-decoration: none !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 0.75rem !important;
+      position: relative !important;
+      z-index: 2 !important;
     }
+
+    #header #site-name::before {
+      content: "🚀";
+      font-size: 1.25rem;
+      animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-10px); }
+      60% { transform: translateY(-5px); }
+    }
+
+    #header #user-tools {
+      display: flex !important;
+      align-items: center !important;
+      gap: 1rem !important;
+      position: relative !important;
+      z-index: 2 !important;
+    }
+
     #header #user-tools a {
-      font-size: 0.675rem !important;
+      color: rgba(255, 255, 255, 0.9) !important;
+      font-size: 0.875rem !important;
+      font-weight: 600 !important;
+      padding: 0.5rem 1rem !important;
+      border-radius: 0.5rem !important;
+      transition: all 0.3s ease !important;
+      text-decoration: none !important;
+      backdrop-filter: blur(10px) !important;
+      background: rgba(255, 255, 255, 0.1) !important;
+      border: 1px solid rgba(255, 255, 255, 0.2) !important;
     }
 
-    /* Style header “Hoạt động gần đây” */
-    body.dashboard #content-related #recent-actions-module h2 {
-      background-color: #14394b !important;
-      color:            #fff   !important;
-      font-weight:      bold   !important;
-      padding:          0.5em  1em !important;
-      margin:           0     !important;
+    #header #user-tools a:hover {
+      background: rgba(255, 255, 255, 0.2) !important;
+      color: #ffffff !important;
+      transform: translateY(-2px) !important;
+      box-shadow: var(--shadow-lg) !important;
     }
 
-    /* Module header đồng bộ */
-    #content-main .module > h2 {
-      background-color: #14394b !important;
-      color: #fff !important;
-      padding: .5em !important;
+    /* === Enhanced Hero Welcome Section (Option 1 + Option 3) === */
+    .hero-welcome {
+      background: var(--primary-gradient) !important;
+      color: #ffffff !important;
+      padding: 3rem 2rem !important;
+      border-radius: 1.5rem !important;
+      margin-bottom: 2rem !important;
+      text-align: center !important;
+      box-shadow: 
+        var(--shadow-xl),
+        0 0 30px rgba(102, 126, 234, 0.3),
+        inset 0 0 30px rgba(255, 255, 255, 0.1) !important;
+      border: 1px solid rgba(255, 255, 255, 0.2) !important;
+      position: relative !important;
+      overflow: hidden !important;
+    }
+
+    /* Neon border animation from Option 3 */
+    .hero-welcome::before {
+      content: "";
+      position: absolute;
+      inset: -2px;
+      background: linear-gradient(45deg, #667eea, #764ba2, #667eea, #764ba2);
+      background-size: 400% 400%;
+      border-radius: inherit;
+      z-index: -1;
+      animation: neonBorder 20s ease infinite;
+    }
+
+    @keyframes neonBorder {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    /* Floating particles from Option 1 */
+    .hero-welcome::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        radial-gradient(2px 2px at 20px 30px, rgba(255,255,255,0.3), transparent),
+        radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.2), transparent),
+        radial-gradient(1px 1px at 90px 40px, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.3), transparent),
+        radial-gradient(2px 2px at 160px 30px, rgba(255,255,255,0.2), transparent);
+      background-repeat: repeat;
+      background-size: 200px 100px;
+      animation: sparkle 15s linear infinite;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    @keyframes sparkle {
+      0% { transform: translateY(0px) translateX(0px) rotate(0deg); opacity: 1; }
+      25% { transform: translateY(-10px) translateX(5px) rotate(90deg); opacity: 0.8; }
+      50% { transform: translateY(-5px) translateX(-3px) rotate(180deg); opacity: 0.6; }
+      75% { transform: translateY(-15px) translateX(8px) rotate(270deg); opacity: 0.9; }
+      100% { transform: translateY(0px) translateX(0px) rotate(360deg); opacity: 1; }
+    }
+
+    /* Gradient text animation from Option 1 */
+    .hero-title {
+      font-size: 2.5rem !important;
+      font-weight: 800 !important;
+      margin: 0 0 0.75rem 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 1rem !important;
+      position: relative !important;
+      z-index: 2 !important;
+      background: linear-gradient(-45deg, #ffffff, #f0f0ff, #ffffff, #e6e6ff);
+      background-size: 400% 400%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 3s ease infinite, textGlow 2s ease-in-out infinite alternate;
+      overflow: hidden;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes textGlow {
+      from { 
+        filter: drop-shadow(0 0 5px rgba(255,255,255,0.3));
+        transform: scale(1);
+      }
+      to { 
+        filter: drop-shadow(0 0 15px rgba(255,255,255,0.6));
+        transform: scale(1.02);
+      }
+    }
+
+    /* Shine effect from Option 3 */
+    .hero-title::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+      transform: translateX(-100%);
+      animation: shine 3s infinite;
+    }
+
+    @keyframes shine {
+      0% { transform: translateX(-100%); }
+      50%, 100% { transform: translateX(100%); }
+    }
+
+    .hero-subtitle {
+      font-size: 2rem !important; /* Tăng kích cỡ */
+      font-weight: 900 !important; /* Font nhẹ, thanh lịch */
+      margin: 0 !important;
+      opacity: 1 !important; /* Bắt đầu ẩn cho animation */
+      position: relative !important;
+      z-index: 2 !important;
+      letter-spacing: 0.04em !important; /* Khoảng cách chữ rộng */
+      text-shadow: 
+        0 2px 8px rgba(0,0,0,0.15),
+        0 0 12px rgba(255,255,255,0.2) !important; /* Ánh sáng mềm */
+      line-height: 1.4 !important;
+      font-family: 'Inter', -apple-system, sans-serif !important;
+      text-transform: none !important;
+      animation: 
+        /* subtitleSlideUp 1s ease-out 0.9s forwards,
+        subtitleBreath 5s ease-in-out 2.5s infinite !important; */
+    }
+
+    /* Animation mượt mà cho subtitle */
+    @keyframes subtitleSlideUp {
+      0% { 
+        opacity: 0;
+        transform: translateY(15px);
+        filter: blur(3px);
+      }
+      70% {
+        opacity: 0.8;
+        transform: translateY(-2px);
+        filter: blur(0px);
+      }
+      100% { 
+        opacity: 1;
+        transform: translateY(0px);
+        filter: blur(0px);
+      }
+    }
+
+    /* Hiệu ứng thở nhẹ nhàng */
+    @keyframes subtitleBreath {
+      0%, 100% { 
+        text-shadow: 
+          0 2px 8px rgba(0,0,0,0.15),
+          0 0 12px rgba(255,255,255,0.2);
+        transform: scale(1);
+      }
+      50% { 
+        text-shadow: 
+          0 2px 8px rgba(0,0,0,0.15),
+          0 0 20px rgba(255,255,255,0.4),
+          0 0 30px rgba(255,255,255,0.1);
+        transform: scale(1.01);
+      }
+    }
+
+    .hero-stats {
+      display: flex !important;
+      justify-content: center !important;
+      gap: 2rem !important;
+      margin-top: 2rem !important;
+      position: relative !important;
+      z-index: 2 !important;
+    }
+
+    .hero-stat {
+      text-align: center !important;
+      animation: statPulse 5s ease-in-out infinite;
+    }
+
+    /* Enhanced stats with pulse effect from Option 1 */
+    .hero-stat-value {
+      font-size: 2rem !important;
+      font-weight: 700 !important;
+      display: block !important;
+    }
+
+    @keyframes statPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .hero-stat-label {
+      font-size: 0.875rem !important;
+      opacity: 0.8 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.05em !important;
+    }
+
+    /* === Advanced Stats Grid === */
+    .stats-grid {
+      display: grid !important;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+      gap: 1.5rem !important;
+      margin-bottom: 2rem !important;
+    }
+
+    .stat-card {
+      background: var(--bg-secondary) !important;
+      backdrop-filter: blur(10px) !important;
+      border-radius: 1.25rem !important;
+      padding: 1.5rem !important;
+      box-shadow: var(--shadow-lg) !important;
+      border: 1px solid var(--glassmorphism-border) !important;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+      position: relative !important;
+      overflow: hidden !important;
+    }
+
+    .stat-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: var(--primary-gradient);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-8px) scale(1.02) !important;
+      box-shadow: var(--shadow-xl) !important;
+    }
+
+    .stat-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .stat-header {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      margin-bottom: 1rem !important;
+    }
+
+    .stat-icon {
+      width: 3.5rem !important;
+      height: 3.5rem !important;
+      border-radius: 1rem !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      font-size: 1.25rem !important;
+      color: #ffffff !important;
+      position: relative !important;
+    }
+
+    .stat-icon::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 2px;
+      background: var(--primary-gradient);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+    }
+
+    .stat-value {
+      font-size: 2rem !important;
+      font-weight: 800 !important;
+      color: var(--text-primary) !important;
+      margin: 0 !important;
+      background: var(--primary-gradient) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+      background-clip: text !important;
+    }
+
+    .stat-label {
+      color: var(--text-secondary) !important;
+      font-size: 0.875rem !important;
+      font-weight: 600 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.05em !important;
+      margin: 0.5rem 0 0 0 !important;
+    }
+
+    .stat-trend {
+      font-size: 0.75rem !important;
+      font-weight: 600 !important;
+      padding: 0.25rem 0.5rem !important;
+      border-radius: 0.375rem !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 0.25rem !important;
+    }
+
+    .stat-trend.up {
+      background: rgba(34, 197, 94, 0.1) !important;
+      color: var(--success-color) !important;
+    }
+
+    .stat-trend.down {
+      background: rgba(239, 68, 68, 0.1) !important;
+      color: var(--danger-color) !important;
+    }
+
+    /* === Enhanced Chart Container === */
+    .charts-section {
+      margin-top: 3rem !important;
+    }
+
+    .section-header {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      margin-bottom: 1.5rem !important;
+    }
+
+    .section-title {
+      font-size: 1.5rem !important;
+      font-weight: 700 !important;
+      color: var(--text-primary) !important;
+      margin: 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 0.75rem !important;
+      margin-left: 20px !important;
+      animation: slideInLeft 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.8s forwards !important;
+      opacity: 0;
+    }
+
+    .chart-controls {
+      display: flex !important;
+      gap: 0.75rem !important;
+    }
+
+    .chart-control-btn {
+      padding: 0.5rem 1rem !important;
+      border: 1px solid var(--border-color) !important;
+      border-radius: 0.5rem !important;
+      background: var(--bg-secondary) !important;
+      color: var(--text-secondary) !important;
+      font-size: 0.875rem !important;
+      font-weight: 500 !important;
+      cursor: pointer !important;
+      transition: all 0.2s ease !important;
+    }
+
+    .chart-control-btn:hover,
+    .chart-control-btn.active {
+      background: var(--primary-color) !important;
+      color: #ffffff !important;
+      border-color: var(--primary-color) !important;
+    }
+
+    .charts-grid {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 2rem !important;
+      margin-bottom: 2rem !important;
+    }
+
+    .chart-card {
+      background: var(--bg-secondary) !important;
+      backdrop-filter: blur(10px) !important;
+      border-radius: 1.5rem !important;
+      padding: 2rem !important;
+      box-shadow: var(--shadow-lg) !important;
+      border: 1px solid var(--glassmorphism-border) !important;
+      position: relative !important;
+      overflow: hidden !important;
+      transition: all 0.3s ease !important;
+      margin-left: 20px;
+    }
+
+    .chart-card:hover {
+      transform: translateY(-4px) !important;
+      box-shadow: var(--shadow-xl) !important;
+    }
+
+    .chart-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: var(--primary-gradient);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+
+    .chart-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .chart-header {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      margin-bottom: 1.5rem !important;
+    }
+
+    .chart-title {
+      font-size: 1.125rem !important;
+      font-weight: 700 !important;
+      color: var(--text-primary) !important;
+      margin: 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 0.5rem !important;
+    }
+
+    .chart-subtitle {
+      font-size: 0.875rem !important;
+      color: var(--text-secondary) !important;
+      margin: 0.25rem 0 0 0 !important;
+    }
+
+    .chart-value {
+      text-align: right !important;
+    }
+
+    .chart-main-value {
+      font-size: 1.5rem !important;
+      font-weight: 800 !important;
+      color: var(--text-primary) !important;
       margin: 0 !important;
     }
-    .dashboard-module .module {
-      border: 1px solid #133642 !important;
-      border-radius: 4px !important;
-    }
-    .dashboard-module .module h2 {
-      background-color: #184e74 !important;
-      color: #fff !important;
-      padding: .5em !important;
-      margin: 0 !important;
+
+    .chart-change {
+      font-size: 0.75rem !important;
+      font-weight: 600 !important;
+      margin: 0.25rem 0 0 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: flex-end !important;
+      gap: 0.25rem !important;
     }
 
-    /* Caption “Chức năng” & “Xác thực và ủy quyền” */
-    #content-main .app-meals.module table caption,
-    #content-main .app-auth.module table caption {
-      background-color: #14394b !important;
-      color:            #fff     !important;
-      text-transform:   uppercase;
-      width: 284px !important;
-      table-layout: fixed !important;
+    .chart-container {
+      position: relative !important;
+      height: 350px !important;
+      width: 100% !important;
     }
-    #content-main ,
-    #content-main {
-    border-left: 1px solid #d2d2d49f !important;  /* Viền trái */
-    border-right: 1px solid #d2d2d49f !important; /* Viền phải */
-    border-top: none !important;             /* Không có viền trên */
-    border-bottom: none !important;          /* Không có viền dưới */
-    margin: 0 !important;
-    width: 100% !important;  /* Đảm bảo bảng chiếm hết chiều rộng */
-    /* Tắt link và hover effect */
-      /* Tắt link và hover effect */
+
+    .chart-container canvas {
+      border-radius: 0.75rem !important;
+    }
+
+    /* === Enhanced Module Styling === */
+    body.dashboard #content-main .module {
+      background: var(--bg-secondary) !important;
+      backdrop-filter: blur(10px) !important;
+      border-radius: 1.25rem !important;
+      box-shadow: var(--shadow-lg) !important;
+      border: 1px solid var(--glassmorphism-border) !important;
+      overflow: hidden !important;
+      margin-top: 20px !important;
+      margin-bottom: 4rem !important;
+      transition: all 0.3s ease !important;
+    }
     
-    }
-    /* Tắt link và hover effect */
-    #content-main .app-meals.module table caption a.section,
-    #content-main .app-auth.module table caption a.section {
-      pointer-events: none !important;
-      cursor: default !important;
-      text-decoration: none !important;
-      color: inherit !important;
-    }
-    #content-main .app-meals.module table tbody tr:hover,
-    #content-main .app-auth.module table tbody tr:hover {
-      background-color: rgba(20,57,75,0.1) !important;
-    }
-    #content-main .app-meals.module table tbody tr th a:hover,
-    #content-main .app-auth.module table tbody tr th a:hover {
-      color: #14394b !important;
-      text-decoration: none !important;
+    body.dashboard #content-main .module:hover {
+      transform: translateY(-2px) !important;
+      box-shadow: var(--shadow-xl) !important;
     }
 
-    @media (max-width: 768px) {
-      /* Xếp modules, charts & recent actions thành cột */
-      body.dashboard #content {
-        flex-direction: column !important;
+    body.dashboard #content-main .module table caption {
+      background: var(--primary-gradient) !important;
+      color: #ffffff !important;
+      font-weight: 700 !important;
+      font-size: 1rem !important;
+      padding: 1rem 1.5rem !important;
+      text-align: left !important;
+      margin: 0 !important;
+      align-items: center !important;
+      gap: 0.75rem !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.05em !important;
+    }
+    .module table {
+        border-collapse: collapse;
+    }
+    /* === Responsive Design === */
+    @media (max-width: 1200px) {
+      .charts-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1.5rem !important;
+      }
+
+      .hero-stats {
         gap: 1rem !important;
       }
 
-      /* Cho khung CHỨC NĂNG và Hoạt động cùng charts đều full width */
-      body.dashboard #content #content-main,
-      body.dashboard #content-related {
-        flex: auto !important;
-        max-width: none !important;
+      .hero-stat-value {
+        font-size: 1.5rem !important;
+      }
+    }
+
+    @media (max-width: 768px) {
+      body.dashboard #content {
+        padding: 0.75rem !important;
+      }
+
+      /* === MOBILE HEADER OPTIMIZATION === */
+      #header {
+        padding: 0.8rem 1rem !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        flex-wrap: nowrap !important;
+        min-height: 70px !important;
+        overflow: visible !important;
+      }
+
+      #header #site-name,
+      #header #site-name a {
+        font-size: 1.1rem !important;
+        font-weight: 700 !important;
+        gap: 0.5rem !important;
+        white-space: nowrap !important;
+        overflow: visible !important;
+        flex: 1 !important;
+        min-width: 0 !important;
+      }
+
+      #header #site-name::before {
+        font-size: 1rem !important;
+        flex-shrink: 0 !important;
+      }
+
+      #header #user-tools {
+        gap: 0.5rem !important;
+        flex-shrink: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+      }
+
+      #header #user-tools a {
+        font-size: 0.75rem !important;
+        padding: 0.5rem 0.8rem !important;
+        white-space: nowrap !important;
+        border-radius: 0.5rem !important;
+        display: inline-block !important;
+      }
+
+      /* === FORCE CHARTS BELOW ALL CONTENT === */
+      .charts-section {
+        margin-top: 2rem !important;
+        clear: both !important;
+        width: 100% !important;
+        display: block !important;
+        order: 999 !important;
+      }
+
+      /* === ENSURE MAIN CONTENT STACKS VERTICALLY === */
+      body.dashboard #content-main {
+        display: flex !important;
+        flex-direction: column !important;
         width: 100% !important;
       }
 
-      /* Charts cũng bỏ margin-left nếu có */
-      .charts-container {
-        margin: 2rem 0 !important;
-        width: auto !important;
+      /* === MODULE ORDERING === */
+      body.dashboard #content-main .module {
+        order: 1 !important;
+        margin-bottom: 1.5rem !important;
+        width: 100% !important;
+      }
+
+      .section-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 0.75rem !important;
+        margin-bottom: 1rem !important;
+        padding: 0 !important;
+      }
+
+      .section-title {
+        font-size: 1.2rem !important;
+        margin-left: 0 !important;
+        padding: 0 !important;
+      }
+
+      .charts-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1.5rem !important;
+        margin-bottom: 1.5rem !important;
+        padding: 0 !important;
+        width: 100% !important;
+      }
+
+      .chart-card {
+        padding: 1.5rem !important;
+        margin: 0 !important;
+        border-radius: 1rem !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+
+      .chart-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 0.5rem !important;
+        margin-bottom: 1rem !important;
+      }
+
+      .chart-title {
+        font-size: 1rem !important;
+        gap: 0.5rem !important;
+        line-height: 1.3 !important;
+      }
+
+      .chart-subtitle {
+        font-size: 0.8rem !important;
+        margin: 0.25rem 0 0 0 !important;
+        line-height: 1.2 !important;
+      }
+
+      .chart-value {
+        text-align: left !important;
+        width: 100% !important;
+      }
+
+      .chart-main-value {
+        font-size: 1.25rem !important;
+        line-height: 1.2 !important;
+      }
+
+      .chart-container {
+        height: 280px !important;
+        width: 100% !important;
+        position: relative !important;
+        overflow: hidden !important;
+      }
+
+      .chart-container canvas {
+        max-width: 100% !important;
+        height: auto !important;
+      }
+
+      /* === MOBILE MODULE STYLING === */
+      body.dashboard #content-main .module {
+        margin-top: 1rem !important;
+        margin-bottom: 2rem !important;
+        border-radius: 1rem !important;
+      }
+
+      body.dashboard #content-main .module table caption {
+        font-size: 0.9rem !important;
+        padding: 0.75rem 1rem !important;
+      }
+
+      /* === MOBILE CHART CONTROLS === */
+      .chart-controls {
+        flex-wrap: wrap !important;
+        gap: 0.5rem !important;
+      }
+
+      .chart-control-btn {
+        font-size: 0.75rem !important;
+        padding: 0.4rem 0.8rem !important;
       }
     }
+
+    @media (max-width: 480px) {
+      body.dashboard #content {
+        padding: 0.5rem !important;
+      }
+
+      #header {
+        padding: 0.5rem 0.6rem !important;
+        min-height: 55px !important;
+        flex-wrap: wrap !important;
+      }
+
+      #header #site-name,
+      #header #site-name a {
+        font-size: 0.9rem !important;
+        gap: 0.3rem !important;
+        flex: 1 !important;
+        min-width: 0 !important;
+      }
+
+      #header #site-name::before {
+        font-size: 0.8rem !important;
+      }
+
+      #header #user-tools {
+        gap: 0.3rem !important;
+      }
+
+      #header #user-tools a {
+        font-size: 0.65rem !important;
+        padding: 0.25rem 0.5rem !important;
+        border-radius: 0.3rem !important;
+      }
+
+      .hero-welcome {
+        padding: 1.5rem 0.75rem !important;
+        border-radius: 0.75rem !important;
+      }
+
+      .hero-title {
+        font-size: 1.25rem !important;
+      }
+
+      .hero-subtitle {
+        font-size: 0.85rem !important;
+        letter-spacing: 0.01em !important;
+      }
+
+      .hero-stat {
+        padding: 0.6rem 0.8rem !important;
+        border-radius: 0.6rem !important;
+      }
+
+      .hero-stat-value {
+        font-size: 1.1rem !important;
+      }
+
+      .hero-stat-label {
+        font-size: 0.75rem !important;
+      }
+
+      .stat-card {
+        padding: 0.8rem !important;
+      }
+
+      .stat-value {
+        font-size: 1.3rem !important;
+      }
+
+      .chart-card {
+        padding: 1rem !important;
+      }
+
+      .chart-container {
+        height: 220px !important;
+        width: 100% !important;
+        margin: 0 !important;
+      }
+
+      .section-title {
+        font-size: 1rem !important;
+        margin: 0 !important;
+      }
+
+      .chart-card {
+        padding: 0.8rem !important;
+        margin: 0 !important;
+        border-radius: 0.6rem !important;
+      }
+
+      .chart-title {
+        font-size: 0.85rem !important;
+        gap: 0.25rem !important;
+      }
+
+      .chart-subtitle {
+        font-size: 0.7rem !important;
+      }
+
+      .chart-main-value {
+        font-size: 1rem !important;
+      }
+
+      .charts-section {
+        margin-top: 1rem !important;
+      }
+
+      .charts-grid {
+        gap: 0.8rem !important;
+        margin-bottom: 0.8rem !important;
+      }
+    }
+
+    /* === Advanced Animations === */
+    @keyframes slideInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes slideInRight {
+      from {
+        opacity: 0;
+        transform: translateX(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    /* Animation cho số học sinh */
+    .animated-student-count {
+      animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.25s forwards !important;
+      opacity: 0;
+    }
+
+    .hero-welcome {
+      animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+    }
+
+    .stat-card:nth-child(1) { animation: slideInLeft 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.1s forwards !important; opacity: 0; }
+    .stat-card:nth-child(2) { animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.2s forwards !important; opacity: 0; }
+    .stat-card:nth-child(3) { animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.3s forwards !important; opacity: 0; }
+    .stat-card:nth-child(4) { animation: slideInRight 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.4s forwards !important; opacity: 0; }
+
+    .chart-card:nth-child(1) { animation: slideInLeft 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.5s forwards !important; opacity: 0; }
+    .chart-card:nth-child(2) { animation: slideInRight 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.6s forwards !important; opacity: 0; }
+
+    #content-main .module { animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.7s forwards !important; opacity: 0; }
   </style>
 {% endblock %}
 
 {% block content %}
+  <!-- Hero Welcome Section -->
+  <div class="hero-welcome">
+    <h1 class="hero-title">
+      <i class="fas fa-tachometer-alt"></i>
+      Dashboard Quản Lý
+    </h1>
+    <p class="hero-subtitle">Tổng quan và phân tích dữ liệu hệ thống</p>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <span class="hero-stat-label">Tổng bữa ăn</span>
+        <span class="hero-stat-value" id="hero-total-meals">0</span>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat-label">Học sinh</span>
+        <span class="hero-stat-value animated-student-count" id="hero-student-count">{{ current_student_count }}</span>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat-label">Doanh thu</span>
+        <span class="hero-stat-value" id="hero-total-revenue">0₫</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Enhanced Stats Grid -->
+  <div class="stats-grid">
+    <!-- Tổng bữa ăn -->
+    <div class="stat-card">
+      <div class="stat-header">
+        <div class="stat-icon" style="background: var(--chart-gradient-1);">
+          <i class="fas fa-utensils"></i>
+        </div>
+        <div class="stat-trend
+            {% if meals_trend_direction == 'up' %}up
+            {% elif meals_trend_direction == 'down' %}down
+            {% else %}neutral
+            {% endif %}">
+          <i class="fas fa-arrow-
+            {% if meals_trend_direction == 'down' %}down{% else %}up{% endif %}"></i>
+          {{ meals_trend_percentage }}%
+        </div>
+      </div>
+      <div class="stat-value" id="total-meals">{{ total_meals }}</div>
+      <div class="stat-label">Tổng bữa ăn</div>
+    </div>
+
+    <!-- Học sinh đang học -->
+    <div class="stat-card">
+      <div class="stat-header">
+        <div class="stat-icon" style="background: var(--chart-gradient-2);">
+          <i class="fas fa-users"></i>
+        </div>
+        <div class="stat-trend
+            {% if students_trend_direction == 'up' %}up
+            {% elif students_trend_direction == 'down' %}down
+            {% else %}neutral
+            {% endif %}">
+          <i class="fas fa-arrow-
+            {% if students_trend_direction == 'down' %}down{% else %}up{% endif %}"></i>
+          {{ students_trend_percentage }}%
+        </div>
+      </div>
+      <div class="stat-value animated-student-count" id="student-count">
+        {{ current_student_count }}
+      </div>
+      <div class="stat-label">Học sinh đang học</div>
+    </div>
+
+    <!-- Doanh thu tháng -->
+    <div class="stat-card">
+      <div class="stat-header">
+        <div class="stat-icon" style="background: var(--chart-gradient-3);">
+          <i class="fas fa-coins"></i>
+        </div>
+        <div class="stat-trend
+            {% if revenue_trend_direction == 'up' %}up
+            {% elif revenue_trend_direction == 'down' %}down
+            {% else %}neutral
+            {% endif %}">
+          <i class="fas fa-arrow-
+            {% if revenue_trend_direction == 'down' %}down{% else %}up{% endif %}"></i>
+          {{ revenue_trend_percentage }}%
+        </div>
+      </div>
+      <div class="stat-value" id="total-revenue">
+        {{ total_revenue|floatformat:0 }}₫
+      </div>
+      <div class="stat-label">Doanh thu tháng</div>
+    </div>
+
+    <!-- Tháng hiện tại -->
+    <div class="stat-card">
+      <div class="stat-header">
+        <div class="stat-icon" style="background: var(--warning-color);">
+          <i class="fas fa-calendar-alt"></i>
+        </div>
+        <div class="stat-trend neutral">
+          <i class="fas fa-clock"></i> Hiện tại
+        </div>
+      </div>
+      <div class="stat-value" id="current-month">THÁNG {{ current_month }}</div>
+      <div class="stat-label">Tháng hiện tại</div>
+    </div>
+  </div>
+
+  <!-- Keep original Django admin content -->
   {{ block.super }}
 
-  {# ==== Các biểu đồ ==== #}
-  <div class="charts-container">
-    <div>
-      <h3 style="margin-bottom:.5rem; color:#14394b;">Số bữa ăn theo tháng</h3>
-      <canvas id="chartMealsByMonth"></canvas>
+  <!-- Enhanced Charts Section -->
+  <div class="charts-section">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">
+          <i class="fas fa-chart-line"></i>
+          Phân tích dữ liệu
+        </h2>
+      </div>
     </div>
-    <div>
-      <h3 style="margin-bottom:.5rem; color:#14394b;">Học phí theo tháng</h3>
-      <canvas id="chartPaidByMonth"></canvas>
+
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">
+              <i class="fas fa-utensils"></i>
+              Bữa ăn theo tháng
+            </h3>
+            <p class="chart-subtitle">Xu hướng phục vụ bữa ăn</p>
+          </div>
+          <div class="chart-value">
+            <div class="chart-main-value" id="chart-meals-total">0</div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="chartMealsByMonth"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">
+              <i class="fas fa-coins"></i>
+              Doanh thu theo tháng
+            </h3>
+            <p class="chart-subtitle">Tình hình thu học phí</p>
+          </div>
+          <div class="chart-value">
+            <div class="chart-main-value" id="chart-revenue-total">0₫</div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="chartPaidByMonth"></canvas>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
     document.addEventListener('DOMContentLoaded', function(){
-      // Đổi “Meals” → “CHỨC NĂNG”
-      const cap = document.querySelector(
-        '#content-main .app-meals.module table caption a.section'
-      );
-      if (cap) { cap.textContent = 'CHỨC NĂNG'; cap.title = 'Các chức năng'; }
-
-      // Chèn 2 link mới vào menu “Chức năng”
-      const tbody = document.querySelector(
-        '#content-main .app-meals.module table tbody'
-      );
+      // Thêm icons và styling cho menu items
+      const tbody = document.querySelector('#content-main .app-meals.module table tbody');
       if (tbody) {
-        tbody.insertAdjacentHTML('afterbegin', `
-          <tr>
-            <th scope="row"><a href="{% url 'meals:student_payment_edit' %}">Chỉnh sửa công nợ</a></th>
+        // Function to create new row
+        function makeRow(url, text, iconClass, cssClass) {
+          const tr = document.createElement('tr');
+          tr.className = cssClass;
+          tr.innerHTML = `
+            <th scope="row">
+              <a href="${url}">
+                <i class="${iconClass}"></i>
+                ${text}
+              </a>
+            </th>
             <td></td>
-            <td><a href="{% url 'meals:student_payment_edit' %}" class="changelink">Đi đến</a></td>
-          </tr>
-          <tr>
-            <th scope="row"><a href="{% url 'meals:statistics' %}">Thống kê</a></th>
-            <td></td>
-            <td><a href="{% url 'meals:statistics' %}" class="changelink">Đi đến</a></td>
-          </tr>
-        `);
+            <td>
+              <a href="${url}" class="changelink">{% trans "Đi đến" %}</a>
+            </td>
+          `;
+          return tr;
+        }
+
+        const statsURL = "{% url 'meals:statistics' %}";
+        const debtURL  = "{% url 'meals:student_payment_edit' %}";
+        const statsText= "{% trans 'Thống kê' %}";
+        const debtText = "{% trans 'Chỉnh sửa công nợ' %}";
+
+        tbody.insertBefore(makeRow(debtURL, debtText, 'row2'), tbody.firstChild);
+        tbody.insertBefore(makeRow(statsURL, statsText, 'row1'), tbody.firstChild);
+
+        // Add icons to existing menu items
+        const links = tbody.querySelectorAll('th a');
+        links.forEach(link => {
+          const text = link.textContent.trim();
+          const iconSpan = link.querySelector('i');
+          
+          // if (!iconSpan) {
+          //   let iconClass = '';
+          //   if (text.includes('Students') || text.includes('Học sinh')) {
+          //     iconClass = 'fas fa-users';
+          //   } else if (text.includes('Meal records') || text.includes('Bữa ăn') || text.includes('meal')) {
+          //     iconClass = 'fas fa-utensils';
+          //   } else if (text.includes('Meal balance audits') || text.includes('audit')) {
+          //     iconClass = 'fas fa-file-alt';
+          //   } else if (text.includes('Student health infos') || text.includes('health')) {
+          //     iconClass = 'fas fa-heart';
+          //   } else if (text.includes('Study groups') || text.includes('Study classes')) {
+          //     iconClass = 'fas fa-users-cog';
+          //   }
+            
+          //   if (iconClass) {
+          //     const icon = document.createElement('i');
+          //     icon.className = iconClass;
+          //     link.insertBefore(icon, link.firstChild);
+          //   }
+          // }
+        });
       }
 
-      // hàm lấy màu từ CSS variables
-      // Hàm lấy CSS var
-    function getV(name){
-      return getComputedStyle(document.documentElement)
-             .getPropertyValue(name).trim();
-    }
+      // Add icons to auth module
+      const authTbody = document.querySelector('#content-main .app-auth.module table tbody');
+      if (authTbody) {
+        const authLinks = authTbody.querySelectorAll('th a');
+        authLinks.forEach(link => {
+          const text = link.textContent.trim();
+          const iconSpan = link.querySelector('i');
+          
+          if (!iconSpan) {
+            let iconClass = '';
+            if (text.includes('Groups') || text.includes('Nhóm')) {
+              iconClass = 'fas fa-users-cog';
+            } else if (text.includes('Users') || text.includes('Người dùng')) {
+              iconClass = 'fas fa-user';
+            }
+            
+            if (iconClass) {
+              const icon = document.createElement('i');
+              icon.className = iconClass;
+              link.insertBefore(icon, link.firstChild);
+            }
+          }
+        });
+      }
 
-    const months      = {{ chart_meal_labels|safe }};
-    const mealCounts  = {{ chart_meal_data|safe }};
-    const paidAmounts = {{ chart_paid_month_data|safe }};
+      // Update captions
+      const mealsCap = document.querySelector('#content-main .app-meals.module table caption a.section');
+      if (mealsCap) {
+        mealsCap.textContent = 'CHỨC NĂNG';
+        mealsCap.setAttribute('title', 'Các chức năng');
+      }
 
-    // Lấy màu từ biến
-    const lineColor = getV('--chart-line-color'),
-          fillColor = getV('--chart-fill-color'),
-          gridColor = getV('--chart-grid-color');
+      const authCap = document.querySelector('#content-main .app-auth.module table caption a.section');
+      if (authCap) {
+        authCap.textContent = 'XÁC THỰC VÀ ỦY QUYỀN';
+        authCap.setAttribute('title', 'Xác thực và ủy quyền');
+      }
 
-    // Vẽ chart Số bữa ăn
-    const chartMeals = new Chart(
-      document.getElementById('chartMealsByMonth').getContext('2d'),
-      {
-        type: 'line',
-        data: {
-          labels: months,
-          datasets: [{
-            label: 'Số bữa ăn (' + new Date().getFullYear() + ')',
-            data: mealCounts,
-            fill: false,
-            borderColor: lineColor,
-            backgroundColor: fillColor,
-            pointBackgroundColor: lineColor,
-            pointBorderColor: '#fff',
-            tension: 0.1
-          }]
-        },
-        options: {
+      // Chart data from Django
+      const months = {{ chart_meal_labels|safe }};
+      const mealCounts = {{ chart_meal_data|safe }};
+      const paidAmounts = {{ chart_paid_month_data|safe }};
+
+      // Update stats
+      const totalMeals = mealCounts.reduce((a, b) => a + b, 0);
+      const currentMonthIndex = new Date().getMonth();  // 0 = Jan, …, 6 = Jul
+      const totalRevenue = paidAmounts[currentMonthIndex] || 0;
+      
+      // Format numbers with animation
+      function animateNumber(element, targetValue, isRevenue = false) {
+        const startValue = 0;
+        const duration = 2000;
+        const startTime = performance.now();
+        
+        function update(currentTime) {
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const easedProgress = 1 - Math.pow(1 - progress, 3); // easeOutCubic
+          
+          const currentValue = Math.floor(startValue + (targetValue - startValue) * easedProgress);
+          const formattedValue = isRevenue ? 
+            currentValue.toLocaleString() + ' ₫' : 
+            currentValue.toLocaleString();
+            
+          element.textContent = formattedValue;
+          
+          if (progress < 1) {
+            requestAnimationFrame(update);
+          }
+        }
+        
+        requestAnimationFrame(update);
+      }
+
+      // Animate all stat numbers
+      setTimeout(() => {
+        animateNumber(document.getElementById('total-meals'), totalMeals);
+        animateNumber(document.getElementById('hero-total-meals'), totalMeals);
+        animateNumber(document.getElementById('total-revenue'), totalRevenue, true);
+        animateNumber(document.getElementById('hero-total-revenue'), totalRevenue, true);
+        animateNumber(document.getElementById('chart-meals-total'), totalMeals);
+        animateNumber(document.getElementById('chart-revenue-total'), totalRevenue, true);
+        
+        // Thêm animation cho số học sinh
+        animateNumber(document.getElementById('student-count'), {{ current_student_count }});
+        animateNumber(document.getElementById('hero-student-count'), {{ current_student_count }});
+        
+      }, 500);
+
+      // Initialize charts immediately
+      initializeCharts();
+
+      function initializeCharts() {
+        // Enhanced chart configuration
+        const chartConfig = {
           responsive: true,
           maintainAspectRatio: false,
+          interaction: {
+            intersect: false,
+            mode: 'index',
+          },
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              titleColor: '#ffffff',
+              bodyColor: '#ffffff',
+              borderColor: 'rgba(255, 255, 255, 0.1)',
+              borderWidth: 1,
+              cornerRadius: 8,
+              displayColors: false,
+              titleFont: { size: 14, weight: 'bold' },
+              bodyFont: { size: 13 },
+              padding: 12
+            }
+          },
           scales: {
             x: {
-              grid: { color: gridColor }
+              grid: {
+                display: true,
+                color: 'rgba(148, 163, 184, 0.1)',
+                borderDash: [2, 2]
+              },
+              ticks: {
+                color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim(),
+                font: { size: 11, weight: '500' }
+              },
+              border: {
+                display: false
+              }
             },
             y: {
               beginAtZero: true,
-              grid: { color: gridColor },
-              ticks: { callback: v => v.toLocaleString() + '₫' }
+              grid: {
+                display: true,
+                color: 'rgba(148, 163, 184, 0.1)',
+                borderDash: [2, 2]
+              },
+              ticks: {
+                color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim(),
+                font: { size: 11, weight: '500' }
+              },
+              border: {
+                display: false
+              }
             }
+          },
+          animation: {
+            duration: 2000,
+            easing: 'easeOutCubic'
           }
-        }
-      }
-    );
+        };
 
-    // Vẽ chart Học phí
-    const chartPaid = new Chart(
-      document.getElementById('chartPaidByMonth').getContext('2d'),
-      {
-        type: 'bar',
-        data: {
-          labels: months,
-          datasets: [{
-            label: 'Học phí (' + new Date().getFullYear() + ')',
-            data: paidAmounts,
-            backgroundColor: fillColor,
-            borderColor: lineColor,
-            borderWidth: 1
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            x: {
-              grid: { color: gridColor }
+        // Enhanced line chart for meals
+        const ctx1 = document.getElementById('chartMealsByMonth').getContext('2d');
+        const gradient1 = ctx1.createLinearGradient(0, 0, 0, 300);
+        gradient1.addColorStop(0, 'rgba(102, 126, 234, 0.8)');
+        gradient1.addColorStop(0.5, 'rgba(102, 126, 234, 0.4)');
+        gradient1.addColorStop(1, 'rgba(102, 126, 234, 0.1)');
+
+        const chartMeals = new Chart(ctx1, {
+          type: 'line',
+          data: {
+            labels: months,
+            datasets: [{
+              data: mealCounts,
+              fill: true,
+              backgroundColor: gradient1,
+              borderColor: '#667eea',
+              pointBackgroundColor: '#667eea',
+              pointBorderColor: '#ffffff',
+              pointBorderWidth: 3,
+              pointRadius: 6,
+              pointHoverRadius: 8,
+              pointHoverBackgroundColor: '#667eea',
+              pointHoverBorderColor: '#ffffff',
+              pointHoverBorderWidth: 3,
+              tension: 0.4,
+              borderWidth: 3
+            }]
+          },
+          options: {
+            ...chartConfig,
+            plugins: {
+              ...chartConfig.plugins,
+              tooltip: {
+                ...chartConfig.plugins.tooltip,
+                callbacks: {
+                  label: function(context) {
+                    return `Số bữa ăn: ${context.parsed.y.toLocaleString()}`;
+                  }
+                }
+              }
             },
-            y: {
-              beginAtZero: true,
-              grid: { color: gridColor },
-              ticks: { callback: v => v.toLocaleString() + '₫' }
+            scales: {
+              ...chartConfig.scales,
+              y: {
+                ...chartConfig.scales.y,
+                ticks: {
+                  ...chartConfig.scales.y.ticks,
+                  callback: function(value) {
+                    return value.toLocaleString();
+                  }
+                }
+              }
             }
           }
-        }
+        });
+
+        // Enhanced bar chart for revenue
+        const ctx2 = document.getElementById('chartPaidByMonth').getContext('2d');
+        const gradient2 = ctx2.createLinearGradient(0, 0, 0, 300);
+        gradient2.addColorStop(0, 'rgba(240, 147, 251, 0.8)');
+        gradient2.addColorStop(0.5, 'rgba(245, 87, 108, 0.6)');
+        gradient2.addColorStop(1, 'rgba(245, 87, 108, 0.1)');
+
+        const chartRevenue = new Chart(ctx2, {
+          type: 'bar',
+          data: {
+            labels: months,
+            datasets: [{
+              data: paidAmounts,
+              backgroundColor: gradient2,
+              borderColor: '#f5576c',
+              borderWidth: 2,
+              borderRadius: 8,
+              borderSkipped: false,
+              hoverBackgroundColor: 'rgba(245, 87, 108, 0.9)',
+              hoverBorderColor: '#f5576c'
+            }]
+          },
+          options: {
+            ...chartConfig,
+            plugins: {
+              ...chartConfig.plugins,
+              tooltip: {
+                ...chartConfig.plugins.tooltip,
+                callbacks: {
+                  label: function(context) {
+                    return `Doanh thu: ${context.parsed.y.toLocaleString()}₫`;
+                  }
+                }
+              }
+            },
+            scales: {
+              ...chartConfig.scales,
+              y: {
+                ...chartConfig.scales.y,
+                ticks: {
+                  ...chartConfig.scales.y.ticks,
+                  callback: function(value) {
+                    return value.toLocaleString() + '₫';
+                  }
+                }
+              }
+            }
+          }
+        });
+
+        // Chart controls (for future implementation)
+        document.querySelectorAll('.chart-control-btn').forEach(btn => {
+          btn.addEventListener('click', function() {
+            document.querySelectorAll('.chart-control-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            // Add period change logic here
+          });
+        });
+
+        // Theme change observer
+        new MutationObserver(mutations => {
+          mutations.forEach(mutation => {
+            if (mutation.attributeName === 'data-theme') {
+              const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim();
+              
+              // Update chart text colors
+              [chartMeals, chartRevenue].forEach(chart => {
+                chart.options.scales.x.ticks.color = textColor;
+                chart.options.scales.y.ticks.color = textColor;
+                chart.update('none');
+              });
+            }
+          });
+        }).observe(document.documentElement, { attributes: true });
       }
-    );
-
-    // Observer để update màu khi theme change
-    new MutationObserver(muts => {
-      muts.forEach(m => {
-        if (m.attributeName === 'data-theme') {
-          const nl = getV('--chart-line-color'),
-                nf = getV('--chart-fill-color'),
-                ng = getV('--chart-grid-color');
-          // update line chart
-          chartMeals.data.datasets.forEach(ds => {
-            ds.borderColor = nl;
-            ds.pointBackgroundColor = nl;
-            ds.backgroundColor = nf;
-          });
-          chartMeals.options.scales.x.grid.color = ng;
-          chartMeals.options.scales.y.grid.color = ng;
-          chartMeals.update();
-          // update bar chart
-          chartPaid.data.datasets.forEach(ds => {
-            ds.borderColor = nl;
-            ds.backgroundColor = nf;
-          });
-          chartPaid.options.scales.x.grid.color = ng;
-          chartPaid.options.scales.y.grid.color = ng;
-          chartPaid.update();
-        }
-      });
-    }).observe(document.documentElement, { attributes: true });
-
-  });
+    });
   </script>
 {% endblock %}
 

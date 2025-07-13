@@ -4,98 +4,420 @@
 {% block title %}Chỉnh sửa Thanh toán Học sinh{% endblock %}
 
 {% block content %}
-<h2>Chỉnh sửa Thanh toán Học sinh</h2>
+<div class="container-fluid py-4" style="max-width: 1200px;">
+    <!-- Header Section -->
+    <div class="hero-header mb-5">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col-12">
+                    <div class="header-content text-center">
+                        <div class="header-icon mb-3">
+                            <i class="fas fa-credit-card"></i>
+                        </div>
+                        <h1 class="header-title mb-2">Chỉnh sửa Thanh toán Học sinh</h1>
+                        <p class="header-subtitle mb-0">Quản lý thông tin thanh toán và bữa ăn một cách hiệu quả</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-{% if form.errors %}
-<div class="alert alert-danger">
-    <ul>
-    {% for field in form %}
-      {% for error in field.errors %}
-         <li>{{ field.label }}: {{ error }}</li>
-      {% endfor %}
-    {% endfor %}
-    {% for error in form.non_field_errors %}
-         <li>{{ error }}</li>
-    {% endfor %}
-    </ul>
+    <!-- Error Messages -->
+    {% if form.errors %}
+    <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Có lỗi xảy ra!</strong>
+        </div>
+        <ul class="mb-0 mt-2">
+        {% for field in form %}
+          {% for error in field.errors %}
+             <li>{{ field.label }}: {{ error }}</li>
+          {% endfor %}
+        {% endfor %}
+        {% for error in form.non_field_errors %}
+             <li>{{ error }}</li>
+        {% endfor %}
+        </ul>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+
+    <!-- Main Form Card -->
+    <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-body p-0">
+            <form method="post" id="payment-form">
+                {% csrf_token %}
+                
+                <!-- Form Content -->
+                <div class="row g-0">
+                    <!-- Left Column - Form Fields -->
+                    <div class="col-lg-8">
+                        <div class="p-4">
+                            <!-- Section Header -->
+                            <div class="d-flex align-items-center mb-4">
+                                <i class="fas fa-edit text-primary me-2"></i>
+                                <h6 class="fw-semibold text-dark mb-0">Thông tin thanh toán</h6>
+                            </div>
+                            
+                            <!-- Student Selection -->
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small fw-medium mb-2 d-block">
+                                        <i class="fas fa-calendar-alt me-1"></i>{{ form.term.label }}
+                                    </label>
+                                    <div class="dropdown-container">
+                                        {{ form.term }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small fw-medium mb-2 d-block">
+                                        <i class="fas fa-chalkboard me-1"></i>{{ form.classroom.label }}
+                                    </label>
+                                    <div class="dropdown-container">
+                                        {{ form.classroom }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small fw-medium mb-2 d-block">
+                                        <i class="fas fa-user-graduate me-1"></i>{{ form.student.label }}
+                                    </label>
+                                    <div class="dropdown-container">
+                                        {{ form.student }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small fw-medium mb-2 d-block">
+                                        <i class="fas fa-calendar me-1"></i>{{ form.month.label }}
+                                    </label>
+                                    <div class="dropdown-container">
+                                        {{ form.month }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Payment Details Section -->
+                            <div class="border-top pt-4">
+                                <div class="d-flex align-items-center mb-3">
+                                    <i class="fas fa-money-bill-wave text-success me-2"></i>
+                                    <h6 class="fw-semibold text-dark mb-0">Chi tiết thanh toán</h6>
+                                </div>
+                                
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label text-muted small fw-medium mb-2 d-block">
+                                            <i class="fas fa-graduation-cap me-1"></i>{{ form.tuition_fee.label }}
+                                        </label>
+                                        <input type="text" id="id_tuition_fee" name="tuition_fee" class="form-control money custom-input"
+                                               value="{{ form.tuition_fee.value|default_if_none:'' }}" placeholder="0">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label text-muted small fw-medium mb-2 d-block">
+                                            <i class="fas fa-utensils me-1"></i>{{ form.meal_price.label }}
+                                        </label>
+                                        <div class="dropdown-container">
+                                            {{ form.meal_price }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row g-3 mt-1">
+                                    <div class="col-md-6">
+                                        <label class="form-label text-muted small fw-medium mb-2 d-block">
+                                            <i class="fas fa-hand-holding-usd me-1"></i>{{ form.amount_paid.label }}
+                                        </label>
+                                        <input type="text" id="id_amount_paid" name="amount_paid" class="form-control money custom-input"
+                                               value="{{ form.amount_paid.value|default_if_none:'' }}" placeholder="0">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label text-muted small fw-medium mb-2 d-block">
+                                            <i class="fas fa-history me-1"></i>Tiền tháng trước
+                                        </label>
+                                        <div class="dropdown-container">
+                                            {{ form.prev_month_balance }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row g-3 mt-1">
+                                    <div class="col-md-6">
+                                        <label class="form-label text-muted small fw-medium mb-2 d-block">
+                                            <i class="fas fa-calendar-check me-1"></i>Tiền tháng này
+                                        </label>
+                                        <div class="dropdown-container">
+                                            {{ form.current_month_payment }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <div class="d-flex justify-content-center mt-4">
+                                <button type="submit" class="btn btn-primary btn-lg px-5 py-2 rounded-pill shadow-sm">
+                                    <i class="fas fa-save me-2"></i>Lưu lại
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column - Meal Information -->
+                    <div class="col-lg-4 bg-light border-start">
+                        <div class="p-4 h-100">
+                            <!-- Meal Count Header -->
+                            <div class="d-flex align-items-center mb-3">
+                                <i class="fas fa-utensils text-primary me-2"></i>
+                                <span class="fw-semibold text-dark">Số bữa ăn đã ăn</span>
+                            </div>
+
+                            <!-- Meal Count Cards -->
+                            <div class="row g-3 mb-4">
+                                <div class="col-6">
+                                    <div class="text-center p-3 bg-white rounded-3 shadow-sm">
+                                        <div class="mb-2">
+                                            <i class="fas fa-sun text-warning" style="font-size: 2rem;"></i>
+                                        </div>
+                                        <h4 class="fw-bold text-warning mb-1" id="breakfast_count">{{ breakfast_count|default:"0" }}</h4>
+                                        <small class="text-muted">Bữa sáng</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center p-3 bg-white rounded-3 shadow-sm">
+                                        <div class="mb-2">
+                                            <i class="fas fa-cloud-sun text-success" style="font-size: 2rem;"></i>
+                                        </div>
+                                        <h4 class="fw-bold text-success mb-1" id="lunch_count">{{ lunch_count|default:"0" }}</h4>
+                                        <small class="text-muted">Bữa trưa</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Meal Statistics -->
+                            <div id="meal-stats" style="display:none;">
+                                <div class="mb-4">
+                                    <h6 class="fw-semibold text-warning mb-3">
+                                        <i class="fas fa-sun me-2"></i>Chi tiết Bữa sáng
+                                    </h6>
+                                    <div id="breakfast-table" class="table-responsive"></div>
+                                </div>
+
+                                <div>
+                                    <h6 class="fw-semibold text-success mb-3">
+                                        <i class="fas fa-cloud-sun me-2"></i>Chi tiết Bữa trưa
+                                    </h6>
+                                    <div id="lunch-table" class="table-responsive"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
-{% endif %}
 
-<form method="post" id="payment-form">
-    {% csrf_token %}
-    <div class="form-group">
-       {{ form.term.label_tag }}
-       {{ form.term }}
-    </div>
-    <div class="form-group">
-        {{ form.classroom.label_tag }}
-        {{ form.classroom }}
-    </div>
-    <div class="form-group">
-        {{ form.student.label_tag }}
-        {{ form.student }}
-    </div>
+<!-- Custom CSS -->
+<style>
+    .hero-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 3rem 0;
+        margin: -1.5rem -15px 0;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .hero-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" fill="rgba(255,255,255,0.1)"><polygon points="0,0 1000,100 1000,0"/></svg>');
+        background-size: cover;
+        pointer-events: none;
+    }
+    
+    .header-content {
+        position: relative;
+        z-index: 2;
+    }
+    
+    .header-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 80px;
+        height: 80px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        backdrop-filter: blur(10px);
+        margin: 0 auto;
+        animation: pulse 2s infinite;
+    }
+    
+    .header-icon i {
+        font-size: 2rem;
+        color: white;
+    }
+    
+    .header-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .header-subtitle {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        font-weight: 400;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    
+    @media (max-width: 768px) {
+        .hero-header {
+            padding: 2rem 0;
+        }
+        .header-title {
+            font-size: 2rem;
+        }
+        .header-icon {
+            width: 60px;
+            height: 60px;
+        }
+        .header-icon i {
+            font-size: 1.5rem;
+        }
+    }
+    
+    .custom-input {
+        border: 2px solid #e9ecef;
+        border-radius: 0.5rem;
+        padding: 0.75rem 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .custom-input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+        transform: translateY(-1px);
+    }
+    
+    .form-select {
+        border: 2px solid #e9ecef;
+        border-radius: 0.5rem;
+        padding: 0.75rem 1rem;
+        transition: all 0.3s ease;
+        width: 100%;
+        height: auto;
+        min-height: 48px;
+    }
+    
+    .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+    }
+    
+    .dropdown-container {
+        width: 100%;
+    }
+    
+    .dropdown-container .form-select,
+    .dropdown-container .form-control {
+        width: 100% !important;
+        min-height: 48px;
+    }
+    
+    .form-label {
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .card {
+        transition: transform 0.2s ease-in-out;
+        border: none !important;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        transition: all 0.3s ease;
+        font-weight: 600;
+    }
+    
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+    
+    .table-responsive table {
+        background: white;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        font-size: 0.875rem;
+    }
+    
+    .table th {
+        background: #f8f9fa;
+        font-weight: 600;
+        color: #495057;
+        border: none;
+        font-size: 0.8rem;
+    }
+    
+    .table td {
+        border-color: #e9ecef;
+        vertical-align: middle;
+    }
+    
+    .alert {
+        border-radius: 0.75rem;
+    }
+    
+    .bg-light {
+        background-color: #f8f9fc !important;
+    }
+    
+    .rounded-4 {
+        border-radius: 1rem !important;
+    }
+    
+    .rounded-pill {
+        border-radius: 50rem !important;
+    }
+    
+    .shadow-sm {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+    }
+</style>
 
-    <div class="form-group">
-        {{ form.month.label_tag }}
-        {{ form.month }}
-    </div>
-
-    <div class="form-group">
-        <label for="id_tuition_fee">{{ form.tuition_fee.label }}</label>
-        <input type="text" id="id_tuition_fee" name="tuition_fee" class="form-control money"
-               value="{{ form.tuition_fee.value|default_if_none:'' }}">
-    </div>
-
-    <!-- Thay daily_meal_fee bằng meal_price -->
-    <div class="form-group">
-        {{ form.meal_price.label_tag }}
-        {{ form.meal_price }}
-    </div>
-
-    <div class="form-group">
-        <label for="id_amount_paid">{{ form.amount_paid.label }}</label>
-        <input type="text" id="id_amount_paid" name="amount_paid" class="form-control money"
-               value="{{ form.amount_paid.value|default_if_none:'' }}">
-    </div>
-
-    <div class="form-group">
-        <label for="id_prev_month_balance">Tiền tháng trước</label>
-        {{ form.prev_month_balance }}
-    </div>
-    <div class="form-group">
-        <label for="id_current_month_payment">Tiền tháng này</label>
-        {{ form.current_month_payment }}
-    </div>
-
-    <button type="submit" class="btn btn-primary">Lưu lại</button>
-</form>
-
-<div id="meal-counts" class="mt-4">
-    <h4>Số bữa ăn đã ăn:</h4>
-    <p>Bữa sáng: <span id="breakfast_count">{{ breakfast_count|default:"0" }}</span></p>
-    <p>Bữa trưa: <span id="lunch_count">{{ lunch_count|default:"0" }}</span></p>
-</div>
-
-<div id="meal-stats" class="mt-5" style="display:none;">
-  <h4>Chi tiết Bữa sáng</h4>
-  <div id="breakfast-table" class="table-responsive mb-4"></div>
-
-  <h4>Chi tiết Bữa trưa</h4>
-  <div id="lunch-table" class="table-responsive"></div>
-</div>
-
+<!-- Bootstrap 5 and FontAwesome -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 <script>
 $(function(){
-    // --- 1) Khi chọn Year, gọi AJAX load Classroom ---
-   $('#id_term').on('change', function(){
-       var term = $(this).val();
-       var $classSelect = $('#id_classroom');
-       // Reset dropdown ClassRoom
-       $classSelect.html('<option value="">--- Chọn Lớp ---</option>');
+    // --- Function để load classes theo term ---
+    function loadClassesByTerm(termValue) {
+        if (!termValue) return;
+        
+        var $classSelect = $('#id_classroom');
+        // Reset dropdown ClassRoom
+        $classSelect.html('<option value="">--- Chọn Lớp ---</option>');
 
-       $.get("{% url 'meals:ajax_get_classes_by_term' %}", { term: term })
+        $.get("{% url 'meals:ajax_get_classes_by_term' %}", { term: termValue })
              .done(function(data){
                 // data là một array dạng [ {id:…, name:…}, … ]
                 data.forEach(function(obj){
@@ -105,9 +427,23 @@ $(function(){
                     $classSelect.append(opt);
                 });
              });
-       // Khi đổi Year thì cũng reset dropdown Student
-       $('#id_student').html('<option value="">--- Chọn Học sinh ---</option>');
+    }
+
+    // --- Load classes ngay khi trang được tải (nếu đã có giá trị term) ---
+    var initialTerm = $('#id_term').val();
+    if (initialTerm) {
+        loadClassesByTerm(initialTerm);
+    }
+
+    // --- 1) Khi chọn Year, gọi AJAX load Classroom ---
+    $('#id_term').on('change', function(){
+        var term = $(this).val();
+        loadClassesByTerm(term);
+        
+        // Khi đổi Year thì cũng reset dropdown Student
+        $('#id_student').html('<option value="">--- Chọn Học sinh ---</option>');
     });
+    
     // Load students khi chọn lớp
     $('#id_classroom').change(function(){
         var cid = $(this).val(), $stu = $('#id_student');
@@ -186,6 +522,7 @@ $(function(){
                    '</tr></tbody></table>';
         $(container).html(html);
     }
+    
     function loadStats(sid, m){
         if(!sid||!m){ $('#meal-stats').hide(); return; }
         $.get("{% url 'meals:ajax_load_meal_stats' %}", { student_id: sid, month: m })
@@ -195,12 +532,15 @@ $(function(){
             $('#meal-stats').show();
          });
     }
+    
     $('#id_student, #id_month').on('change', function(){
         loadStats($('#id_student').val(), $('#id_month').val());
     });
+    
     if($('#id_student').val() && $('#id_month').val()){
         loadStats($('#id_student').val(), $('#id_month').val());
     }
 });
 </script>
+
 {% endblock %}
