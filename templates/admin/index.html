@@ -915,7 +915,7 @@
           <i class="fas fa-clock"></i> Hiện tại
         </div>
       </div>
-      <div class="stat-value" id="current-month">T{{ current_month }}</div>
+      <div class="stat-value" id="current-month">THÁNG {{ current_month }}</div>
       <div class="stat-label">Tháng hiện tại</div>
     </div>
   </div>
@@ -1095,7 +1095,7 @@
           
           const currentValue = Math.floor(startValue + (targetValue - startValue) * easedProgress);
           const formattedValue = isRevenue ? 
-            currentValue.toLocaleString() + '₫' : 
+            currentValue.toLocaleString() + ' ₫' : 
             currentValue.toLocaleString();
             
           element.textContent = formattedValue;
