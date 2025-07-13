@@ -690,7 +690,6 @@
     }
     .module table {
         border-collapse: collapse;
-        margin-bottom: 33px;
     }
     /* === Responsive Design === */
     @media (max-width: 1200px) {
@@ -1228,8 +1227,8 @@
         const statsText= "{% trans 'Thống kê' %}";
         const debtText = "{% trans 'Chỉnh sửa công nợ' %}";
 
-        tbody.insertBefore(makeRow(debtURL, debtText, 'fas fa-edit', 'row2'), tbody.firstChild);
-        tbody.insertBefore(makeRow(statsURL, statsText, 'fas fa-chart-pie', 'row1'), tbody.firstChild);
+        tbody.insertBefore(makeRow(debtURL, debtText, 'row2'), tbody.firstChild);
+        tbody.insertBefore(makeRow(statsURL, statsText, 'row1'), tbody.firstChild);
 
         // Add icons to existing menu items
         const links = tbody.querySelectorAll('th a');
@@ -1237,26 +1236,26 @@
           const text = link.textContent.trim();
           const iconSpan = link.querySelector('i');
           
-          if (!iconSpan) {
-            let iconClass = '';
-            if (text.includes('Students') || text.includes('Học sinh')) {
-              iconClass = 'fas fa-users';
-            } else if (text.includes('Meal records') || text.includes('Bữa ăn') || text.includes('meal')) {
-              iconClass = 'fas fa-utensils';
-            } else if (text.includes('Meal balance audits') || text.includes('audit')) {
-              iconClass = 'fas fa-file-alt';
-            } else if (text.includes('Student health infos') || text.includes('health')) {
-              iconClass = 'fas fa-heart';
-            } else if (text.includes('Study groups') || text.includes('Study classes')) {
-              iconClass = 'fas fa-users-cog';
-            }
+          // if (!iconSpan) {
+          //   let iconClass = '';
+          //   if (text.includes('Students') || text.includes('Học sinh')) {
+          //     iconClass = 'fas fa-users';
+          //   } else if (text.includes('Meal records') || text.includes('Bữa ăn') || text.includes('meal')) {
+          //     iconClass = 'fas fa-utensils';
+          //   } else if (text.includes('Meal balance audits') || text.includes('audit')) {
+          //     iconClass = 'fas fa-file-alt';
+          //   } else if (text.includes('Student health infos') || text.includes('health')) {
+          //     iconClass = 'fas fa-heart';
+          //   } else if (text.includes('Study groups') || text.includes('Study classes')) {
+          //     iconClass = 'fas fa-users-cog';
+          //   }
             
-            if (iconClass) {
-              const icon = document.createElement('i');
-              icon.className = iconClass;
-              link.insertBefore(icon, link.firstChild);
-            }
-          }
+          //   if (iconClass) {
+          //     const icon = document.createElement('i');
+          //     icon.className = iconClass;
+          //     link.insertBefore(icon, link.firstChild);
+          //   }
+          // }
         });
       }
 
