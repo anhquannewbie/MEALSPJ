@@ -517,6 +517,7 @@
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
       background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%) !important;
       color: #ffffff !important;
+      margin-right: 20px;
     }
 
     body:not(.dashboard) #content .object-tools a.historylink:hover {
@@ -528,13 +529,19 @@
     /* === OBJECT-TOOLS LAYOUT === */
     /* Restructure object-tools to vertical layout */
     body:not(.dashboard) #content .object-tools {
-      background: var(--bg-primary) !important;
-      padding: 1.5rem !important;
-      border-bottom: 1px solid var(--border-color) !important;
+      background: transparent !important;
+      padding: 0 !important;
+      border: none !important;
       margin: 0 !important;
+      margin-bottom: 1.5rem !important;
       display: flex !important;
       flex-direction: column !important;
       gap: 1rem !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      position: relative !important;
+      z-index: 1 !important;
+      
     }
 
     /* First row: History button */
@@ -546,10 +553,15 @@
       gap: 0.75rem !important;
       flex-wrap: wrap !important;
       order: 1 !important;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
     }
 
     body:not(.dashboard) #content .object-tools li {
       margin: 0 !important;
+      padding: 0 !important;
+      background: transparent !important;
     }
 
     /* Second row: Custom action buttons */
@@ -561,11 +573,17 @@
       order: 2 !important;
     }
 
+    /* Force clear any floating or positioning issues */
+    body:not(.dashboard) #content .object-tools + * {
+      clear: both !important;
+      margin-top: 0 !important;
+    }
+
     /* === MAIN LAYOUT CONTAINER === */
     /* Tạo container tổng cho toàn bộ content */
     body:not(.dashboard) #content-main {
       display: flex !important;
-      gap: 1.5rem !important;
+      /* gap: 1.5rem !important; */
       align-items: flex-start !important;
       background: transparent !important;
       border: none !important;
@@ -588,16 +606,29 @@
       border: 1px solid var(--border-color) !important;
       overflow: hidden !important;
       margin: 0 !important;
+      position: relative !important;
+      z-index: 1 !important;
     }
 
     /* Reset changelist layout về dạng block thông thường */
     body:not(.dashboard) #changelist {
       display: block !important;
+      clear: both !important;
     }
 
     body:not(.dashboard) #changelist .results {
       width: 100% !important;
       margin: 0 !important;
+      position: relative !important;
+    }
+
+    /* Ensure proper spacing after object-tools */
+    body:not(.dashboard) #changelist-search,
+    body:not(.dashboard) #toolbar,
+    body:not(.dashboard) .actions,
+    body:not(.dashboard) .results {
+      margin-top: 0 !important;
+      clear: both !important;
     }
 
     /* === ENHANCED FILTER SIDEBAR === */
@@ -1394,8 +1425,27 @@
       }
     }
 
+    /* === MOBILE OPTIMIZATIONS === */
     @media (max-width: 1024px) {
+      /* Header mobile adjustments */
+      #header {
+        padding: 0.5rem 1rem !important;
+        font-size: 0.9rem !important;
+      }
+
+      #header #site-name,
+      #header #site-name a {
+        font-size: 1rem !important;
+      }
+
+      #header #user-tools a {
+        font-size: 0.75rem !important;
+        padding: 0.25rem 0.5rem !important;
+      }
+
+      /* Sidebar mobile behavior */
       body:not(.dashboard) #nav-sidebar {
+        width: 300px !important;
         transform: translateX(-100%) !important;
         transition: transform 0.3s ease !important;
       }
@@ -1431,52 +1481,42 @@
         background: var(--primary-gradient) !important;
       }
 
-      /* Form responsive */
-      body:not(.dashboard) .form-row.field-first_name,
-      body:not(.dashboard) .form-row.field-last_name {
-        display: block !important;
-        width: 100% !important;
-        margin-right: 0 !important;
-      }
-
-      body:not(.dashboard) {
-        padding-left: 0 !important;
-      }
-
-      /* Mobile changelist fixes */
+      /* MOBILE SEARCH AND TOOLBAR OPTIMIZATIONS */
       body:not(.dashboard) #changelist-search {
         flex-direction: column !important;
         align-items: stretch !important;
         gap: 0.75rem !important;
-        flex-wrap: wrap !important;
+        padding: 1rem !important;
+      }
+
+      body:not(.dashboard) #changelist-search label {
+        font-size: 0.85rem !important;
+        margin-bottom: 0.25rem !important;
       }
 
       body:not(.dashboard) #changelist-search input[type="text"] {
         min-width: auto !important;
         max-width: none !important;
         width: 100% !important;
+        font-size: 16px !important; /* Prevent zoom on iOS */
+        padding: 0.75rem !important;
+        height: 44px !important; /* Touch-friendly height */
       }
 
-      body:not(.dashboard) .actions {
+      body:not(.dashboard) #changelist-search input[type="submit"] {
+        width: 100% !important;
+        padding: 0.75rem 1rem !important;
+        font-size: 1rem !important;
+        height: 44px !important;
+        border-radius: 0.5rem !important;
+      }
+
+      /* MOBILE TOOLBAR OPTIMIZATIONS */
+      body:not(.dashboard) #toolbar {
         flex-direction: column !important;
         align-items: stretch !important;
         gap: 0.75rem !important;
-        flex-wrap: wrap !important;
-      }
-
-      body:not(.dashboard) .actions select {
-        min-width: auto !important;
-        width: 100% !important;
-      }
-
-      body:not(.dashboard) .actions button,
-      body:not(.dashboard) .actions input[type="submit"] {
-        width: 100% !important;
-      }
-
-      body:not(.dashboard) #toolbar {
-        align-items: stretch !important;
-        gap: 0.75rem !important;
+        padding: 1rem !important;
       }
 
       body:not(.dashboard) #toolbar form {
@@ -1485,22 +1525,152 @@
         gap: 0.75rem !important;
       }
 
-      body:not(.dashboard) #toolbar select,
-      body:not(.dashboard) #toolbar input,
-      body:not(.dashboard) #toolbar button {
-        width: 100% !important;
+      body:not(.dashboard) #toolbar label {
+        font-size: 0.85rem !important;
+        margin-bottom: 0.25rem !important;
       }
 
+      body:not(.dashboard) #toolbar select {
+        width: 100% !important;
+        font-size: 16px !important; /* Prevent zoom on iOS */
+        padding: 0.75rem !important;
+        height: 44px !important;
+      }
+
+      body:not(.dashboard) #toolbar input[type="submit"],
+      body:not(.dashboard) #toolbar button {
+        width: 100% !important;
+        padding: 0.75rem 1rem !important;
+        font-size: 1rem !important;
+        height: 44px !important;
+        margin-left: 0 !important;
+        border-radius: 0.5rem !important;
+      }
+
+      /* MOBILE ACTIONS OPTIMIZATIONS */
+      body:not(.dashboard) .actions {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.75rem !important;
+        padding: 1rem !important;
+      }
+
+      body:not(.dashboard) .actions label {
+        margin-left: 0 !important;
+        font-size: 0.85rem !important;
+        margin-bottom: 0.25rem !important;
+      }
+
+      body:not(.dashboard) .actions select {
+        min-width: auto !important;
+        width: 100% !important;
+        font-size: 16px !important; /* Prevent zoom on iOS */
+        padding: 0.75rem !important;
+        height: 44px !important;
+      }
+
+      body:not(.dashboard) .actions button,
+      body:not(.dashboard) .actions input[type="submit"] {
+        width: 100% !important;
+        padding: 0.75rem 1rem !important;
+        font-size: 1rem !important;
+        height: 44px !important;
+        margin-top: 0 !important;
+        border-radius: 0.5rem !important;
+      }
+
+      body:not(.dashboard) .question,
+      body:not(.dashboard) .actions .action-counter {
+        margin-left: 0 !important;
+        margin-top: 0.5rem !important;
+        text-align: center !important;
+      }
+
+      /* Form responsive optimizations */
+      body:not(.dashboard) .form-row.field-first_name,
+      body:not(.dashboard) .form-row.field-last_name {
+        display: block !important;
+        width: 100% !important;
+        margin-right: 0 !important;
+      }
+
+      /* Input optimizations for mobile */
+      body:not(.dashboard) input[type="text"],
+      body:not(.dashboard) input[type="email"],
+      body:not(.dashboard) input[type="password"],
+      body:not(.dashboard) input[type="number"],
+      body:not(.dashboard) input[type="date"],
+      body:not(.dashboard) input[type="datetime-local"],
+      body:not(.dashboard) select,
+      body:not(.dashboard) textarea {
+        font-size: 16px !important; /* Prevent zoom on iOS */
+        padding: 0.75rem !important;
+        min-height: 44px !important; /* Touch-friendly */
+      }
+
+      /* Filter mobile adjustments */
       body:not(.dashboard) #changelist-filter {
         order: 2 !important;
         margin-top: 1rem !important;
+        border-radius: 0.5rem !important;
+        max-height: 300px !important;
       }
       
       body:not(.dashboard) #changelist {
         order: 1 !important;
       }
+
+      /* Mobile table responsiveness */
+      body:not(.dashboard) .results {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+      }
+
+      body:not(.dashboard) .results table {
+        min-width: 600px !important;
+        font-size: 0.85rem !important;
+      }
+
+      body:not(.dashboard) .results thead th,
+      body:not(.dashboard) .results tbody td {
+        padding: 0.5rem !important;
+        white-space: nowrap !important;
+      }
+
+      /* Object tools mobile */
+      body:not(.dashboard) #content .object-tools {
+        padding: 1rem !important;
+        flex-direction: column !important;
+        gap: 0.75rem !important;
+      }
+
+      body:not(.dashboard) #content .object-tools ul {
+        flex-direction: column !important;
+        gap: 0.5rem !important;
+      }
+
+      /* Pagination mobile */
+      body:not(.dashboard) .paginator {
+        padding: 1rem !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+        flex-wrap: wrap !important;
+      }
+
+      body:not(.dashboard) .paginator a,
+      body:not(.dashboard) .paginator .this-page {
+        min-width: 44px !important;
+        min-height: 44px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 0.9rem !important;
+      }
     }
 
+    /* Hide mobile menu button on desktop */
     @media (min-width: 1025px) {
       #mobile-menu-btn {
         display: none !important;
@@ -1744,6 +1914,25 @@
       gap: 0.75rem !important;
       width: 100% !important;
       flex-wrap: nowrap !important;
+    }
+
+    /* Mobile responsive adjustments override desktop */
+    @media (max-width: 1024px) {
+      #toolbar form,
+      div#toolbar form,
+      body:not(.dashboard) #toolbar form {
+        flex-direction: column !important;
+      }
+
+      #toolbar form > div {
+        flex-direction: column !important;
+        width: 100% !important;
+      }
+
+      #toolbar form input[type="text"] {
+        max-width: none !important;
+        width: 100% !important;
+      }
     }
   </style>
 
@@ -2307,6 +2496,12 @@
           margin-bottom: 1.5rem !important;
           border-radius: 0 !important;
           box-shadow: none !important;
+          position: relative !important;
+          z-index: 1 !important;
+          display: flex !important;
+          flex-direction: column !important;
+          gap: 1rem !important;
+          clear: both !important;
         `;
 
         // Style the history button container specifically
@@ -2319,8 +2514,28 @@
             display: flex !important;
             gap: 0.75rem !important;
             flex-wrap: wrap !important;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            position: static !important;
+            float: none !important;
+            clear: both !important;
           `;
         }
+
+        // Ensure any li elements are also clean
+        const allLis = objectTools.querySelectorAll('li');
+        allLis.forEach(li => {
+          li.style.cssText = `
+            margin: 0 !important;
+            padding: 0 !important;
+            background: transparent !important;
+            border: none !important;
+            list-style: none !important;
+            float: none !important;
+            position: static !important;
+          `;
+        });
       }
       
       // Run after DOM is ready
