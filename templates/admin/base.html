@@ -1400,20 +1400,29 @@
 
     /* === RESPONSIVE DESIGN FOR FILTER === */
     @media (max-width: 1440px) {
-      /* Trên màn hình nhỏ hơn, đưa filter xuống dưới content */
+      /* Trên màn hình nhỏ hơn, đưa filter về trên cùng ngay dưới header */
       body:not(.dashboard) #changelist-filter {
-        position: static !important;
-        top: unset !important;
-        right: unset !important;
+        position: fixed !important;
+        top: 60px !important; /* Ngay dưới header */
+        left: 0 !important;
+        right: 0 !important;
         bottom: unset !important;
         width: 100% !important;
         max-width: none !important;
-        margin-top: 1.5rem !important;
-        max-height: 400px !important;
+        height: auto !important;
+        max-height: 300px !important; /* Giới hạn chiều cao */
+        z-index: 997 !important; /* Thấp hơn header nhưng cao hơn content */
+        border-radius: 0 !important;
+        border-left: none !important;
+        border-right: none !important;
+        border-top: none !important;
+        margin: 0 !important;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
       }
 
       body:not(.dashboard).filtered #content {
         padding-right: 1.5rem !important;
+        padding-top: calc(1.5rem + 300px) !important; /* Thêm space cho filter */
       }
 
       body:not(.dashboard) #content-main {
@@ -1422,6 +1431,18 @@
 
       body:not(.dashboard) .filter-toggle {
         display: none !important;
+      }
+
+      /* Adjust filter content for mobile */
+      body:not(.dashboard) #changelist-filter h2 {
+        padding: 0.75rem 1rem !important;
+        font-size: 0.9rem !important;
+        border-radius: 0 !important;
+      }
+
+      body:not(.dashboard) #changelist-filter > div {
+        max-height: 240px !important; /* Giảm chiều cao cho mobile */
+        overflow-y: auto !important;
       }
     }
 
@@ -1457,6 +1478,7 @@
       body:not(.dashboard) #content {
         margin-left: 0 !important;
         padding: 1rem !important;
+        padding-top: calc(1rem + 300px) !important; /* Đảm bảo có space cho filter trên mobile */
       }
 
       /* Mobile menu button */
@@ -1608,16 +1630,19 @@
         min-height: 44px !important; /* Touch-friendly */
       }
 
-      /* Filter mobile adjustments */
+      /* Filter mobile adjustments - đảm bảo filter luôn ở trên cùng */
       body:not(.dashboard) #changelist-filter {
-        order: 2 !important;
-        margin-top: 1rem !important;
-        border-radius: 0.5rem !important;
-        max-height: 300px !important;
+        top: 60px !important; /* Cố định ngay dưới header */
+        position: fixed !important;
+        order: unset !important;
+        margin-top: 0 !important;
+        border-radius: 0 !important;
+        max-height: 250px !important;
+        z-index: 997 !important;
       }
       
       body:not(.dashboard) #changelist {
-        order: 1 !important;
+        order: unset !important;
       }
 
       /* Mobile table responsiveness */
