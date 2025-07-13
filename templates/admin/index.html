@@ -89,13 +89,14 @@
       margin: 0 !important;
       padding: 1.5rem !important;
     }
-
     /* === ẨN HOÀN TOÀN CÔNG NỢ HỌC SINH === */
+    /* Ẩn dòng studentpayment trong cả dashboard và sidebar */
     body #content-main .app-meals.module table tbody tr.model-studentpayment,
     body:not(.dashboard) #nav-sidebar .module table tbody tr.model-studentpayment {
       display: none !important;
     }
     
+    /* Backup selectors cho dashboard */
     body.dashboard #content-main .app-meals.module table tbody tr:has(th a[href*="studentpayment"]),
     body.dashboard #content-main .app-meals.module table tbody tr th a[href*="studentpayment"],
     body.dashboard #content-main .app-meals.module table tbody tr:has(th a:contains("Công nợ học sinh")),
@@ -103,18 +104,17 @@
       display: none !important;
     }
     
+    /* Backup selectors cho sidebar */
     body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th a[href*="studentpayment"]),
     body:not(.dashboard) #nav-sidebar .module table tbody tr th a[href*="studentpayment"],
     body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th a:contains("Công nợ học sinh")),
     body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th:contains("Công nợ học sinh")) {
       display: none !important;
     }
-
     /* Hide default h1 title */
     body.dashboard #content h1 {
       display: none !important;
     }
-
     /* === Enhanced Header === */
     #header {
       background: var(--primary-gradient) !important;
@@ -124,9 +124,6 @@
       backdrop-filter: blur(10px) !important;
       position: relative !important;
       overflow: hidden !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: space-between !important; /* Đảm bảo căn đều giữa site-name và menu-toggle */
     }
 
     #header::before {
@@ -156,7 +153,6 @@
       gap: 0.75rem !important;
       position: relative !important;
       z-index: 2 !important;
-      flex-grow: 1; /* Cho phép site-name chiếm không gian còn lại */
     }
 
     #header #site-name::before {
@@ -209,13 +205,15 @@
       cursor: pointer !important;
       padding: 0.5rem !important;
       z-index: 3 !important;
+      position: absolute !important;
+      right: 1rem !important;
     }
 
     .mobile-menu {
       display: none !important;
       position: absolute !important;
       top: 100% !important;
-      right: 1rem !important; /* Đặt menu bên phải */
+      right: 1rem !important;
       background: var(--bg-secondary) !important;
       backdrop-filter: blur(10px) !important;
       border-radius: 0.5rem !important;
@@ -693,11 +691,9 @@
       text-transform: uppercase !important;
       letter-spacing: 0.05em !important;
     }
-
     .module table {
-      border-collapse: collapse;
+        border-collapse: collapse;
     }
-
     /* === Responsive Design === */
     @media (max-width: 1200px) {
       .charts-grid {
@@ -724,7 +720,7 @@
         padding: 0.8rem 1rem !important;
         display: flex !important;
         align-items: center !important;
-        justify-content: space-between !important; /* Đảm bảo menu-toggle ở bên phải */
+        justify-content: flex-start !important;
         flex-wrap: nowrap !important;
         min-height: 70px !important;
         overflow: visible !important;
@@ -748,11 +744,11 @@
       }
 
       #header #user-tools {
-        display: none !important; /* Ẩn hoàn toàn user-tools trên mobile */
+        display: none !important;
       }
 
       .mobile-menu-toggle {
-        display: block !important; /* Hiển thị nút toggle trên mobile */
+        display: block !important;
       }
 
       /* === FORCE CHARTS BELOW ALL CONTENT === */
@@ -764,12 +760,14 @@
         order: 999 !important;
       }
 
+      /* === ENSURE MAIN CONTENT STACKS VERTICALLY === */
       body.dashboard #content-main {
         display: flex !important;
         flex-direction: column !important;
         width: 100% !important;
       }
 
+      /* === MODULE ORDERING === */
       body.dashboard #content-main .module {
         order: 1 !important;
         margin-bottom: 1.5rem !important;
@@ -847,6 +845,7 @@
         height: auto !important;
       }
 
+      /* === MOBILE MODULE STYLING === */
       body.dashboard #content-main .module {
         margin-top: 1rem !important;
         margin-bottom: 2rem !important;
@@ -858,6 +857,7 @@
         padding: 0.75rem 1rem !important;
       }
 
+      /* === MOBILE CHART CONTROLS === */
       .chart-controls {
         flex-wrap: wrap !important;
         gap: 0.5rem !important;
@@ -1313,8 +1313,11 @@
         animateNumber(document.getElementById('hero-total-revenue'), totalRevenue, true);
         animateNumber(document.getElementById('chart-meals-total'), totalMeals);
         animateNumber(document.getElementById('chart-revenue-total'), totalRevenue, true);
+        
+        // Thêm animation cho số học sinh
         animateNumber(document.getElementById('student-count'), {{ current_student_count }});
         animateNumber(document.getElementById('hero-student-count'), {{ current_student_count }});
+        
       }, 500);
 
       initializeCharts();
