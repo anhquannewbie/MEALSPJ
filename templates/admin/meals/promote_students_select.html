@@ -1,0 +1,37 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+  <h1>{% trans "Chọn học sinh để lên lớp" %} – {{ original.name }}</h1>
+  <form method="post" style="margin-top: 1em;">
+    {% csrf_token %}
+    {# Hiển thị list checkbox #}
+    <table class="adminlist">
+      <thead>
+        <tr>
+          <th style="width: 50px;">&nbsp;</th>
+          <th>Tên học sinh</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for student in students %}
+          <tr class="{% cycle 'row1' 'row2' %}">
+            <td>
+              <input type="checkbox" name="students" value="{{ student.id }}" />
+            </td>
+            <td>{{ student.name }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="2">Không có học sinh nào trong lớp này.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div style="margin-top: 1em;">
+      <button type="submit" class="default">{% trans "Tiếp tục" %}</button>
+      <a href="../../{{ original.id }}/change/" class="button">{% trans "Hủy" %}</a>
+    </div>
+  </form>
+{% endblock %}
