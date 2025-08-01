@@ -90,7 +90,6 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
 # Only use secure cookies in production (when DATABASE_URL is set)
 if os.getenv("DATABASE_URL"):
     SESSION_COOKIE_SECURE = True
@@ -101,4 +100,7 @@ else:
     # Additional CSRF settings for development
     CSRF_COOKIE_HTTPONLY = False
     CSRF_USE_SESSIONS = False
+
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
