@@ -1,0 +1,47 @@
+{# templates/admin/meals/import_payments.html #}
+{% extends "admin/base_site.html" %}
+{% block content %}
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="default">Import</button>
+  </form>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const termSelect = document.querySelector('#id_term');
+    const classroomSelect = document.querySelector('#id_classroom');
+    
+    if (termSelect && classroomSelect) {
+      termSelect.addEventListener('change', function() {
+        const selectedTerm = this.value;
+        
+        // Clear classroom options
+        classroomSelect.innerHTML = '<option value="">--- Chọn Lớp ---</option>';
+        
+        if (selectedTerm) {
+          // Fetch classrooms for selected term
+          fetch(`/admin/meals/studentpayment/get-classrooms-by-term/?term=${encodeURIComponent(selectedTerm)}`)
+            .then(response => {
+              console.log('Response status:', response.status);
+              return response.json();
+            })
+            .then(data => {
+              console.log('Data received:', data);
+              data.forEach(classroom => {
+                const option = document.createElement('option');
+                option.value = classroom.id;
+                option.textContent = classroom.name;
+                classroomSelect.appendChild(option);
+              });
+            })
+            .catch(error => {
+              console.error('Error:', error);
+              // Fallback: reload page with term parameter
+              window.location.href = `?term=${encodeURIComponent(selectedTerm)}`;
+            });
+        }
+      });
+    }
+  });
+  </script>
+{% endblock %}

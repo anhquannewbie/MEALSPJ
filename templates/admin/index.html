@@ -1,0 +1,1806 @@
+{% extends "admin/index.html" %}
+{% load i18n %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    /* === CSS Variables === */
+    :root {
+      --primary-color: #6366f1;
+      --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --secondary-color: #64748b;
+      --accent-color: #0ea5e9;
+      --success-color: #10b981;
+      --warning-color: #f59e0b;
+      --danger-color: #ef4444;
+      --info-color: #3b82f6;
+      --bg-primary: #f8fafc;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #f1f5f9;
+      --text-primary: #1e293b;
+      --text-secondary: #64748b;
+      --text-muted: #94a3b8;
+      --border-color: #e2e8f0;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+      --chart-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --chart-gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      --chart-gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      --chart-grid-color: rgba(148, 163, 184, 0.2);
+      --glassmorphism: rgba(255, 255, 255, 0.25);
+      --glassmorphism-border: rgba(255, 255, 255, 0.18);
+    }
+
+    /* Dark mode */
+    html[data-theme="dark"] {
+      --primary-color: #818cf8;
+      --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --secondary-color: #94a3b8;
+      --accent-color: #06b6d4;
+      --success-color: #22c55e;
+      --warning-color: #fbbf24;
+      --danger-color: #f87171;
+      --info-color: #60a5fa;
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-tertiary: #334155;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --border-color: #334155;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+      --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.3);
+      --chart-grid-color: rgba(148, 163, 184, 0.1);
+      --glassmorphism: rgba(0, 0, 0, 0.25);
+      --glassmorphism-border: rgba(255, 255, 255, 0.1);
+    }
+
+    /* === Global Styles === */
+    body.dashboard {
+      background: var(--bg-primary) !important;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+      overflow-x: hidden !important;
+    }
+
+    /* Hide sidebar and recent actions */
+    body.dashboard nav#nav-sidebar,
+    body.dashboard #content-related {
+      display: none !important;
+    }
+
+    body.dashboard #content,
+    body.dashboard #content-main {
+      margin-left: 0 !important;
+      width: auto !important;
+      max-width: none !important;
+    }
+
+    body.dashboard #content {
+      display: block !important;
+      margin: 0 !important;
+      padding: 1.5rem !important;
+    }
+    /* === ẨN HOÀN TOÀN CÔNG NỢ HỌC SINH === */
+    /* Ẩn dòng studentpayment trong cả dashboard và sidebar */
+    body #content-main .app-meals.module table tbody tr.model-studentpayment,
+    body:not(.dashboard) #nav-sidebar .module table tbody tr.model-studentpayment {
+      display: none !important;
+    }
+    
+    /* Backup selectors cho dashboard - exclude import-payments */
+    body.dashboard #content-main .app-meals.module table tbody tr:has(th a[href*="studentpayment"]):not(:has(th a[href*="import-payments"])),
+    body.dashboard #content-main .app-meals.module table tbody tr th a[href*="studentpayment"]:not([href*="import-payments"]),
+    body.dashboard #content-main .app-meals.module table tbody tr:has(th a:contains("Công nợ học sinh")),
+    body.dashboard #content-main .app-meals.module table tbody tr:has(th:contains("Công nợ học sinh")) {
+      display: none !important;
+    }
+    
+    /* Backup selectors cho sidebar - exclude import-payments */
+    body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th a[href*="studentpayment"]):not(:has(th a[href*="import-payments"])),
+    body:not(.dashboard) #nav-sidebar .module table tbody tr th a[href*="studentpayment"]:not([href*="import-payments"]),
+    body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th a:contains("Công nợ học sinh")),
+    body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th:contains("Công nợ học sinh")) {
+      display: none !important;
+    }
+
+    /* Ensure import payments row is visible */
+    body.dashboard #content-main .app-meals.module table tbody tr.row3,
+    body.dashboard #content-main .app-meals.module table tbody tr:has(th a[href*="import-payments"]),
+    body:not(.dashboard) #nav-sidebar .module table tbody tr.row3,
+    body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th a[href*="import-payments"]) {
+      display: table-row !important;
+      visibility: visible !important;
+    }
+
+    /* Fix search icon size */
+    .search-form img[src*="search.svg"],
+    #searchbar img[src*="search.svg"],
+    input[type="search"] + img[src*="search.svg"],
+    .search-box img[src*="search.svg"],
+    #changelist-search img[src*="search.svg"],
+    img[src="/static/admin/img/search.svg"] {
+      width: 16px !important;
+      height: 16px !important;
+      max-width: 16px !important;
+      max-height: 16px !important;
+    }
+    /* Hide default h1 title */
+    body.dashboard #content h1 {
+      display: none !important;
+    }
+    /* === Enhanced Header === */
+    #header {
+      background: var(--primary-gradient) !important;
+      padding: 1rem 2rem !important;
+      box-shadow: var(--shadow-xl) !important;
+      border: none !important;
+      backdrop-filter: blur(10px) !important;
+      position: relative !important;
+      overflow: hidden !important;
+    }
+
+    #header::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd"><g fill="%23ffffff" fill-opacity="0.05"><circle cx="30" cy="30" r="4"/></g></svg>');
+      animation: float 20s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-10px) rotate(180deg); }
+    }
+
+    #header #site-name {
+      font-size: 1.5rem !important;
+      font-weight: 800 !important;
+      color: #ffffff !important;
+      text-decoration: none !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 0.75rem !important;
+      position: relative !important;
+      z-index: 2 !important;
+    }
+
+    #header #site-name::before {
+      content: "🍽️";
+      font-size: 1.25rem;
+      animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-10px); }
+      60% { transform: translateY(-5px); }
+    }
+
+    #header #user-tools {
+      display: flex !important;
+      align-items: center !important;
+      gap: 1rem !important;
+      position: relative !important;
+      z-index: 2 !important;
+    }
+
+    #header #user-tools a {
+      color: rgba(255, 255, 255, 0.9) !important;
+      font-size: 0.875rem !important;
+      font-weight: 600 !important;
+      padding: 0.5rem 1rem !important;
+      border-radius: 0.5rem !important;
+      transition: all 0.3s ease !important;
+      text-decoration: none !important;
+      backdrop-filter: blur(10px) !important;
+      background: rgba(255, 255, 255, 0.1) !important;
+      border: 1px solid rgba(255, 255, 255, 0.2) !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 0.5rem !important;
+    }
+
+    #header #user-tools a:hover {
+      background: rgba(255, 255, 255, 0.2) !important;
+      color: #ffffff !important;
+      transform: translateY(-2px) !important;
+      box-shadow: var(--shadow-lg) !important;
+    }
+
+    /* Add icons to header user tools */
+    #header #user-tools a[href*="password_change"]::before {
+      content: "🔐";
+      margin-right: 0.25rem;
+    }
+
+    #header #user-tools a[href*="logout"]::before {
+      content: "🚪";
+      margin-right: 0.25rem;
+    }
+
+    #header #user-tools a[href="#"]::before,
+    #header #user-tools a:not([href*="password_change"]):not([href*="logout"])::before {
+      content: "🌐";
+      margin-right: 0.25rem;
+    }
+
+    /* === Mobile Menu Styles === */
+    .mobile-menu-toggle {
+      display: none !important;
+      background: none !important;
+      border: none !important;
+      color: #ffffff !important;
+      font-size: 1.5rem !important;
+      cursor: pointer !important;
+      padding: 0.5rem !important;
+      z-index: 3 !important;
+      position: absolute !important;
+      right: 1rem !important;
+    }
+
+    .mobile-menu {
+      display: none !important;
+      position: absolute !important;
+      top: 100% !important;
+      right: 1rem !important;
+      background: var(--bg-secondary) !important;
+      backdrop-filter: blur(10px) !important;
+      border-radius: 0.5rem !important;
+      box-shadow: var(--shadow-lg) !important;
+      border: 1px solid var(--glassmorphism-border) !important;
+      padding: 0.5rem 0 !important;
+      min-width: 200px !important;
+      z-index: 1000 !important;
+    }
+
+    .mobile-menu.active {
+      display: block !important;
+    }
+
+    .mobile-menu a {
+      display: block !important;
+      color: var(--text-primary) !important;
+      padding: 0.75rem 1.5rem !important;
+      text-decoration: none !important;
+      font-size: 0.875rem !important;
+      font-weight: 500 !important;
+      transition: background 0.2s ease !important;
+    }
+
+    .mobile-menu a:hover {
+      background: var(--primary-color) !important;
+      color: #ffffff !important;
+    }
+
+    /* === Dark Mode Toggle === */
+    .dark-mode-toggle {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      width: 45px !important;
+      height: 45px !important;
+      border-radius: 50% !important;
+      background: rgba(255, 255, 255, 0.1) !important;
+      border: 1px solid rgba(255, 255, 255, 0.2) !important;
+      color: #ffffff !important;
+      cursor: pointer !important;
+      transition: all 0.3s ease !important;
+      backdrop-filter: blur(10px) !important;
+      position: relative !important;
+      z-index: 3 !important;
+      margin-right: 1rem !important;
+    }
+
+    .dark-mode-toggle:hover {
+      background: rgba(255, 255, 255, 0.2) !important;
+      transform: translateY(-2px) !important;
+      box-shadow: var(--shadow-lg) !important;
+    }
+
+    .dark-mode-toggle .toggle-icon {
+      font-size: 1.2rem !important;
+      transition: transform 0.3s ease !important;
+    }
+
+    .dark-mode-toggle:hover .toggle-icon {
+      transform: rotate(15deg) scale(1.1) !important;
+    }
+
+    /* Dark mode active state */
+    .dark-mode-toggle.active {
+      background: rgba(255, 255, 255, 0.3) !important;
+      border-color: rgba(255, 255, 255, 0.4) !important;
+    }
+
+    .dark-mode-toggle.active .toggle-icon {
+      transform: rotate(180deg) !important;
+    }
+
+    /* Mobile dark mode toggle */
+    @media (max-width: 768px) {
+      .dark-mode-toggle {
+        width: 40px !important;
+        height: 40px !important;
+        margin-right: 0.5rem !important;
+      }
+      
+      .dark-mode-toggle .toggle-icon {
+        font-size: 1rem !important;
+      }
+    }
+
+    /* === Enhanced Hero Welcome Section === */
+    .hero-welcome {
+      background: var(--primary-gradient) !important;
+      color: #ffffff !important;
+      padding: 3rem 2rem !important;
+      border-radius: 1.5rem !important;
+      margin-bottom: 2rem !important;
+      text-align: center !important;
+      box-shadow: 
+        var(--shadow-xl),
+        0 0 30px rgba(102, 126, 234, 0.3),
+        inset 0 0 30px rgba(255, 255, 255, 0.1) !important;
+      border: 1px solid rgba(255, 255, 255, 0.2) !important;
+      position: relative !important;
+      overflow: hidden !important;
+    }
+
+    .hero-welcome::before {
+      content: "";
+      position: absolute;
+      inset: -2px;
+      background: linear-gradient(45deg, #667eea, #764ba2, #667eea, #764ba2);
+      background-size: 400% 400%;
+      border-radius: inherit;
+      z-index: -1;
+      animation: neonBorder 20s ease infinite;
+    }
+
+    @keyframes neonBorder {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    .hero-welcome::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        radial-gradient(2px 2px at 20px 30px, rgba(255,255,255,0.3), transparent),
+        radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.2), transparent),
+        radial-gradient(1px 1px at 90px 40px, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.3), transparent),
+        radial-gradient(2px 2px at 160px 30px, rgba(255,255,255,0.2), transparent);
+      background-repeat: repeat;
+      background-size: 200px 100px;
+      animation: sparkle 15s linear infinite;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    @keyframes sparkle {
+      0% { transform: translateY(0px) translateX(0px) rotate(0deg); opacity: 1; }
+      25% { transform: translateY(-10px) translateX(5px) rotate(90deg); opacity: 0.8; }
+      50% { transform: translateY(-5px) translateX(-3px) rotate(180deg); opacity: 0.6; }
+      75% { transform: translateY(-15px) translateX(8px) rotate(270deg); opacity: 0.9; }
+      100% { transform: translateY(0px) translateX(0px) rotate(360deg); opacity: 1; }
+    }
+
+    .hero-title {
+      font-size: 2.5rem !important;
+      font-weight: 800 !important;
+      margin: 0 0 0.75rem 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 1rem !important;
+      position: relative !important;
+      z-index: 2 !important;
+      background: linear-gradient(-45deg, #ffffff, #f0f0ff, #ffffff, #e6e6ff);
+      background-size: 400% 400%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 3s ease infinite, textGlow 2s ease-in-out infinite alternate;
+      overflow: hidden;
+    }
+
+    .hero-title::before {
+      content: "📊";
+      font-size: 2rem;
+      margin-right: 0.5rem;
+      animation: bounce 2s infinite;
+      -webkit-text-fill-color: initial;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes textGlow {
+      from { 
+        filter: drop-shadow(0 0 5px rgba(255,255,255,0.3));
+        transform: scale(1);
+      }
+      to { 
+        filter: drop-shadow(0 0 15px rgba(255,255,255,0.6));
+        transform: scale(1.02);
+      }
+    }
+
+    .hero-title::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+      transform: translateX(-100%);
+      animation: shine 3s infinite;
+    }
+
+    @keyframes shine {
+      0% { transform: translateX(-100%); }
+      50%, 100% { transform: translateX(100%); }
+    }
+
+    .hero-subtitle {
+      font-size: 1.25rem !important;
+      font-weight: 600 !important;
+      margin: 0 !important;
+      opacity: 1 !important;
+      position: relative !important;
+      z-index: 2 !important;
+      letter-spacing: 0.02em !important;
+      text-shadow: 
+        0 2px 8px rgba(0,0,0,0.15),
+        0 0 12px rgba(255,255,255,0.2) !important;
+      line-height: 1.4 !important;
+      font-family: 'Inter', -apple-system, sans-serif !important;
+      text-transform: none !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 0.5rem !important;
+    }
+
+    .hero-subtitle::before {
+      content: "📈";
+      font-size: 1rem;
+    }
+
+    .hero-stats {
+      display: flex !important;
+      justify-content: center !important;
+      gap: 2rem !important;
+      margin-top: 2rem !important;
+      position: relative !important;
+      z-index: 2 !important;
+    }
+
+    .hero-stat {
+      text-align: center !important;
+      animation: statPulse 5s ease-in-out infinite;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      gap: 0.5rem !important;
+    }
+
+    .hero-stat-icon {
+      font-size: 1.5rem !important;
+      opacity: 0.9 !important;
+    }
+
+    .hero-stat-value {
+      font-size: 2rem !important;
+      font-weight: 700 !important;
+      display: block !important;
+    }
+
+    @keyframes statPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .hero-stat-label {
+      font-size: 0.875rem !important;
+      opacity: 0.8 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.05em !important;
+    }
+
+    /* === Advanced Stats Grid === */
+    .stats-grid {
+      display: grid !important;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+      gap: 1.5rem !important;
+      margin-bottom: 2rem !important;
+    }
+
+    .stat-card {
+      background: var(--bg-secondary) !important;
+      backdrop-filter: blur(10px) !important;
+      border-radius: 1.25rem !important;
+      padding: 1.5rem !important;
+      box-shadow: var(--shadow-lg) !important;
+      border: 1px solid var(--glassmorphism-border) !important;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+      position: relative !important;
+      overflow: hidden !important;
+    }
+
+    .stat-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: var(--primary-gradient);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-8px) scale(1.02) !important;
+      box-shadow: var(--shadow-xl) !important;
+    }
+
+    .stat-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .stat-header {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      margin-bottom: 1rem !important;
+    }
+
+    .stat-icon {
+      width: 3.5rem !important;
+      height: 3.5rem !important;
+      border-radius: 1rem !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      font-size: 1.5rem !important;
+      color: #ffffff !important;
+      position: relative !important;
+    }
+
+    .stat-icon::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 2px;
+      background: var(--primary-gradient);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+    }
+
+    .stat-value {
+      font-size: 2rem !important;
+      font-weight: 800 !important;
+      color: var(--text-primary) !important;
+      margin: 0 !important;
+      background: var(--primary-gradient) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+      background-clip: text !important;
+    }
+
+    .stat-label {
+      color: var(--text-secondary) !important;
+      font-size: 0.875rem !important;
+      font-weight: 600 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.05em !important;
+      margin: 0.5rem 0 0 0 !important;
+    }
+
+    .stat-trend {
+      font-size: 0.75rem !important;
+      font-weight: 600 !important;
+      padding: 0.25rem 0.5rem !important;
+      border-radius: 0.375rem !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 0.25rem !important;
+    }
+
+    .stat-trend.up {
+      background: rgba(34, 197, 94, 0.1) !important;
+      color: var(--success-color) !important;
+    }
+
+    .stat-trend.down {
+      background: rgba(239, 68, 68, 0.1) !important;
+      color: var(--danger-color) !important;
+    }
+
+    .stat-trend.up::before {
+      content: "📈";
+      margin-right: 0.25rem;
+    }
+
+    .stat-trend.down::before {
+      content: "📉";
+      margin-right: 0.25rem;
+    }
+
+    .stat-trend.neutral::before {
+      content: "📊";
+      margin-right: 0.25rem;
+    }
+
+    /* === Enhanced Chart Container === */
+    .charts-section {
+      margin-top: 3rem !important;
+    }
+
+    .section-header {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      margin-bottom: 1.5rem !important;
+    }
+
+    .section-title {
+      font-size: 1.5rem !important;
+      font-weight: 700 !important;
+      color: var(--text-primary) !important;
+      margin: 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 0.75rem !important;
+      margin-left: 20px !important;
+      animation: slideInLeft 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.8s forwards !important;
+      opacity: 0;
+    }
+
+    .section-title::before {
+      content: "📊";
+      font-size: 1.5rem;
+      animation: bounce 2s infinite;
+    }
+
+    .chart-controls {
+      display: flex !important;
+      gap: 0.75rem !important;
+    }
+
+    .chart-control-btn {
+      padding: 0.5rem 1rem !important;
+      border: 1px solid var(--border-color) !important;
+      border-radius: 0.5rem !important;
+      background: var(--bg-secondary) !important;
+      color: var(--text-secondary) !important;
+      font-size: 0.875rem !important;
+      font-weight: 500 !important;
+      cursor: pointer !important;
+      transition: all 0.2s ease !important;
+    }
+
+    .chart-control-btn:hover,
+    .chart-control-btn.active {
+      background: var(--primary-color) !important;
+      color: #ffffff !important;
+      border-color: var(--primary-color) !important;
+    }
+
+    .charts-grid {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 2rem !important;
+      margin-bottom: 2rem !important;
+    }
+
+    .chart-card {
+      background: var(--bg-secondary) !important;
+      backdrop-filter: blur(10px) !important;
+      border-radius: 1.5rem !important;
+      padding: 2rem !important;
+      box-shadow: var(--shadow-lg) !important;
+      border: 1px solid var(--glassmorphism-border) !important;
+      position: relative !important;
+      overflow: hidden !important;
+      transition: all 0.3s ease !important;
+      margin-left: 20px;
+    }
+
+    .chart-card:hover {
+      transform: translateY(-4px) !important;
+      box-shadow: var(--shadow-xl) !important;
+    }
+
+    .chart-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: var(--primary-gradient);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+
+    .chart-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .chart-header {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      margin-bottom: 1.5rem !important;
+    }
+
+    .chart-title {
+      font-size: 1.125rem !important;
+      font-weight: 700 !important;
+      color: var(--text-primary) !important;
+      margin: 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 0.5rem !important;
+    }
+
+    .chart-title.meals-chart::before {
+      content: "🍽️";
+      font-size: 1.25rem;
+    }
+
+    .chart-title.revenue-chart::before {
+      content: "💰";
+      font-size: 1.25rem;
+    }
+
+    .chart-subtitle {
+      font-size: 0.875rem !important;
+      color: var(--text-secondary) !important;
+      margin: 0.25rem 0 0 0 !important;
+    }
+
+    .chart-value {
+      text-align: right !important;
+    }
+
+    .chart-main-value {
+      font-size: 1.5rem !important;
+      font-weight: 800 !important;
+      color: var(--text-primary) !important;
+      margin: 0 !important;
+    }
+
+    .chart-change {
+      font-size: 0.75rem !important;
+      font-weight: 600 !important;
+      margin: 0.25rem 0 0 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: flex-end !important;
+      gap: 0.25rem !important;
+    }
+
+    .chart-container {
+      position: relative !important;
+      height: 350px !important;
+      width: 100% !important;
+    }
+
+    .chart-container canvas {
+      border-radius: 0.75rem !important;
+    }
+
+    /* === Enhanced Module Styling === */
+    body.dashboard #content-main .module {
+      background: var(--bg-secondary) !important;
+      backdrop-filter: blur(10px) !important;
+      border-radius: 1.25rem !important;
+      box-shadow: var(--shadow-lg) !important;
+      border: 1px solid var(--glassmorphism-border) !important;
+      overflow: hidden !important;
+      margin-top: 20px !important;
+      margin-bottom: 4rem !important;
+      transition: all 0.3s ease !important;
+    }
+    
+    body.dashboard #content-main .module:hover {
+      transform: translateY(-2px) !important;
+      box-shadow: var(--shadow-xl) !important;
+    }
+
+    body.dashboard #content-main .module table caption {
+      background: var(--primary-gradient) !important;
+      color: #ffffff !important;
+      font-weight: 700 !important;
+      font-size: 1rem !important;
+      padding: 1rem 1.5rem !important;
+      text-align: left !important;
+      margin: 0 !important;
+      align-items: center !important;
+      gap: 0.75rem !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.05em !important;
+    }
+
+    .module table {
+        border-collapse: collapse;
+    }
+
+    /* === Menu Item Icons Removed === */
+
+    /* === Responsive Design === */
+    @media (max-width: 1200px) {
+      .charts-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1.5rem !important;
+      }
+
+      .hero-stats {
+        gap: 1rem !important;
+      }
+
+      .hero-stat-value {
+        font-size: 1.5rem !important;
+      }
+    }
+
+    @media (max-width: 768px) {
+      body.dashboard #content {
+        padding: 0.75rem !important;
+      }
+
+      /* === MOBILE HEADER OPTIMIZATION === */
+      #header {
+        padding: 0.8rem 1rem !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        flex-wrap: nowrap !important;
+        min-height: 70px !important;
+        overflow: visible !important;
+        position: relative !important;
+      }
+
+      #header #site-name {
+        font-size: 1.1rem !important;
+        font-weight: 700 !important;
+        gap: 0.5rem !important;
+        white-space: nowrap !important;
+        overflow: visible !important;
+        flex: 1 !important;
+        min-width: 0 !important;
+      }
+
+      #header #site-name::before {
+        font-size: 1rem !important;
+        flex-shrink: 0 !important;
+      }
+
+      #header #user-tools {
+        display: none !important;
+      }
+
+      .mobile-menu-toggle {
+        display: block !important;
+      }
+
+      /* === FORCE CHARTS BELOW ALL CONTENT === */
+      .charts-section {
+        margin-top: 2rem !important;
+        clear: both !important;
+        width: 100% !important;
+        display: block !important;
+        order: 999 !important;
+      }
+
+      /* === ENSURE MAIN CONTENT STACKS VERTICALLY === */
+      body.dashboard #content-main {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+      }
+
+      /* === MODULE ORDERING === */
+      body.dashboard #content-main .module {
+        order: 1 !important;
+        margin-bottom: 1.5rem !important;
+        width: 100% !important;
+      }
+
+      .section-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 0.75rem !important;
+        margin-bottom: 1rem !important;
+        padding: 0 !important;
+      }
+
+      .section-title {
+        font-size: 1.2rem !important;
+        margin-left: 0 !important;
+        padding: 0 !important;
+      }
+
+      .charts-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1.5rem !important;
+        margin-bottom: 1.5rem !important;
+        padding: 0 !important;
+        width: 100% !important;
+      }
+
+      .chart-card {
+        padding: 1.5rem !important;
+        margin: 0 !important;
+        border-radius: 1rem !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+
+      .chart-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 0.5rem !important;
+        margin-bottom: 1rem !important;
+      }
+
+      .chart-title {
+        font-size: 1rem !important;
+        gap: 0.5rem !important;
+        line-height: 1.3 !important;
+      }
+
+      .chart-subtitle {
+        font-size: 0.8rem !important;
+        margin: 0.25rem 0 0 0 !important;
+        line-height: 1.2 !important;
+      }
+
+      .chart-value {
+        text-align: left !important;
+        width: 100% !important;
+      }
+
+      .chart-main-value {
+        font-size: 1.25rem !important;
+        line-height: 1.2 !important;
+      }
+
+      .chart-container {
+        height: 280px !important;
+        width: 100% !important;
+        position: relative !important;
+        overflow: hidden !important;
+      }
+
+      .chart-container canvas {
+        max-width: 100% !important;
+        height: auto !important;
+      }
+
+      /* === MOBILE MODULE STYLING === */
+      body.dashboard #content-main .module {
+        margin-top: 1rem !important;
+        margin-bottom: 2rem !important;
+        border-radius: 1rem !important;
+      }
+
+      body.dashboard #content-main .module table caption {
+        font-size: 0.9rem !important;
+        padding: 0.75rem 1rem !important;
+      }
+
+      /* === MOBILE CHART CONTROLS === */
+      .chart-controls {
+        flex-wrap: wrap !important;
+        gap: 0.5rem !important;
+      }
+
+      .chart-control-btn {
+        font-size: 0.75rem !important;
+        padding: 0.4rem 0.8rem !important;
+      }
+
+      /* Mobile hero stats layout */
+      .hero-stats {
+        flex-wrap: wrap !important;
+        gap: 1rem !important;
+      }
+
+      .hero-stat {
+        min-width: calc(50% - 0.5rem) !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      body.dashboard #content {
+        padding: 0.5rem !important;
+      }
+
+      #header {
+        padding: 0.5rem 0.6rem !important;
+        min-height: 55px !important;
+        flex-wrap: nowrap !important;
+      }
+
+      #header #site-name {
+        font-size: 0.9rem !important;
+        gap: 0.3rem !important;
+        flex: 1 !important;
+        min-width: 0 !important;
+      }
+
+      #header #site-name::before {
+        font-size: 0.8rem !important;
+      }
+
+      .mobile-menu-toggle {
+        font-size: 1.2rem !important;
+        padding: 0.3rem !important;
+      }
+
+      .mobile-menu {
+        right: 0.6rem !important;
+        min-width: 180px !important;
+      }
+
+      .mobile-menu a {
+        font-size: 0.8rem !important;
+        padding: 0.5rem 1rem !important;
+      }
+
+      .hero-welcome {
+        padding: 1.5rem 0.75rem !important;
+        border-radius: 0.75rem !important;
+      }
+
+      .hero-title {
+        font-size: 1.5rem !important;
+        flex-direction: column !important;
+        gap: 0.5rem !important;
+      }
+
+      .hero-title::before {
+        font-size: 1.5rem !important;
+        margin-right: 0 !important;
+      }
+
+      .hero-subtitle {
+        font-size: 1rem !important;
+        letter-spacing: 0.01em !important;
+      }
+
+      .hero-stat {
+        padding: 0.6rem 0.8rem !important;
+        border-radius: 0.6rem !important;
+        min-width: calc(50% - 0.5rem) !important;
+      }
+
+      .hero-stat-value {
+        font-size: 1.3rem !important;
+      }
+
+      .hero-stat-label {
+        font-size: 0.75rem !important;
+      }
+
+      .stat-card {
+        padding: 0.8rem !important;
+      }
+
+      .stat-value {
+        font-size: 1.3rem !important;
+      }
+
+      .chart-card {
+        padding: 0.8rem !important;
+        margin: 0 !important;
+        border-radius: 0.6rem !important;
+      }
+
+      .chart-title {
+        font-size: 0.85rem !important;
+        gap: 0.25rem !important;
+      }
+
+      .chart-subtitle {
+        font-size: 0.7rem !important;
+      }
+
+      .chart-main-value {
+        font-size: 1rem !important;
+      }
+
+      .charts-section {
+        margin-top: 1rem !important;
+      }
+
+      .charts-grid {
+        gap: 0.8rem !important;
+        margin-bottom: 0.8rem !important;
+      }
+    }
+
+    /* === Advanced Animations === */
+    @keyframes slideInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes slideInRight {
+      from {
+        opacity: 0;
+        transform: translateX(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .animated-student-count {
+      animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.25s forwards !important;
+      opacity: 0;
+    }
+
+    .hero-welcome {
+      animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+    }
+
+    .stat-card:nth-child(1) { animation: slideInLeft 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.1s forwards !important; opacity: 0; }
+    .stat-card:nth-child(2) { animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.2s forwards !important; opacity: 0; }
+    .stat-card:nth-child(3) { animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.3s forwards !important; opacity: 0; }
+    .stat-card:nth-child(4) { animation: slideInRight 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.4s forwards !important; opacity: 0; }
+
+    .chart-card:nth-child(1) { animation: slideInLeft 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.5s forwards !important; opacity: 0; }
+    .chart-card:nth-child(2) { animation: slideInRight 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.6s forwards !important; opacity: 0; }
+
+    #content-main .module { animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.7s forwards !important; opacity: 0; }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <!-- Hero Welcome Section -->
+  <div class="hero-welcome">
+    <h1 class="hero-title">
+      Dashboard Quản Lý
+    </h1>
+    <p class="hero-subtitle">Tổng quan và phân tích dữ liệu hệ thống</p>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-icon">🍽️</div>
+        <span class="hero-stat-label">Tổng bữa ăn</span>
+        <span class="hero-stat-value" id="hero-total-meals">0</span>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-icon">👨‍🎓</div>
+        <span class="hero-stat-label">Học sinh</span>
+        <span class="hero-stat-value animated-student-count" id="hero-student-count">{{ current_student_count }}</span>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-icon">💰</div>
+        <span class="hero-stat-label">Doanh thu</span>
+        <span class="hero-stat-value" id="hero-total-revenue">0₫</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Enhanced Stats Grid -->
+  <div class="stats-grid">
+    <!-- Tổng bữa ăn -->
+    <div class="stat-card">
+      <div class="stat-header">
+        <div class="stat-icon" style="background: var(--chart-gradient-1);">
+          🍽️
+        </div>
+        <div class="stat-trend
+            {% if meals_trend_direction == 'up' %}up
+            {% elif meals_trend_direction == 'down' %}down
+            {% else %}neutral
+            {% endif %}">
+          {{ meals_trend_percentage }}%
+        </div>
+      </div>
+      <div class="stat-value" id="total-meals">{{ total_meals }}</div>
+      <div class="stat-label">Tổng bữa ăn</div>
+    </div>
+
+    <!-- Học sinh đang học -->
+    <div class="stat-card">
+      <div class="stat-header">
+        <div class="stat-icon" style="background: var(--chart-gradient-2);">
+          👨‍🎓
+        </div>
+        <div class="stat-trend
+            {% if students_trend_direction == 'up' %}up
+            {% elif students_trend_direction == 'down' %}down
+            {% else %}neutral
+            {% endif %}">
+          {{ students_trend_percentage }}%
+        </div>
+      </div>
+      <div class="stat-value animated-student-count" id="student-count">
+        {{ current_student_count }}
+      </div>
+      <div class="stat-label">Học sinh đang học</div>
+    </div>
+
+    <!-- Doanh thu tháng -->
+    <div class="stat-card">
+      <div class="stat-header">
+        <div class="stat-icon" style="background: var(--chart-gradient-3);">
+          💰
+        </div>
+        <div class="stat-trend
+            {% if revenue_trend_direction == 'up' %}up
+            {% elif revenue_trend_direction == 'down' %}down
+            {% else %}neutral
+            {% endif %}">
+          {{ revenue_trend_percentage }}%
+        </div>
+      </div>
+      <div class="stat-value" id="total-revenue">
+        {{ total_revenue|floatformat:0 }}₫
+      </div>
+      <div class="stat-label">Doanh thu tháng</div>
+    </div>
+
+    <!-- Tháng hiện tại -->
+    <div class="stat-card">
+      <div class="stat-header">
+        <div class="stat-icon" style="background: var(--warning-color);">
+          📅
+        </div>
+        <div class="stat-trend neutral">
+          Hiện tại
+        </div>
+      </div>
+      <div class="stat-value" id="current-month">THÁNG {{ current_month }}</div>
+      <div class="stat-label">Tháng hiện tại</div>
+    </div>
+  </div>
+
+  <!-- Keep original Django admin content -->
+  {{ block.super }}
+
+  <!-- Enhanced Charts Section -->
+  <div class="charts-section">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">
+          Phân tích dữ liệu
+        </h2>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title meals-chart">
+              Bữa ăn theo tháng
+            </h3>
+            <p class="chart-subtitle">Xu hướng phục vụ bữa ăn</p>
+          </div>
+          <div class="chart-value">
+            <div class="chart-main-value" id="chart-meals-total">0</div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="chartMealsByMonth"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title revenue-chart">
+              Doanh thu theo tháng
+            </h3>
+            <p class="chart-subtitle">Tình hình thu học phí</p>
+          </div>
+          <div class="chart-value">
+            <div class="chart-main-value" id="chart-revenue-total">0₫</div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="chartPaidByMonth"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      // === DARK MODE FUNCTIONALITY ===
+      const darkModeToggle = document.getElementById('dark-mode-toggle');
+      const toggleIcon = darkModeToggle.querySelector('.toggle-icon');
+      
+      // Check for saved dark mode preference or default to light mode
+      const savedTheme = localStorage.getItem('darkMode');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      
+      let isDarkMode = savedTheme === 'true' || (!savedTheme && prefersDark);
+      
+      // Apply initial theme
+      updateTheme(isDarkMode);
+      
+      // Dark mode toggle event
+      darkModeToggle.addEventListener('click', function() {
+        isDarkMode = !isDarkMode;
+        updateTheme(isDarkMode);
+        localStorage.setItem('darkMode', isDarkMode);
+        
+        // Add click animation
+        this.style.transform = 'scale(0.9)';
+        setTimeout(() => {
+          this.style.transform = '';
+        }, 150);
+      });
+      
+      function updateTheme(dark) {
+        const html = document.documentElement;
+        const mobileToggleIcon = document.querySelector('.mobile-toggle-icon');
+        const mobileToggleBtn = document.getElementById('mobile-dark-toggle');
+        
+        if (dark) {
+          html.setAttribute('data-theme', 'dark');
+          toggleIcon.textContent = '☀️';
+          darkModeToggle.classList.add('active');
+          darkModeToggle.title = 'Chuyển sang chế độ sáng';
+          
+          if (mobileToggleIcon) {
+            mobileToggleIcon.textContent = '☀️';
+            mobileToggleBtn.innerHTML = '<span class="mobile-toggle-icon">☀️</span> Chế độ sáng';
+          }
+        } else {
+          html.setAttribute('data-theme', 'light');
+          toggleIcon.textContent = '🌙';
+          darkModeToggle.classList.remove('active');
+          darkModeToggle.title = 'Chuyển sang chế độ tối';
+          
+          if (mobileToggleIcon) {
+            mobileToggleIcon.textContent = '🌙';
+            mobileToggleBtn.innerHTML = '<span class="mobile-toggle-icon">🌙</span> Chế độ tối';
+          }
+        }
+        
+        // Smooth transition
+        html.style.transition = 'all 0.3s ease';
+        setTimeout(() => {
+          html.style.transition = '';
+        }, 300);
+      }
+      
+      // Mobile dark mode toggle
+      const mobileDarkToggle = document.getElementById('mobile-dark-toggle');
+      if (mobileDarkToggle) {
+        mobileDarkToggle.addEventListener('click', function() {
+          isDarkMode = !isDarkMode;
+          updateTheme(isDarkMode);
+          localStorage.setItem('darkMode', isDarkMode);
+          
+          // Close mobile menu after toggle
+          const mobileMenu = document.querySelector('.mobile-menu');
+          if (mobileMenu) {
+            mobileMenu.classList.remove('active');
+          }
+        });
+      }
+
+      // Listen for system theme changes
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        if (!localStorage.getItem('darkMode')) {
+          updateTheme(e.matches);
+        }
+      });
+
+      // Mobile menu toggle functionality
+      const menuToggle = document.querySelector('.mobile-menu-toggle');
+      const mobileMenu = document.querySelector('.mobile-menu');
+      
+      if (menuToggle && mobileMenu) {
+        menuToggle.addEventListener('click', function() {
+          mobileMenu.classList.toggle('active');
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click', function(event) {
+          if (!mobileMenu.contains(event.target) && !menuToggle.contains(event.target)) {
+            mobileMenu.classList.remove('active');
+          }
+        });
+      }
+
+      // Thêm icons và styling cho menu items
+      const tbody = document.querySelector('#content-main .app-meals.module table tbody');
+      if (tbody) {
+        function makeRow(url, text, iconClass, cssClass) {
+          const tr = document.createElement('tr');
+          tr.className = cssClass;
+          tr.innerHTML = `
+            <th scope="row">
+              <a href="${url}">
+                ${text}
+              </a>
+            </th>
+            <td></td>
+            <td>
+              <a href="${url}" class="changelink">{% trans "Đi đến" %}</a>
+            </td>
+          `;
+          return tr;
+        }
+
+        const statsURL = "{% url 'meals:statistics' %}";
+        const debtURL  = "{% url 'meals:student_payment_edit' %}";
+        const importURL = "/admin/meals/studentpayment/import-payments/";
+        const statsText= "{% trans 'Thống kê' %}";
+        const debtText = "{% trans 'Chỉnh sửa công nợ' %}";
+        const importText = "{% trans 'Import tiền đã đóng' %}";
+
+        tbody.insertBefore(makeRow(debtURL, debtText, 'row2'), tbody.firstChild);
+        tbody.insertBefore(makeRow(statsURL, statsText, 'row1'), tbody.firstChild);
+        
+        // Thêm "Import tiền đã đóng" vào cuối danh sách
+        tbody.appendChild(makeRow(importURL, importText, '', 'row3'));
+      }
+
+      // Update captions
+      const mealsCap = document.querySelector('#content-main .app-meals.module table caption a.section');
+      if (mealsCap) {
+        mealsCap.textContent = 'CHỨC NĂNG';
+        mealsCap.setAttribute('title', 'Các chức năng');
+      }
+
+      const authCap = document.querySelector('#content-main .app-auth.module table caption a.section');
+      if (authCap) {
+        authCap.textContent = 'XÁC THỰC VÀ ỦY QUYỀN';
+        authCap.setAttribute('title', 'Xác thực và ủy quyền');
+      }
+
+      // Chart data from Django
+      const months = {{ chart_meal_labels|safe }};
+      const mealCounts = {{ chart_meal_data|safe }};
+      const paidAmounts = {{ chart_paid_month_data|safe }};
+
+      // Update stats
+      const totalMeals = mealCounts.reduce((a, b) => a + b, 0);
+      const currentMonthIndex = new Date().getMonth();
+      const totalRevenue = paidAmounts[currentMonthIndex] || 0;
+      
+      function animateNumber(element, targetValue, isRevenue = false) {
+        const startValue = 0;
+        const duration = 2000;
+        const startTime = performance.now();
+        
+        function update(currentTime) {
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const easedProgress = 1 - Math.pow(1 - progress, 3);
+          
+          const currentValue = Math.floor(startValue + (targetValue - startValue) * easedProgress);
+          const formattedValue = isRevenue ? 
+            currentValue.toLocaleString() + '₫' : 
+            currentValue.toLocaleString();
+            
+          element.textContent = formattedValue;
+          
+          if (progress < 1) {
+            requestAnimationFrame(update);
+          }
+        }
+        
+        requestAnimationFrame(update);
+      }
+
+      setTimeout(() => {
+        animateNumber(document.getElementById('total-meals'), totalMeals);
+        animateNumber(document.getElementById('hero-total-meals'), totalMeals);
+        animateNumber(document.getElementById('total-revenue'), totalRevenue, true);
+        animateNumber(document.getElementById('hero-total-revenue'), totalRevenue, true);
+        animateNumber(document.getElementById('chart-meals-total'), totalMeals);
+        animateNumber(document.getElementById('chart-revenue-total'), totalRevenue, true);
+        
+        // Thêm animation cho số học sinh
+        animateNumber(document.getElementById('student-count'), {{ current_student_count }});
+        animateNumber(document.getElementById('hero-student-count'), {{ current_student_count }});
+        
+      }, 500);
+
+      initializeCharts();
+
+      function initializeCharts() {
+        const chartConfig = {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            intersect: false,
+            mode: 'index',
+          },
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              titleColor: '#ffffff',
+              bodyColor: '#ffffff',
+              borderColor: 'rgba(255, 255, 255, 0.1)',
+              borderWidth: 1,
+              cornerRadius: 8,
+              displayColors: false,
+              titleFont: { size: 14, weight: 'bold' },
+              bodyFont: { size: 13 },
+              padding: 12
+            }
+          },
+          scales: {
+            x: {
+              grid: {
+                display: true,
+                color: 'rgba(148, 163, 184, 0.1)',
+                borderDash: [2, 2]
+              },
+              ticks: {
+                color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim(),
+                font: { size: 11, weight: '500' }
+              },
+              border: {
+                display: false
+              }
+            },
+            y: {
+              beginAtZero: true,
+              grid: {
+                display: true,
+                color: 'rgba(148, 163, 184, 0.1)',
+                borderDash: [2, 2]
+              },
+              ticks: {
+                color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim(),
+                font: { size: 11, weight: '500' }
+              },
+              border: {
+                display: false
+              }
+            }
+          },
+          animation: {
+            duration: 2000,
+            easing: 'easeOutCubic'
+          }
+        };
+
+        const ctx1 = document.getElementById('chartMealsByMonth').getContext('2d');
+        const gradient1 = ctx1.createLinearGradient(0, 0, 0, 300);
+        gradient1.addColorStop(0, 'rgba(102, 126, 234, 0.8)');
+        gradient1.addColorStop(0.5, 'rgba(102, 126, 234, 0.4)');
+        gradient1.addColorStop(1, 'rgba(102, 126, 234, 0.1)');
+
+        const chartMeals = new Chart(ctx1, {
+          type: 'line',
+          data: {
+            labels: months,
+            datasets: [{
+              data: mealCounts,
+              fill: true,
+              backgroundColor: gradient1,
+              borderColor: '#667eea',
+              pointBackgroundColor: '#667eea',
+              pointBorderColor: '#ffffff',
+              pointBorderWidth: 3,
+              pointRadius: 6,
+              pointHoverRadius: 8,
+              pointHoverBackgroundColor: '#667eea',
+              pointHoverBorderColor: '#ffffff',
+              pointHoverBorderWidth: 3,
+              tension: 0.4,
+              borderWidth: 3
+            }]
+          },
+          options: {
+            ...chartConfig,
+            plugins: {
+              ...chartConfig.plugins,
+              tooltip: {
+                ...chartConfig.plugins.tooltip,
+                callbacks: {
+                  label: function(context) {
+                    return `Số bữa ăn: ${context.parsed.y.toLocaleString()}`;
+                  }
+                }
+              }
+            },
+            scales: {
+              ...chartConfig.scales,
+              y: {
+                ...chartConfig.scales.y,
+                ticks: {
+                  ...chartConfig.scales.y.ticks,
+                  callback: function(value) {
+                    return value.toLocaleString();
+                  }
+                }
+              }
+            }
+          }
+        });
+
+        const ctx2 = document.getElementById('chartPaidByMonth').getContext('2d');
+        const gradient2 = ctx2.createLinearGradient(0, 0, 0, 300);
+        gradient2.addColorStop(0, 'rgba(240, 147, 251, 0.8)');
+        gradient2.addColorStop(0.5, 'rgba(245, 87, 108, 0.6)');
+        gradient2.addColorStop(1, 'rgba(245, 87, 108, 0.1)');
+
+        const chartRevenue = new Chart(ctx2, {
+          type: 'bar',
+          data: {
+            labels: months,
+            datasets: [{
+              data: paidAmounts,
+              backgroundColor: gradient2,
+              borderColor: '#f5576c',
+              borderWidth: 2,
+              borderRadius: 8,
+              borderSkipped: false,
+              hoverBackgroundColor: 'rgba(245, 87, 108, 0.9)',
+              hoverBorderColor: '#f5576c'
+            }]
+          },
+          options: {
+            ...chartConfig,
+            plugins: {
+              ...chartConfig.plugins,
+              tooltip: {
+                ...chartConfig.plugins.tooltip,
+                callbacks: {
+                  label: function(context) {
+                    return `Doanh thu: ${context.parsed.y.toLocaleString()}₫`;
+                  }
+                }
+              }
+            },
+            scales: {
+              ...chartConfig.scales,
+              y: {
+                ...chartConfig.scales.y,
+                ticks: {
+                  ...chartConfig.scales.y.ticks,
+                  callback: function(value) {
+                    return value.toLocaleString() + '₫';
+                  }
+                }
+              }
+            }
+          }
+        });
+
+        document.querySelectorAll('.chart-control-btn').forEach(btn => {
+          btn.addEventListener('click', function() {
+            document.querySelectorAll('.chart-control-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+          });
+        });
+
+        new MutationObserver(mutations => {
+          mutations.forEach(mutation => {
+            if (mutation.attributeName === 'data-theme') {
+              const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim();
+              
+              [chartMeals, chartRevenue].forEach(chart => {
+                chart.options.scales.x.ticks.color = textColor;
+                chart.options.scales.y.ticks.color = textColor;
+                chart.update('none');
+              });
+            }
+          });
+        }).observe(document.documentElement, { attributes: true });
+      }
+    });
+  </script>
+{% endblock %}
+
+{% block header %}
+  <div id="header">
+    <div id="site-name">
+      <a href="{% url 'admin:index' %}">TRANG QUẢN TRỊ BỮA ĂN HỌC SINH</a>
+    </div>
+    <button class="mobile-menu-toggle">
+      ☰
+    </button>
+    
+    <!-- Dark Mode Toggle -->
+    <button id="dark-mode-toggle" class="dark-mode-toggle" title="Chuyển đổi chế độ tối">
+      <span class="toggle-icon">🌙</span>
+    </button>
+    
+    <div id="user-tools">
+      {% if user.is_authenticated %}
+        {% block userlinks %}
+          {% if site_url %}
+            <a href="{{ site_url }}">{% trans 'View site' %}</a>
+          {% endif %}
+          {% if user.has_usable_password %}
+            <a href="{% url 'admin:password_change' %}">{% trans 'Change password' %}</a>
+          {% endif %}
+          <a href="{% url 'admin:logout' %}">{% trans 'Log out' %}</a>
+        {% endblock %}
+      {% endif %}
+    </div>
+    <div class="mobile-menu">
+      {% if user.is_authenticated %}
+        {% if site_url %}
+          <a href="{{ site_url }}">🌐 {% trans 'View site' %}</a>
+        {% endif %}
+        {% if user.has_usable_password %}
+          <a href="{% url 'admin:password_change' %}">🔐 {% trans 'Change password' %}</a>
+        {% endif %}
+        <button id="mobile-dark-toggle" class="mobile-dark-toggle" style="
+          display: block;
+          color: var(--text-primary);
+          padding: 0.75rem 1.5rem;
+          text-decoration: none;
+          font-size: 0.875rem;
+          font-weight: 500;
+          transition: background 0.2s ease;
+          background: none;
+          border: none;
+          cursor: pointer;
+          width: 100%;
+          text-align: left;
+        " onmouseover="this.style.background='var(--primary-color)'; this.style.color='#ffffff'"
+           onmouseout="this.style.background='transparent'; this.style.color='var(--text-primary)'">
+          <span class="mobile-toggle-icon">🌙</span> Chế độ tối
+        </button>
+        <a href="{% url 'admin:logout' %}">🚪 {% trans 'Log out' %}</a>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
+
+{% block sidebar %}
+  {{ block.super }}
+{% endblock %}
