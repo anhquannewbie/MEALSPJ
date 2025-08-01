@@ -96,20 +96,42 @@
       display: none !important;
     }
     
-    /* Backup selectors cho dashboard */
-    body.dashboard #content-main .app-meals.module table tbody tr:has(th a[href*="studentpayment"]),
-    body.dashboard #content-main .app-meals.module table tbody tr th a[href*="studentpayment"],
+    /* Backup selectors cho dashboard - exclude import-payments */
+    body.dashboard #content-main .app-meals.module table tbody tr:has(th a[href*="studentpayment"]):not(:has(th a[href*="import-payments"])),
+    body.dashboard #content-main .app-meals.module table tbody tr th a[href*="studentpayment"]:not([href*="import-payments"]),
     body.dashboard #content-main .app-meals.module table tbody tr:has(th a:contains("Công nợ học sinh")),
     body.dashboard #content-main .app-meals.module table tbody tr:has(th:contains("Công nợ học sinh")) {
       display: none !important;
     }
     
-    /* Backup selectors cho sidebar */
-    body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th a[href*="studentpayment"]),
-    body:not(.dashboard) #nav-sidebar .module table tbody tr th a[href*="studentpayment"],
+    /* Backup selectors cho sidebar - exclude import-payments */
+    body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th a[href*="studentpayment"]):not(:has(th a[href*="import-payments"])),
+    body:not(.dashboard) #nav-sidebar .module table tbody tr th a[href*="studentpayment"]:not([href*="import-payments"]),
     body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th a:contains("Công nợ học sinh")),
     body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th:contains("Công nợ học sinh")) {
       display: none !important;
+    }
+
+    /* Ensure import payments row is visible */
+    body.dashboard #content-main .app-meals.module table tbody tr.row3,
+    body.dashboard #content-main .app-meals.module table tbody tr:has(th a[href*="import-payments"]),
+    body:not(.dashboard) #nav-sidebar .module table tbody tr.row3,
+    body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th a[href*="import-payments"]) {
+      display: table-row !important;
+      visibility: visible !important;
+    }
+
+    /* Fix search icon size */
+    .search-form img[src*="search.svg"],
+    #searchbar img[src*="search.svg"],
+    input[type="search"] + img[src*="search.svg"],
+    .search-box img[src*="search.svg"],
+    #changelist-search img[src*="search.svg"],
+    img[src="/static/admin/img/search.svg"] {
+      width: 16px !important;
+      height: 16px !important;
+      max-width: 16px !important;
+      max-height: 16px !important;
     }
     /* Hide default h1 title */
     body.dashboard #content h1 {
@@ -155,7 +177,7 @@
     }
 
     #header #site-name::before {
-      content: "🚀";
+      content: "🍽️";
       font-size: 1.25rem;
       animation: bounce 2s infinite;
     }
@@ -185,6 +207,9 @@
       backdrop-filter: blur(10px) !important;
       background: rgba(255, 255, 255, 0.1) !important;
       border: 1px solid rgba(255, 255, 255, 0.2) !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 0.5rem !important;
     }
 
     #header #user-tools a:hover {
@@ -192,6 +217,23 @@
       color: #ffffff !important;
       transform: translateY(-2px) !important;
       box-shadow: var(--shadow-lg) !important;
+    }
+
+    /* Add icons to header user tools */
+    #header #user-tools a[href*="password_change"]::before {
+      content: "🔐";
+      margin-right: 0.25rem;
+    }
+
+    #header #user-tools a[href*="logout"]::before {
+      content: "🚪";
+      margin-right: 0.25rem;
+    }
+
+    #header #user-tools a[href="#"]::before,
+    #header #user-tools a:not([href*="password_change"]):not([href*="logout"])::before {
+      content: "🌐";
+      margin-right: 0.25rem;
     }
 
     /* === Mobile Menu Styles === */
@@ -240,6 +282,63 @@
     .mobile-menu a:hover {
       background: var(--primary-color) !important;
       color: #ffffff !important;
+    }
+
+    /* === Dark Mode Toggle === */
+    .dark-mode-toggle {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      width: 45px !important;
+      height: 45px !important;
+      border-radius: 50% !important;
+      background: rgba(255, 255, 255, 0.1) !important;
+      border: 1px solid rgba(255, 255, 255, 0.2) !important;
+      color: #ffffff !important;
+      cursor: pointer !important;
+      transition: all 0.3s ease !important;
+      backdrop-filter: blur(10px) !important;
+      position: relative !important;
+      z-index: 3 !important;
+      margin-right: 1rem !important;
+    }
+
+    .dark-mode-toggle:hover {
+      background: rgba(255, 255, 255, 0.2) !important;
+      transform: translateY(-2px) !important;
+      box-shadow: var(--shadow-lg) !important;
+    }
+
+    .dark-mode-toggle .toggle-icon {
+      font-size: 1.2rem !important;
+      transition: transform 0.3s ease !important;
+    }
+
+    .dark-mode-toggle:hover .toggle-icon {
+      transform: rotate(15deg) scale(1.1) !important;
+    }
+
+    /* Dark mode active state */
+    .dark-mode-toggle.active {
+      background: rgba(255, 255, 255, 0.3) !important;
+      border-color: rgba(255, 255, 255, 0.4) !important;
+    }
+
+    .dark-mode-toggle.active .toggle-icon {
+      transform: rotate(180deg) !important;
+    }
+
+    /* Mobile dark mode toggle */
+    @media (max-width: 768px) {
+      .dark-mode-toggle {
+        width: 40px !important;
+        height: 40px !important;
+        margin-right: 0.5rem !important;
+      }
+      
+      .dark-mode-toggle .toggle-icon {
+        font-size: 1rem !important;
+      }
     }
 
     /* === Enhanced Hero Welcome Section === */
@@ -322,6 +421,14 @@
       overflow: hidden;
     }
 
+    .hero-title::before {
+      content: "📊";
+      font-size: 2rem;
+      margin-right: 0.5rem;
+      animation: bounce 2s infinite;
+      -webkit-text-fill-color: initial;
+    }
+
     @keyframes gradientShift {
       0% { background-position: 0% 50%; }
       50% { background-position: 100% 50%; }
@@ -357,19 +464,28 @@
     }
 
     .hero-subtitle {
-      font-size: 2rem !important;
-      font-weight: 900 !important;
+      font-size: 1.25rem !important;
+      font-weight: 600 !important;
       margin: 0 !important;
       opacity: 1 !important;
       position: relative !important;
       z-index: 2 !important;
-      letter-spacing: 0.04em !important;
+      letter-spacing: 0.02em !important;
       text-shadow: 
         0 2px 8px rgba(0,0,0,0.15),
         0 0 12px rgba(255,255,255,0.2) !important;
       line-height: 1.4 !important;
       font-family: 'Inter', -apple-system, sans-serif !important;
       text-transform: none !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 0.5rem !important;
+    }
+
+    .hero-subtitle::before {
+      content: "📈";
+      font-size: 1rem;
     }
 
     .hero-stats {
@@ -384,6 +500,15 @@
     .hero-stat {
       text-align: center !important;
       animation: statPulse 5s ease-in-out infinite;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      gap: 0.5rem !important;
+    }
+
+    .hero-stat-icon {
+      font-size: 1.5rem !important;
+      opacity: 0.9 !important;
     }
 
     .hero-stat-value {
@@ -459,7 +584,7 @@
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-      font-size: 1.25rem !important;
+      font-size: 1.5rem !important;
       color: #ffffff !important;
       position: relative !important;
     }
@@ -515,6 +640,21 @@
       color: var(--danger-color) !important;
     }
 
+    .stat-trend.up::before {
+      content: "📈";
+      margin-right: 0.25rem;
+    }
+
+    .stat-trend.down::before {
+      content: "📉";
+      margin-right: 0.25rem;
+    }
+
+    .stat-trend.neutral::before {
+      content: "📊";
+      margin-right: 0.25rem;
+    }
+
     /* === Enhanced Chart Container === */
     .charts-section {
       margin-top: 3rem !important;
@@ -538,6 +678,12 @@
       margin-left: 20px !important;
       animation: slideInLeft 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.8s forwards !important;
       opacity: 0;
+    }
+
+    .section-title::before {
+      content: "📊";
+      font-size: 1.5rem;
+      animation: bounce 2s infinite;
     }
 
     .chart-controls {
@@ -622,6 +768,16 @@
       gap: 0.5rem !important;
     }
 
+    .chart-title.meals-chart::before {
+      content: "🍽️";
+      font-size: 1.25rem;
+    }
+
+    .chart-title.revenue-chart::before {
+      content: "💰";
+      font-size: 1.25rem;
+    }
+
     .chart-subtitle {
       font-size: 0.875rem !important;
       color: var(--text-secondary) !important;
@@ -690,9 +846,13 @@
       text-transform: uppercase !important;
       letter-spacing: 0.05em !important;
     }
+
     .module table {
         border-collapse: collapse;
     }
+
+    /* === Menu Item Icons Removed === */
+
     /* === Responsive Design === */
     @media (max-width: 1200px) {
       .charts-grid {
@@ -865,6 +1025,16 @@
         font-size: 0.75rem !important;
         padding: 0.4rem 0.8rem !important;
       }
+
+      /* Mobile hero stats layout */
+      .hero-stats {
+        flex-wrap: wrap !important;
+        gap: 1rem !important;
+      }
+
+      .hero-stat {
+        min-width: calc(50% - 0.5rem) !important;
+      }
     }
 
     @media (max-width: 480px) {
@@ -910,21 +1080,29 @@
       }
 
       .hero-title {
-        font-size: 1.25rem !important;
+        font-size: 1.5rem !important;
+        flex-direction: column !important;
+        gap: 0.5rem !important;
+      }
+
+      .hero-title::before {
+        font-size: 1.5rem !important;
+        margin-right: 0 !important;
       }
 
       .hero-subtitle {
-        font-size: 0.85rem !important;
+        font-size: 1rem !important;
         letter-spacing: 0.01em !important;
       }
 
       .hero-stat {
         padding: 0.6rem 0.8rem !important;
         border-radius: 0.6rem !important;
+        min-width: calc(50% - 0.5rem) !important;
       }
 
       .hero-stat-value {
-        font-size: 1.1rem !important;
+        font-size: 1.3rem !important;
       }
 
       .hero-stat-label {
@@ -1027,20 +1205,22 @@
   <!-- Hero Welcome Section -->
   <div class="hero-welcome">
     <h1 class="hero-title">
-      <i class="fas fa-tachometer-alt"></i>
       Dashboard Quản Lý
     </h1>
     <p class="hero-subtitle">Tổng quan và phân tích dữ liệu hệ thống</p>
     <div class="hero-stats">
       <div class="hero-stat">
+        <div class="hero-stat-icon">🍽️</div>
         <span class="hero-stat-label">Tổng bữa ăn</span>
         <span class="hero-stat-value" id="hero-total-meals">0</span>
       </div>
       <div class="hero-stat">
+        <div class="hero-stat-icon">👨‍🎓</div>
         <span class="hero-stat-label">Học sinh</span>
         <span class="hero-stat-value animated-student-count" id="hero-student-count">{{ current_student_count }}</span>
       </div>
       <div class="hero-stat">
+        <div class="hero-stat-icon">💰</div>
         <span class="hero-stat-label">Doanh thu</span>
         <span class="hero-stat-value" id="hero-total-revenue">0₫</span>
       </div>
@@ -1053,15 +1233,13 @@
     <div class="stat-card">
       <div class="stat-header">
         <div class="stat-icon" style="background: var(--chart-gradient-1);">
-          <i class="fas fa-utensils"></i>
+          🍽️
         </div>
         <div class="stat-trend
             {% if meals_trend_direction == 'up' %}up
             {% elif meals_trend_direction == 'down' %}down
             {% else %}neutral
             {% endif %}">
-          <i class="fas fa-arrow-
-            {% if meals_trend_direction == 'down' %}down{% else %}up{% endif %}"></i>
           {{ meals_trend_percentage }}%
         </div>
       </div>
@@ -1073,15 +1251,13 @@
     <div class="stat-card">
       <div class="stat-header">
         <div class="stat-icon" style="background: var(--chart-gradient-2);">
-          <i class="fas fa-users"></i>
+          👨‍🎓
         </div>
         <div class="stat-trend
             {% if students_trend_direction == 'up' %}up
             {% elif students_trend_direction == 'down' %}down
             {% else %}neutral
             {% endif %}">
-          <i class="fas fa-arrow-
-            {% if students_trend_direction == 'down' %}down{% else %}up{% endif %}"></i>
           {{ students_trend_percentage }}%
         </div>
       </div>
@@ -1095,15 +1271,13 @@
     <div class="stat-card">
       <div class="stat-header">
         <div class="stat-icon" style="background: var(--chart-gradient-3);">
-          <i class="fas fa-coins"></i>
+          💰
         </div>
         <div class="stat-trend
             {% if revenue_trend_direction == 'up' %}up
             {% elif revenue_trend_direction == 'down' %}down
             {% else %}neutral
             {% endif %}">
-          <i class="fas fa-arrow-
-            {% if revenue_trend_direction == 'down' %}down{% else %}up{% endif %}"></i>
           {{ revenue_trend_percentage }}%
         </div>
       </div>
@@ -1117,10 +1291,10 @@
     <div class="stat-card">
       <div class="stat-header">
         <div class="stat-icon" style="background: var(--warning-color);">
-          <i class="fas fa-calendar-alt"></i>
+          📅
         </div>
         <div class="stat-trend neutral">
-          <i class="fas fa-clock"></i> Hiện tại
+          Hiện tại
         </div>
       </div>
       <div class="stat-value" id="current-month">THÁNG {{ current_month }}</div>
@@ -1136,7 +1310,6 @@
     <div class="section-header">
       <div>
         <h2 class="section-title">
-          <i class="fas fa-chart-line"></i>
           Phân tích dữ liệu
         </h2>
       </div>
@@ -1146,8 +1319,7 @@
       <div class="chart-card">
         <div class="chart-header">
           <div>
-            <h3 class="chart-title">
-              <i class="fas fa-utensils"></i>
+            <h3 class="chart-title meals-chart">
               Bữa ăn theo tháng
             </h3>
             <p class="chart-subtitle">Xu hướng phục vụ bữa ăn</p>
@@ -1164,8 +1336,7 @@
       <div class="chart-card">
         <div class="chart-header">
           <div>
-            <h3 class="chart-title">
-              <i class="fas fa-coins"></i>
+            <h3 class="chart-title revenue-chart">
               Doanh thu theo tháng
             </h3>
             <p class="chart-subtitle">Tình hình thu học phí</p>
@@ -1183,6 +1354,89 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function(){
+      // === DARK MODE FUNCTIONALITY ===
+      const darkModeToggle = document.getElementById('dark-mode-toggle');
+      const toggleIcon = darkModeToggle.querySelector('.toggle-icon');
+      
+      // Check for saved dark mode preference or default to light mode
+      const savedTheme = localStorage.getItem('darkMode');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      
+      let isDarkMode = savedTheme === 'true' || (!savedTheme && prefersDark);
+      
+      // Apply initial theme
+      updateTheme(isDarkMode);
+      
+      // Dark mode toggle event
+      darkModeToggle.addEventListener('click', function() {
+        isDarkMode = !isDarkMode;
+        updateTheme(isDarkMode);
+        localStorage.setItem('darkMode', isDarkMode);
+        
+        // Add click animation
+        this.style.transform = 'scale(0.9)';
+        setTimeout(() => {
+          this.style.transform = '';
+        }, 150);
+      });
+      
+      function updateTheme(dark) {
+        const html = document.documentElement;
+        const mobileToggleIcon = document.querySelector('.mobile-toggle-icon');
+        const mobileToggleBtn = document.getElementById('mobile-dark-toggle');
+        
+        if (dark) {
+          html.setAttribute('data-theme', 'dark');
+          toggleIcon.textContent = '☀️';
+          darkModeToggle.classList.add('active');
+          darkModeToggle.title = 'Chuyển sang chế độ sáng';
+          
+          if (mobileToggleIcon) {
+            mobileToggleIcon.textContent = '☀️';
+            mobileToggleBtn.innerHTML = '<span class="mobile-toggle-icon">☀️</span> Chế độ sáng';
+          }
+        } else {
+          html.setAttribute('data-theme', 'light');
+          toggleIcon.textContent = '🌙';
+          darkModeToggle.classList.remove('active');
+          darkModeToggle.title = 'Chuyển sang chế độ tối';
+          
+          if (mobileToggleIcon) {
+            mobileToggleIcon.textContent = '🌙';
+            mobileToggleBtn.innerHTML = '<span class="mobile-toggle-icon">🌙</span> Chế độ tối';
+          }
+        }
+        
+        // Smooth transition
+        html.style.transition = 'all 0.3s ease';
+        setTimeout(() => {
+          html.style.transition = '';
+        }, 300);
+      }
+      
+      // Mobile dark mode toggle
+      const mobileDarkToggle = document.getElementById('mobile-dark-toggle');
+      if (mobileDarkToggle) {
+        mobileDarkToggle.addEventListener('click', function() {
+          isDarkMode = !isDarkMode;
+          updateTheme(isDarkMode);
+          localStorage.setItem('darkMode', isDarkMode);
+          
+          // Close mobile menu after toggle
+          const mobileMenu = document.querySelector('.mobile-menu');
+          if (mobileMenu) {
+            mobileMenu.classList.remove('active');
+          }
+        });
+      }
+
+      // Listen for system theme changes
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        if (!localStorage.getItem('darkMode')) {
+          updateTheme(e.matches);
+        }
+      });
+
       // Mobile menu toggle functionality
       const menuToggle = document.querySelector('.mobile-menu-toggle');
       const mobileMenu = document.querySelector('.mobile-menu');
@@ -1209,7 +1463,6 @@
           tr.innerHTML = `
             <th scope="row">
               <a href="${url}">
-                <i class="${iconClass}"></i>
                 ${text}
               </a>
             </th>
@@ -1223,36 +1476,16 @@
 
         const statsURL = "{% url 'meals:statistics' %}";
         const debtURL  = "{% url 'meals:student_payment_edit' %}";
+        const importURL = "/admin/meals/studentpayment/import-payments/";
         const statsText= "{% trans 'Thống kê' %}";
         const debtText = "{% trans 'Chỉnh sửa công nợ' %}";
+        const importText = "{% trans 'Import tiền đã đóng' %}";
 
         tbody.insertBefore(makeRow(debtURL, debtText, 'row2'), tbody.firstChild);
         tbody.insertBefore(makeRow(statsURL, statsText, 'row1'), tbody.firstChild);
-      }
-
-      // Add icons to auth module
-      const authTbody = document.querySelector('#content-main .app-auth.module table tbody');
-      if (authTbody) {
-        const authLinks = authTbody.querySelectorAll('th a');
-        authLinks.forEach(link => {
-          const text = link.textContent.trim();
-          const iconSpan = link.querySelector('i');
-          
-          if (!iconSpan) {
-            let iconClass = '';
-            if (text.includes('Groups') || text.includes('Nhóm')) {
-              iconClass = 'fas fa-users-cog';
-            } else if (text.includes('Users') || text.includes('Người dùng')) {
-              iconClass = 'fas fa-user';
-            }
-            
-            if (iconClass) {
-              const icon = document.createElement('i');
-              icon.className = iconClass;
-              link.insertBefore(icon, link.firstChild);
-            }
-          }
-        });
+        
+        // Thêm "Import tiền đã đóng" vào cuối danh sách
+        tbody.appendChild(makeRow(importURL, importText, '', 'row3'));
       }
 
       // Update captions
@@ -1516,8 +1749,14 @@
       <a href="{% url 'admin:index' %}">TRANG QUẢN TRỊ BỮA ĂN HỌC SINH</a>
     </div>
     <button class="mobile-menu-toggle">
-      <i class="fas fa-bars"></i>
+      ☰
     </button>
+    
+    <!-- Dark Mode Toggle -->
+    <button id="dark-mode-toggle" class="dark-mode-toggle" title="Chuyển đổi chế độ tối">
+      <span class="toggle-icon">🌙</span>
+    </button>
+    
     <div id="user-tools">
       {% if user.is_authenticated %}
         {% block userlinks %}
@@ -1534,12 +1773,29 @@
     <div class="mobile-menu">
       {% if user.is_authenticated %}
         {% if site_url %}
-          <a href="{{ site_url }}">{% trans 'View site' %}</a>
+          <a href="{{ site_url }}">🌐 {% trans 'View site' %}</a>
         {% endif %}
         {% if user.has_usable_password %}
-          <a href="{% url 'admin:password_change' %}">{% trans 'Change password' %}</a>
+          <a href="{% url 'admin:password_change' %}">🔐 {% trans 'Change password' %}</a>
         {% endif %}
-        <a href="{% url 'admin:logout' %}">{% trans 'Log out' %}</a>
+        <button id="mobile-dark-toggle" class="mobile-dark-toggle" style="
+          display: block;
+          color: var(--text-primary);
+          padding: 0.75rem 1.5rem;
+          text-decoration: none;
+          font-size: 0.875rem;
+          font-weight: 500;
+          transition: background 0.2s ease;
+          background: none;
+          border: none;
+          cursor: pointer;
+          width: 100%;
+          text-align: left;
+        " onmouseover="this.style.background='var(--primary-color)'; this.style.color='#ffffff'"
+           onmouseout="this.style.background='transparent'; this.style.color='var(--text-primary)'">
+          <span class="mobile-toggle-icon">🌙</span> Chế độ tối
+        </button>
+        <a href="{% url 'admin:logout' %}">🚪 {% trans 'Log out' %}</a>
       {% endif %}
     </div>
   </div>

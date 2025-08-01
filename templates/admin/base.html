@@ -86,7 +86,7 @@
     }
 
     #header #site-name::before {
-      content: "🚀";
+      content: "";
       font-size: 1rem;
     }
 
@@ -231,19 +231,6 @@
       box-sizing: border-box !important;
     }
 
-    /* === ẨN HOÀN TOÀN CÔNG NỢ HỌC SINH === */
-    /* CSS selector để ẩn row studentpayment */
-    body:not(.dashboard) #nav-sidebar .module table tbody tr.model-studentpayment {
-      display: none !important;
-    }
-    
-    /* Backup selectors */
-    body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th a[href*="studentpayment"]),
-    body:not(.dashboard) #nav-sidebar .module table tbody tr th a[href*="studentpayment"],
-    body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th a:contains("Công nợ học sinh")),
-    body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th:contains("Công nợ học sinh")) {
-      display: none !important;
-    }
 
     /* Add icons to sidebar headers */
     body:not(.dashboard) #nav-sidebar .app-meals.module table caption::before {
@@ -254,6 +241,19 @@
     body:not(.dashboard) #nav-sidebar .app-auth.module table caption::before {
       content: "🔐";
       font-size: 0.9rem;
+    }
+
+    /* Fix search icon size */
+    .search-form img[src*="search.svg"],
+    #searchbar img[src*="search.svg"],
+    input[type="search"] + img[src*="search.svg"],
+    .search-box img[src*="search.svg"],
+    #changelist-search img[src*="search.svg"],
+    img[src="/static/admin/img/search.svg"] {
+      width: 16px !important;
+      height: 16px !important;
+      max-width: 16px !important;
+      max-height: 16px !important;
     }
 
     /* Sidebar tables */
@@ -779,7 +779,7 @@
 
     /* Enhanced filter section icons */
     body:not(.dashboard) #changelist-filter h3::before {
-      content: "📊";
+      content: "";
       font-size: 1rem;
       background: linear-gradient(135deg, var(--filter-accent), #7c3aed);
       -webkit-background-clip: text;
@@ -2316,7 +2316,7 @@
             const toggleBtn = document.createElement('button');
             toggleBtn.className = 'filter-toggle';
             toggleBtn.title = 'Ẩn/Hiện bộ lọc';
-            toggleBtn.innerHTML = '<i class="fas fa-times"></i>';
+            toggleBtn.innerHTML = '✕';
             document.body.appendChild(toggleBtn);
             
             // Xử lý toggle filter
@@ -2326,12 +2326,12 @@
               if (isHidden) {
                 filter.classList.remove('hidden');
                 body.classList.add('filtered');
-                toggleBtn.innerHTML = '<i class="fas fa-times"></i>';
+                toggleBtn.innerHTML = '✕';
                 toggleBtn.title = 'Ẩn bộ lọc';
               } else {
                 filter.classList.add('hidden');
                 body.classList.remove('filtered');
-                toggleBtn.innerHTML = '<i class="fas fa-filter"></i>';
+                toggleBtn.innerHTML = '≡';
                 toggleBtn.title = 'Hiện bộ lọc';
               }
             });
@@ -2373,7 +2373,7 @@
           // Enhanced filter styling
           const filterTitle = filter.querySelector('h2');
           if (filterTitle) {
-            filterTitle.innerHTML = '<i class="fas fa-magic"></i> BỘ LỌC THÔNG MINH';
+            filterTitle.innerHTML = 'BỘ LỌC THÔNG MINH';
           }
           
           // Add search functionality to filter
@@ -2493,7 +2493,7 @@
               document.body.classList.remove('filtered');
               const toggleBtn = document.querySelector('.filter-toggle');
               if (toggleBtn) {
-                toggleBtn.innerHTML = '<i class="fas fa-filter"></i>';
+                toggleBtn.innerHTML = '≡';
                 toggleBtn.title = 'Hiện bộ lọc';
               }
             }
@@ -2558,7 +2558,7 @@
       if (window.innerWidth <= 1024 && !document.body.classList.contains('dashboard')) {
         const mobileBtn = document.createElement('button');
         mobileBtn.id = 'mobile-menu-btn';
-        mobileBtn.innerHTML = '<i class="fas fa-bars"></i>';
+        mobileBtn.innerHTML = '☰';
         document.body.appendChild(mobileBtn);
 
         mobileBtn.addEventListener('click', function() {
@@ -2604,7 +2604,7 @@
         // Hàm tạo <tr> mới
         function makeRow(url, text, iconClass, cssClass) {
           const tr = document.createElement('tr');
-          tr.className = cssClass;
+          tr.className = cssClass || '';
           tr.innerHTML = `
             <th scope="row">
               <a href="${url}">
@@ -2620,47 +2620,24 @@
 
         const statsURL = "{% url 'meals:statistics' %}";
         const debtURL  = "{% url 'meals:student_payment_edit' %}";
+        const importURL = "/admin/meals/studentpayment/import-payments/";
         const statsText= "{% trans 'Thống kê' %}";
         const debtText = "{% trans 'Chỉnh sửa công nợ' %}";
+        const importText = "{% trans 'Import tiền đã đóng' %}";
 
         // Chèn "Chỉnh sửa công nợ" (row2) và "Thống kê" (row1) lên đầu danh sách
-        tbody.insertBefore(makeRow(debtURL, debtText, 'row2'), tbody.firstChild);
-        tbody.insertBefore(makeRow(statsURL, statsText, 'row1'), tbody.firstChild);
+        tbody.insertBefore(makeRow(debtURL, debtText, '', 'row2'), tbody.firstChild);
+        tbody.insertBefore(makeRow(statsURL, statsText, '', 'row1'), tbody.firstChild);
+        
+        // Thêm "Import tiền đã đóng" vào cuối danh sách
+        tbody.appendChild(makeRow(importURL, importText, '', 'row3'));
 
-        // ẨN HOÀN TOÀN CÔNG NỢ HỌC SINH - nhiều cách để đảm bảo
-        const allRows = tbody.querySelectorAll('tr');
-        allRows.forEach(row => {
-          const linkText = row.querySelector('th a');
-          if (linkText && (
-            linkText.textContent.includes('Công nợ học sinh') ||
-            linkText.textContent.includes('Student debt') ||
-            linkText.textContent.includes('studentpayment') ||
-            linkText.href.includes('student_debt') ||
-            linkText.href.includes('studentpayment') ||
-            row.classList.contains('model-studentpayment')
-          )) {
-            row.style.display = 'none !important';
-            row.style.visibility = 'hidden !important';
-            row.remove(); // Xóa luôn khỏi DOM
-          }
-        });
-
-        // Thêm CSS rule để đảm bảo ẩn hoàn toàn
-        const hideStyle = document.createElement('style');
-        hideStyle.textContent = `
-          .model-studentpayment,
-          tr.model-studentpayment,
-          [href*="studentpayment"],
-          a[href*="studentpayment"],
-          tr:has(a[href*="studentpayment"]) {
-            display: none !important;
-            visibility: hidden !important;
-            opacity: 0 !important;
-            height: 0 !important;
-            overflow: hidden !important;
-          }
-        `;
-        document.head.appendChild(hideStyle);
+        // ẨN CÔNG NỢ HỌC SINH
+        const studentPaymentRow = tbody.querySelector('.model-studentpayment');
+        if (studentPaymentRow) {
+          studentPaymentRow.style.display = 'none';
+          studentPaymentRow.remove();
+        }
 
         // Thêm icons vào các menu items có sẵn
         const links = tbody.querySelectorAll('th a');
@@ -2693,32 +2670,7 @@
         });
       }
 
-      // Thêm icons vào auth module
-      const authTbody = document.querySelector(
-        'nav#nav-sidebar .app-auth.module table tbody'
-      );
-      if (authTbody) {
-        const authLinks = authTbody.querySelectorAll('th a');
-        authLinks.forEach(link => {
-          const text = link.textContent.trim();
-          const iconSpan = link.querySelector('i');
-          
-          if (!iconSpan) {
-            let iconClass = '';
-            if (text.includes('Groups') || text.includes('Nhóm')) {
-              iconClass = 'fas fa-users-cog';
-            } else if (text.includes('Users') || text.includes('Người dùng')) {
-              iconClass = 'fas fa-user';
-            }
-            
-            if (iconClass) {
-              const icon = document.createElement('i');
-              icon.className = iconClass;
-              link.insertBefore(icon, link.firstChild);
-            }
-          }
-        });
-      }
+      // Remove icons from auth module - no longer adding icons
 
       // === INITIALIZE ALL FILTER FEATURES ===
       initFilterLayout();
@@ -2780,7 +2732,7 @@
             
             // Add specific styling and content based on button type
             if (originalLink.href.includes('/delete_students/')) {
-              button.innerHTML = '<i class="fas fa-trash-alt"></i> Xóa toàn bộ học sinh';
+              button.innerHTML = 'Xóa toàn bộ học sinh';
               button.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
               button.addEventListener('mouseenter', () => {
                 button.style.background = 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)';
@@ -2793,7 +2745,7 @@
                 button.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
               });
             } else if (originalLink.href.includes('/export_students/')) {
-              button.innerHTML = '<i class="fas fa-download"></i> Export Học sinh';
+              button.innerHTML = 'Export Học sinh';
               button.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
               button.addEventListener('mouseenter', () => {
                 button.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
@@ -2806,7 +2758,7 @@
                 button.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
               });
             } else if (originalLink.href.includes('/import_students/')) {
-              button.innerHTML = '<i class="fas fa-upload"></i> Import Học sinh';
+              button.innerHTML = 'Import Học sinh';
               button.style.background = 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)';
               button.addEventListener('mouseenter', () => {
                 button.style.background = 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)';
@@ -2819,7 +2771,7 @@
                 button.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
               });
             } else if (originalLink.href.includes('/promote_students/')) {
-              button.innerHTML = '<i class="fas fa-level-up-alt"></i> Lên Lớp';
+              button.innerHTML = 'Lên Lớp';
               button.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
               button.addEventListener('mouseenter', () => {
                 button.style.background = 'linear-gradient(135deg, #d97706 0%, #b45309 100%)';
@@ -2847,7 +2799,7 @@
         // Add icon to history button if it exists
         const historyButton = objectTools.querySelector('.historylink');
         if (historyButton && !historyButton.querySelector('i')) {
-          historyButton.innerHTML = '<i class="fas fa-history"></i> ' + historyButton.textContent.trim();
+          historyButton.innerHTML = historyButton.textContent.trim();
         }
         
         // Also ensure object-tools styling is clean - NO BORDER

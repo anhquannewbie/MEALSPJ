@@ -55,7 +55,9 @@ TEMPLATES = [
 ]
 CSRF_TRUSTED_ORIGINS = [
   'https://mealspj-production.up.railway.app',
-  'https://meal.hoahuongduong.org/'
+  'https://meal.hoahuongduong.org/',
+  'http://127.0.0.1:8000',
+  'http://localhost:8000',
 ]
 WSGI_APPLICATION = 'meals_system.wsgi.application'
 
@@ -88,6 +90,15 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+
+# Only use secure cookies in production (when DATABASE_URL is set)
+if os.getenv("DATABASE_URL"):
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+else:
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    # Additional CSRF settings for development
+    CSRF_COOKIE_HTTPONLY = False
+    CSRF_USE_SESSIONS = False
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"

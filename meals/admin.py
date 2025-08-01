@@ -155,13 +155,33 @@ class MyAdminSite(AdminSite):
             },
         ]
         return context
+    
+    def logout(self, request, extra_context=None):
+        """
+        Logout view - allows both GET and POST
+        """
+        from django.contrib.auth import logout
+        from django.shortcuts import redirect, render
+        from django.template.response import TemplateResponse
+        
+        if request.method == 'POST':
+            logout(request)
+            return redirect('login')
+        
+        # For GET requests, show logout confirmation
+        context = {
+            **self.each_context(request),
+            'title': 'Đăng xuất',
+            **(extra_context or {})
+        }
+        return TemplateResponse(request, 'admin/logout.html', context)
     def index(self, request, extra_context=None):
         extra_context = extra_context or {}
 
         # ==== QUICK LINKS như trước ====
         extra_context['quick_links'] = [
-            {'url': reverse('meals:statistics'),           'label': '📊 Thống kê'},
-            {'url': reverse('meals:student_payment_edit'), 'label': '💳 Chỉnh sửa công nợ'},
+            {'url': reverse('meals:statistics'),           'label': 'Thống kê'},
+            {'url': reverse('meals:student_payment_edit'), 'label': 'Chỉnh sửa công nợ'},
         ]
 
         # ==== 1) Dữ liệu SỐ BỮA ĂN theo tháng (năm hiện tại) ====
@@ -919,6 +939,7 @@ class MealRecordAdmin( admin.ModelAdmin):
     ordering = ('-date',)
     date_hierarchy = 'date'
     search_fields = ('student__name',)
+    autocomplete_fields = ('student',)
     # Đổi tên hiển thị của model MealRecord trong Admin
     verbose_name = "Bữa ăn"
     verbose_name_plural = "Các bữa ăn"
