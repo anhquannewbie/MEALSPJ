@@ -155,33 +155,13 @@ class MyAdminSite(AdminSite):
             },
         ]
         return context
-    
-    def logout(self, request, extra_context=None):
-        """
-        Logout view - allows both GET and POST
-        """
-        from django.contrib.auth import logout
-        from django.shortcuts import redirect, render
-        from django.template.response import TemplateResponse
-        
-        if request.method == 'POST':
-            logout(request)
-            return redirect('login')
-        
-        # For GET requests, show logout confirmation
-        context = {
-            **self.each_context(request),
-            'title': 'Đăng xuất',
-            **(extra_context or {})
-        }
-        return TemplateResponse(request, 'admin/logout.html', context)
     def index(self, request, extra_context=None):
         extra_context = extra_context or {}
 
         # ==== QUICK LINKS như trước ====
         extra_context['quick_links'] = [
-            {'url': reverse('meals:statistics'),           'label': 'Thống kê'},
-            {'url': reverse('meals:student_payment_edit'), 'label': 'Chỉnh sửa công nợ'},
+            {'url': reverse('meals:statistics'),           'label': '📊 Thống kê'},
+            {'url': reverse('meals:student_payment_edit'), 'label': '💳 Chỉnh sửa công nợ'},
         ]
 
         # ==== 1) Dữ liệu SỐ BỮA ĂN theo tháng (năm hiện tại) ====
@@ -939,7 +919,7 @@ class MealRecordAdmin( admin.ModelAdmin):
     ordering = ('-date',)
     date_hierarchy = 'date'
     search_fields = ('student__name',)
-    autocomplete_fields = ('student',)
+    change_form_template = "admin/meals/mealrecord/change_form.html"
     # Đổi tên hiển thị của model MealRecord trong Admin
     verbose_name = "Bữa ăn"
     verbose_name_plural = "Các bữa ăn"
@@ -974,6 +954,11 @@ class MealRecordAdmin( admin.ModelAdmin):
         })
         super().delete_model(request, obj)
     def save_model(self, request, obj, form, change):
+        # Kiểm tra nếu đây là request "Tạo và tiếp tục chỉnh sửa"
+        if "_create_and_continue" in request.POST:
+            # Không lưu obj hiện tại, chỉ return để không thay đổi dữ liệu
+            return
+            
         existing_record = MealRecord.objects.filter(
              student=obj.student,
              date=obj.date,
@@ -1012,6 +997,80 @@ class MealRecordAdmin( admin.ModelAdmin):
             sp.save()  # gọi model.save() sẽ dùng meal_price để tính remaining_balance
         except StudentPayment.DoesNotExist:
             pass
+    
+    def response_change(self, request, obj):
+        if "_create_and_continue" in request.POST:
+            # Get the form data from the request
+            student_id = request.POST.get('student')
+            date_str = request.POST.get('date')
+            meal_type = request.POST.get('meal_type')
+            status = request.POST.get('status')
+            non_eat = request.POST.get('non_eat', 0)
+            absence_reason = request.POST.get('absence_reason', '')
+            
+            # Convert date string to date object
+            from datetime import datetime
+            try:
+                date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
+            except:
+                messages.error(request, "❌ Định dạng ngày không hợp lệ.")
+                from django.http import HttpResponseRedirect
+                # Reload lại dữ liệu gốc
+                obj.refresh_from_db()
+                return HttpResponseRedirect(request.path)
+            
+            # Get student object
+            try:
+                from .models import Student
+                student = Student.objects.get(pk=student_id)
+            except Student.DoesNotExist:
+                messages.error(request, "❌ Không tìm thấy học sinh.")
+                from django.http import HttpResponseRedirect
+                # Reload lại dữ liệu gốc
+                obj.refresh_from_db()
+                return HttpResponseRedirect(request.path)
+            
+            # Check for duplicate records
+            existing_record = MealRecord.objects.filter(
+                student=student,
+                date=date_obj,
+                meal_type=meal_type
+            ).first()
+            
+            if existing_record:
+                messages.warning(
+                    request,
+                    f"⚠️ Bản ghi đã tồn tại cho học sinh {student.name}, "
+                    f"ngày {date_obj.strftime('%d/%m/%Y')}, {meal_type}. "
+                    f"Không thể tạo bản ghi mới."
+                )
+                # Reload lại dữ liệu gốc từ database
+                obj.refresh_from_db()
+                from django.http import HttpResponseRedirect
+                return HttpResponseRedirect(request.path)
+            
+            # Create a new record with the form data
+            new_record = MealRecord.objects.create(
+                student=student,
+                date=date_obj,
+                meal_type=meal_type,
+                status=status,
+                non_eat=int(non_eat),
+                absence_reason=absence_reason
+            )
+            
+            messages.success(
+                request,
+                f"✅ Đã tạo bản ghi mới thành công (ID: {new_record.pk})"
+            )
+            
+            # Redirect to the new record's change form
+            from django.shortcuts import redirect
+            return redirect(
+                f'/admin/meals/mealrecord/{new_record.pk}/change/'
+            )
+        
+        return super().response_change(request, obj)
         
 class MealRecordAdminForm(forms.ModelForm):
     class Meta:
