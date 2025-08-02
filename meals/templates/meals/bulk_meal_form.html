@@ -793,11 +793,19 @@
                     reason_data:   JSON.stringify(reasonData),
                     csrfmiddlewaretoken: '{{ csrf_token }}'
                 },
-                success: function() { 
+                success: function(response) { 
+                    // Hiển thị thông báo chi tiết từ server
+                    const message = response.detail || 'Đã lưu thành công!';
                     document.getElementById('btn-save').innerHTML = '<i class="fas fa-check success-check"></i> Đã lưu thành công!';
+                    
+                    // Hiển thị thông báo popup chi tiết
+                    alert(message);
+                    
                     setTimeout(() => {
                         document.getElementById('btn-save').innerHTML = '💾 Lưu Dữ Liệu';
                         document.getElementById('btn-save').disabled = false;
+                        // Reload lại dữ liệu để cập nhật trạng thái
+                        loadMealData();
                     }, 2000);
                 },
                 error: function() { 

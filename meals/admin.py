@@ -391,19 +391,22 @@ class StudentPaymentAdmin(admin.ModelAdmin):
         ).exclude(pk=obj.pk).first()
 
         if existing:
-            # ghi đè lên existing
+            # ghi đè lên existing -> luôn là "change"
             existing.tuition_fee    = obj.tuition_fee
             existing.meal_price     = obj.meal_price
             existing.amount_paid    = obj.amount_paid
             existing.save()
             self.message_user(request, f"✅ Đã cập nhật bản ghi {existing.id}.", level=messages.SUCCESS)
             target = existing
+            actual_action = 'change'
         else:
+            # Tạo record mới -> có thể là "add" hoặc "change"
             super().save_model(request, obj, form, change)
             target = obj
+            actual_action = 'change' if change else 'add'
 
-        # always log both add & change
-        action = 'change' if change else 'add'
+        # log với action chính xác
+        action = actual_action
         log_admin_action(request, target, action, extra={
             'student_name':   target.student.name,
             'classroom_name': target.student.classroom.name,
@@ -964,18 +967,28 @@ class MealRecordAdmin( admin.ModelAdmin):
              date=obj.date,
              meal_type=obj.meal_type
         ).first()
+        
         if existing_record:
+            # Cập nhật record đã tồn tại -> luôn là "change"
             existing_record.status         = obj.status
             existing_record.non_eat        = obj.non_eat
             existing_record.absence_reason = obj.absence_reason
             existing_record.save()
             target = existing_record
+            actual_action = 'change'
+            self.message_user(request, f"✅ Đã cập nhật bản ghi bữa ăn cho {target.student.name} thành công!", level=messages.SUCCESS)
         else:
+            # Tạo record mới -> có thể là "add" hoặc "change" tùy thuộc context
             super().save_model(request, obj, form, change)
             target = obj
+            actual_action = 'change' if change else 'add'
+            if actual_action == 'add':
+                self.message_user(request, f"✅ Đã tạo bản ghi bữa ăn mới cho {target.student.name} thành công!", level=messages.SUCCESS)
+            else:
+                self.message_user(request, f"✅ Đã cập nhật bản ghi bữa ăn cho {target.student.name} thành công!", level=messages.SUCCESS)
 
-        # log hành động bữa ăn (add/change)
-        action = 'change' if change else 'add'
+        # log hành động bữa ăn với action chính xác
+        action = actual_action
         # Format ngày thành dd/mm/YYYY
         date_str = target.date.strftime('%d/%m/%Y')
         mt       = target.get_meal_type_display().replace('Bữa ', '').capitalize()
@@ -1058,6 +1071,19 @@ class MealRecordAdmin( admin.ModelAdmin):
                 non_eat=int(non_eat),
                 absence_reason=absence_reason
             )
+            
+            # Log audit cho record mới được tạo
+            date_str = new_record.date.strftime('%d/%m/%Y')
+            mt = new_record.get_meal_type_display().replace('Bữa ', '').capitalize()
+            disp = (
+                f"Bản ghi bữa ăn - {date_str} - "
+                f"{new_record.student.name} - {new_record.student.classroom.name} - {mt}"
+            )
+            log_admin_action(request, new_record, 'add', extra={
+                'model':          'mealrecord',
+                'object_id':      new_record.pk,
+                'object_display': disp,
+            })
             
             messages.success(
                 request,

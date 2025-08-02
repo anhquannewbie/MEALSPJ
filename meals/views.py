@@ -492,13 +492,14 @@ def bulk_meal_record_save(request):
                 non_eat=non_eat,
                 absence_reason=reason_data.get(sid, '').strip()
             )
-            action = 'change' 
+            # Bulk create luôn tạo record mới -> action = 'add'
+            action = 'add' 
             # Log ngay sau khi tạo record
+            date_str = rec.date.strftime('%d/%m/%Y')
+            mt = rec.get_meal_type_display().replace('Bữa ', '').capitalize()
             obj_disp = (
-                f"Bản ghi bữa ăn - {rec.date.strftime('%d/%m/%Y')} - "
-                f"Bản ghi bữa ăn - {student.name} - "
-                f"{student.classroom.name} - {rec.get_meal_type_display()}"
-                
+                f"Bản ghi bữa ăn - {date_str} - "
+                f"{student.name} - {student.classroom.name} - {mt}"
             )
             AuditLog.objects.create(
                 user=request.user,
@@ -518,9 +519,22 @@ def bulk_meal_record_save(request):
             except StudentPayment.DoesNotExist:
                 # nếu chưa có thì bỏ qua hoặc log warning
                 continue
-        student_names = [stu.name for stu in students]
+        # Đếm số học sinh đã được lưu
+        total_students = students.count()
+        selected_count = len(student_ids)
         
-        return JsonResponse({"message": "success"}, status=200)
+        # Tạo thông báo chi tiết
+        success_message = (
+            f"✅ Lưu thành công dữ liệu bữa ăn cho {total_students} học sinh lớp {class_name}! "
+            f"({selected_count} học sinh ăn đủ, {total_students - selected_count} học sinh vắng)"
+        )
+        
+        return JsonResponse({
+            "message": "success",
+            "detail": success_message,
+            "total_students": total_students,
+            "selected_count": selected_count
+        }, status=200)
     return JsonResponse({"error": "Invalid method"}, status=400)
 
 def bulk_meal_record_create(request):
