@@ -2,7 +2,7 @@ from meals.admin import my_admin_site
 from django.urls import path, include
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import login_required, permission_required
-from meals.views import logout_view,export_monthly_statistics_all,ajax_get_classes_by_term
+from meals.views import logout_view,admin_logout_view,export_monthly_statistics_all,ajax_get_classes_by_term
 # Views
 from meals_system.views import home
 from meals.views import (
@@ -20,6 +20,9 @@ from meals.views import (
 )
 
 urlpatterns = [
+    # Admin logout fix (must be before admin/ to avoid conflicts)
+    path('admin/logout/', admin_logout_view, name='admin_logout'),
+    
     # Admin site
     path('admin/', my_admin_site.urls),
 

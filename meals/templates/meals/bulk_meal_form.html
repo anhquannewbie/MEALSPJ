@@ -515,8 +515,7 @@
             
             {% csrf_token %}
             
-            <!-- Date Selection (Admin Only) -->
-            {% if is_superadmin %}
+            <!-- Date Selection -->
             <div class="form-group">
                 <label for="id_record_date">
                     <i class="fas fa-calendar-alt"></i>Chọn ngày:
@@ -529,11 +528,11 @@
                         name="record_date"
                         class="form-control"
                         value="{{ default_date }}"
+                        {% if not is_superadmin %}max="{{ default_date }}"{% endif %}
                         onkeydown="return false;"
                     />
                 </div>
             </div>
-            {% endif %}
             
             <!-- Term Selection -->
             <div class="form-group">
@@ -604,9 +603,8 @@
     const isAdmin = {{ is_superadmin|yesno:"true,false" }};
 
     function getSelectedDate() {
-        return isAdmin
-            ? document.getElementById('id_record_date').value
-            : defaultDate;
+        // Cả admin và user đều có thể chọn ngày, nhưng user bị giới hạn max = today
+        return document.getElementById('id_record_date').value || defaultDate;
     }
 
     document.addEventListener('DOMContentLoaded', function() {

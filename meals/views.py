@@ -32,10 +32,15 @@ from django.db import transaction
 from django.utils.dateparse import parse_date
 from django.db.models.functions import ExtractMonth, ExtractYear
 
+def admin_logout_view(request):
+    """Handle both GET and POST logout requests for admin"""
+    from django.contrib.auth import logout
+    logout(request)
+    return redirect('/login/')
+
 @csrf_exempt
-
-
 def logout_view(request):
+    """Handle both GET and POST logout requests"""
     logout(request)
     return redirect('login')
 def user_login(request):
